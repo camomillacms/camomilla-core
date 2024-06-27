@@ -3,11 +3,10 @@ from django.conf import settings as django_settings
 from django.db.models.aggregates import Max
 from django.db.models.functions import Coalesce
 from django.utils import translation
-from modeltranslation.settings import AVAILABLE_LANGUAGES
-from modeltranslation.utils import build_localized_fieldname
 from rest_framework import serializers
 from rest_framework.utils import model_meta
 
+from camomilla.models import UrlNode
 from camomilla.fields import ORDERING_ACCEPTED_FIELDS
 from camomilla.serializers.fields.related import RelatedField
 from camomilla.serializers.utils import build_standard_model_serializer
@@ -169,12 +168,6 @@ class AbstractPageMixin(serializers.ModelSerializer):
     def get_breadcrumbs(self, instance: "AbstractPage"):
         return instance.breadcrumbs
 
-    LANG_PERMALINK_FIELDS = [
-        build_localized_fieldname("permalink", lang)
-        for lang in AVAILABLE_LANGUAGES
-        if settings.ENABLE_TRANSLATIONS
-    ]
-
     @property
     def translation_fields(self):
         return super().translation_fields + ["permalink"]
@@ -186,15 +179,15 @@ class AbstractPageMixin(serializers.ModelSerializer):
             return super().get_default_field_names(*args)
         return (
             [f for f in super().get_default_field_names(*args) if f != "url_node"]
-            + self.LANG_PERMALINK_FIELDS
+            + UrlNode.LANG_PERMALINK_FIELDS
             + ["permalink"]
         )
 
     def build_field(self, field_name, info, model_class, nested_depth):
-        if field_name in self.LANG_PERMALINK_FIELDS + ["permalink"]:
+        if field_name in UrlNode.LANG_PERMALINK_FIELDS + ["permalink"]:
             return serializers.CharField, {
-                "source": "url_node.%s" % field_name,
-                "read_only": True,
+                "required": False,
+                "allow_blank": True,
             }
         return super().build_field(field_name, info, model_class, nested_depth)
 

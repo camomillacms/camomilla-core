@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.utils.functional import lazy
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import get_language
 
 from camomilla.managers.pages import PageQuerySet
 from camomilla.models.mixins import MetaMixin, SeoMixin
@@ -29,7 +30,8 @@ from camomilla.utils.getters import pointed_getter
 from camomilla import settings
 from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
-
+from modeltranslation.settings import AVAILABLE_LANGUAGES
+from modeltranslation.utils import build_localized_fieldname
 
 def GET_TEMPLATE_CHOICES():
     return [(t, t) for t in get_all_templates_files()]
@@ -111,6 +113,14 @@ class UrlNodeManager(models.Manager):
 
 
 class UrlNode(models.Model):
+    
+    LANG_PERMALINK_FIELDS = [
+        build_localized_fieldname("permalink", lang)
+        for lang in AVAILABLE_LANGUAGES
+        if settings.ENABLE_TRANSLATIONS
+    ]
+    
+    
     permalink = models.CharField(max_length=400, unique=True, null=True)
     related_name = models.CharField(max_length=200)
     objects = UrlNodeManager()
@@ -140,6 +150,17 @@ class UrlNode(models.Model):
         if self.routerlink == "/":
             return ""
         return self.routerlink
+    
+    def save(self, *args, **kwargs) -> None:
+        for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
+            lang_p_attr = getattr(self, lang_p_field)
+            if isinstance(lang_p_attr, str):
+                p_parts = lang_p_attr.split("/")
+                lang_p_attr = "/".join([slugify(p, allow_unicode=True).strip() for p in p_parts])
+                if not lang_p_attr.startswith("/"):
+                    lang_p_attr = f"/{lang_p_attr}"
+            setattr(self, lang_p_field, lang_p_attr)
+        super().save(*args, **kwargs)
 
 
 PAGE_CHILD_RELATED_NAME = "%(app_label)s_%(class)s_child_pages"
@@ -154,11 +175,28 @@ PAGE_STATUS = (
 
 
 class PageBase(models.base.ModelBase):
+    """
+        This models comes to implement a language based permalink logic
+    """
+    def perm_prop_factory(permalink_field):
+        def getter(_self):
+            return getattr(_self, f"__{permalink_field}", getattr(_self.url_node or object(), permalink_field, None))
+        def setter(_self, value:str):
+            setattr(_self, f"__{permalink_field}", value)
+        return getter, setter
+    
     def __new__(cls, name, bases, attrs, **kwargs):
         attr_meta = attrs.pop("PageMeta", None)
         new_class = super().__new__(cls, name, bases, attrs, **kwargs)
         page_meta = attr_meta or getattr(new_class, "PageMeta", None)
         base_page_meta = getattr(new_class, "_page_meta", None)
+        for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
+            computed_prop = property(*cls.perm_prop_factory(lang_p_field))
+            setattr(new_class, lang_p_field, computed_prop)
+        setattr(new_class, "permalink", property(
+            lambda _self: getattr(_self, build_localized_fieldname("permalink", get_language()), None),
+            lambda _self, value: setattr(_self, f"__{build_localized_fieldname('permalink', get_language())}", value)
+        ))
         if page_meta:
             for name, value in getattr(base_page_meta, "__dict__", {}).items():
                 if name not in page_meta.__dict__:
@@ -211,6 +249,19 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     )
 
     objects = PageQuerySet.as_manager()
+    
+    __cached_db_instance: "AbstractPage" = None
+
+    @property
+    def db_instance(self):
+        if self.__cached_db_instance is None:
+            self.__cached_db_instance = self.get_db_instance()
+        return self.__cached_db_instance
+    
+    def get_db_instance(self):
+        if self.pk:
+            return self.__class__.objects.get(pk=self.pk)
+        return None
 
     def __init__(self, *args, **kwargs):
         super(AbstractPage, self).__init__(*args, **kwargs)
@@ -239,10 +290,6 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     @property
     def model_info(self) -> dict:
         return {"app_label": self._meta.app_label, "class": self._meta.model_name}
-
-    @property
-    def permalink(self) -> str:
-        return self.url_node and self.url_node.permalink
 
     @property
     def routerlink(self) -> str:
@@ -291,8 +338,10 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def _update_url_node(self, force: bool = False) -> UrlNode:
         self.url_node = self._get_or_create_url_node()
         for __ in activate_languages():
-            old_permalink = self.permalink
-            new_permalink = self.generate_permalink()
+            old_permalink = self.db_instance and self.db_instance.permalink
+            new_permalink = self.permalink
+            if not new_permalink:            
+                new_permalink = self.generate_permalink()
             force = force or old_permalink != new_permalink
             set_nofallbacks(self.url_node, "permalink", new_permalink)
         if force:
@@ -333,7 +382,10 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def save(self, *args, **kwargs) -> None:
         with transaction.atomic():
             self._update_url_node()
-            return super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
+            self.__cached_db_instance = None
+            for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
+                hasattr(self, f"__{lang_p_field}") and delattr(self, f"__{lang_p_field}")
 
     @classmethod
     def get(cls, request, *args, **kwargs) -> "AbstractPage":
