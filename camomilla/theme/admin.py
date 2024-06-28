@@ -26,7 +26,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 class ArticleAdminForm(forms.ModelForm):
     class Meta:
         model = Article
-        exclude = ("slug",)
+        fields = "__all__"
         widgets = {"content": CKEditorUploadingWidget}
 
 

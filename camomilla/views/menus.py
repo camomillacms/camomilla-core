@@ -80,5 +80,4 @@ class MenuViewSet(BaseModelViewset):
     def search_urlnode(self, request, *args, **kwargs):
         url_node = request.GET.get("q", "")
         qs = UrlNode.objects.filter(permalink__icontains=url_node).order_by("permalink")
-        print(get_language())
         return Response(BasicUrlNodeSerializer(qs, many=True).data)

@@ -8,7 +8,7 @@ from camomilla.utils.translation import get_nofallbacks, set_nofallbacks
 
 
 class UniquePermalinkValidator:
-    message = _("This slug generates a non-unique permalink.")
+    message = _("There is an other page with same permalink.")
 
     requires_context = True
 
@@ -29,13 +29,17 @@ class UniquePermalinkValidator:
             instance, parent_page_field, None
         )
         for language in activate_languages():
-            f_name = build_localized_fieldname("slug", language)
-            slug = value.get(f_name, instance and get_nofallbacks(instance, "slug"))
+            autopermalink_f = build_localized_fieldname("autopermalink", language)
+            f_name = build_localized_fieldname("permalink", language)
+            permalink = value.get(f_name, instance and get_nofallbacks(instance, "permalink"))
+            permalink = UrlNode.sanitize_permalink(permalink)
+            autopermalink = value.get(autopermalink_f, instance and get_nofallbacks(instance, "autopermalink"))
+            if autopermalink:
+                continue
             fake_instance = serializer.Meta.model()
-            set_nofallbacks(fake_instance, "slug", slug)
+            set_nofallbacks(fake_instance, "permalink", permalink)
             if parent_page:
                 set_nofallbacks(fake_instance, parent_page_field, parent_page)
-            permalink = fake_instance.generate_permalink(safe=False)
             qs = UrlNode.objects.exclude(**exclude_kwargs)
             if qs.filter(permalink=permalink).exists():
                 errors[f_name] = self.message

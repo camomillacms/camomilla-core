@@ -2,7 +2,6 @@ from typing import Sequence, Tuple
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.validators import RegexValidator
 
 from django.db import ProgrammingError, OperationalError, models, transaction
 from django.db.models.signals import post_delete
@@ -32,6 +31,10 @@ from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
 from modeltranslation.settings import AVAILABLE_LANGUAGES
 from modeltranslation.utils import build_localized_fieldname
+
+
+class UrlPathValidator():
+    pass
 
 def GET_TEMPLATE_CHOICES():
     return [(t, t) for t in get_all_templates_files()]
@@ -151,15 +154,18 @@ class UrlNode(models.Model):
             return ""
         return self.routerlink
     
+    @staticmethod
+    def sanitize_permalink(permalink):
+        if isinstance(permalink, str):
+            p_parts = permalink.split("/")
+            permalink = "/".join([slugify(p, allow_unicode=True).strip() for p in p_parts])
+            if not permalink.startswith("/"):
+                permalink = f"/{permalink}"
+        return permalink
+    
     def save(self, *args, **kwargs) -> None:
         for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
-            lang_p_attr = getattr(self, lang_p_field)
-            if isinstance(lang_p_attr, str):
-                p_parts = lang_p_attr.split("/")
-                lang_p_attr = "/".join([slugify(p, allow_unicode=True).strip() for p in p_parts])
-                if not lang_p_attr.startswith("/"):
-                    lang_p_attr = f"/{lang_p_attr}"
-            setattr(self, lang_p_field, lang_p_attr)
+            setattr(self, lang_p_field, UrlNode.sanitize_permalink(getattr(self, lang_p_field)))
         super().save(*args, **kwargs)
 
 
@@ -205,16 +211,6 @@ class PageBase(models.base.ModelBase):
         return new_class
 
 
-class UrlPathValidator(RegexValidator):
-    
-    regex = r"^[a-zA-Z0-9_\-\/]+[^\/]$"
-    message = _(
-        "Enter a valid 'slug' consisting of lowercase letters, numbers, "
-        "underscores, hyphens and slashes."
-    )
-    flags = 0
-
-
 class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated_at = models.DateTimeField(auto_now=True)
@@ -226,9 +222,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         editable=False,
     )
     breadcrumbs_title = models.CharField(max_length=128, null=True, blank=True)
-    slug = models.CharField(
-        max_length=150, null=True, blank=True, validators=[UrlPathValidator()]
-    )
+    autopermalink = models.BooleanField(default=True)
     status = models.CharField(
         max_length=3,
         choices=PAGE_STATUS,
@@ -299,7 +293,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def breadcrumbs(self) -> Sequence[dict]:
         breadcrumb = {
             "permalink": self.permalink,
-            "title": self.breadcrumbs_title or self.title or self.slug,
+            "title": self.breadcrumbs_title or self.title or "",
         }
         if self.parent:
             return self.parent.breadcrumbs + [breadcrumb]
@@ -340,7 +334,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         for __ in activate_languages():
             old_permalink = self.db_instance and self.db_instance.permalink
             new_permalink = self.permalink
-            if not new_permalink:            
+            if self.autopermalink:            
                 new_permalink = self.generate_permalink()
             force = force or old_permalink != new_permalink
             set_nofallbacks(self.url_node, "permalink", new_permalink)
@@ -350,22 +344,10 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         return self.url_node
 
     def generate_permalink(self, safe: bool = True) -> str:
-        slug = get_nofallbacks(self, "slug")
-        if slug is None and not self.permalink:
-            translations = get_field_translations(self, "slug").values()
-            fallback_slug = next((t for t in translations if t is not None), None)
-            slug = (
-                slugify(self.title or uuid4(), allow_unicode=True)
-                if fallback_slug is None
-                else fallback_slug
-            )
-            set_nofallbacks(self, "slug", slug)
-        slug_parts = (slug or "").split("/")
-        for i, part in enumerate(slug_parts):
-            slug_parts[i] = slugify(part, allow_unicode=True)            
-        permalink = "/%s" % "/".join(slug_parts)
+        permalink = f"/{slugify(self.title or '', allow_unicode=True)}"
         if self.parent:
-            permalink = f"{self.parent.permalink}{permalink}"
+            permalink = f"/{self.parent.permalink}{permalink}"
+        set_nofallbacks(self, "permalink", permalink)
         qs = UrlNode.objects.exclude(pk=getattr(self.url_node or object, "pk", None))
         if safe and qs.filter(permalink=permalink).exists():
             permalink = "/".join(
@@ -438,7 +420,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 node = UrlNode.objects.get(permalink="/")
             return node.page, False
         except UrlNode.DoesNotExist:
-            return cls.get_or_create(None, slug="")
+            return cls.get_or_create(None, permalink="/")
 
     @classmethod
     def get_or_404(cls, request, *args, **kwargs) -> "AbstractPage":
