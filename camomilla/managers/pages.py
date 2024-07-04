@@ -1,6 +1,4 @@
-from typing import Any, Tuple
 from django.db.models.query import QuerySet
-from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.apps import apps
 
