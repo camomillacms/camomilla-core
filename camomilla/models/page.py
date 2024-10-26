@@ -36,6 +36,7 @@ from modeltranslation.utils import build_localized_fieldname
 class UrlPathValidator():
     pass
 
+
 def GET_TEMPLATE_CHOICES():
     return [(t, t) for t in get_all_templates_files()]
 
@@ -116,14 +117,13 @@ class UrlNodeManager(models.Manager):
 
 
 class UrlNode(models.Model):
-    
+
     LANG_PERMALINK_FIELDS = [
         build_localized_fieldname("permalink", lang)
         for lang in AVAILABLE_LANGUAGES
         if settings.ENABLE_TRANSLATIONS
     ]
-    
-    
+
     permalink = models.CharField(max_length=400, unique=True, null=True)
     related_name = models.CharField(max_length=200)
     objects = UrlNodeManager()
@@ -153,7 +153,7 @@ class UrlNode(models.Model):
         if self.routerlink == "/":
             return ""
         return self.routerlink
-    
+
     @staticmethod
     def sanitize_permalink(permalink):
         if isinstance(permalink, str):
@@ -162,12 +162,12 @@ class UrlNode(models.Model):
             if not permalink.startswith("/"):
                 permalink = f"/{permalink}"
         return permalink
-    
+
     def save(self, *args, **kwargs) -> None:
         for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
             setattr(self, lang_p_field, UrlNode.sanitize_permalink(getattr(self, lang_p_field)))
         super().save(*args, **kwargs)
-        
+
     def __str__(self) -> str:
         return self.permalink
 
@@ -190,10 +190,11 @@ class PageBase(models.base.ModelBase):
     def perm_prop_factory(permalink_field):
         def getter(_self):
             return getattr(_self, f"__{permalink_field}", getattr(_self.url_node or object(), permalink_field, None))
-        def setter(_self, value:str):
+
+        def setter(_self, value: str):
             setattr(_self, f"__{permalink_field}", value)
         return getter, setter
-    
+
     def __new__(cls, name, bases, attrs, **kwargs):
         attr_meta = attrs.pop("PageMeta", None)
         new_class = super().__new__(cls, name, bases, attrs, **kwargs)
@@ -246,7 +247,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     )
 
     objects = PageQuerySet.as_manager()
-    
+
     __cached_db_instance: "AbstractPage" = None
 
     @property
@@ -254,7 +255,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         if self.__cached_db_instance is None:
             self.__cached_db_instance = self.get_db_instance()
         return self.__cached_db_instance
-    
+
     def get_db_instance(self):
         if self.pk:
             return self.__class__.objects.get(pk=self.pk)
@@ -337,7 +338,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         for __ in activate_languages():
             old_permalink = self.db_instance and self.db_instance.permalink
             new_permalink = self.permalink
-            if self.autopermalink:            
+            if self.autopermalink:
                 new_permalink = self.generate_permalink()
             force = force or old_permalink != new_permalink
             set_nofallbacks(self.url_node, "permalink", new_permalink)

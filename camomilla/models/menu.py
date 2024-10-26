@@ -14,7 +14,6 @@ from pydantic import (
 )
 from structured.pydantic.models import BaseModel
 from structured.fields import StructuredJSONField
-from structured.pydantic.fields import QuerySet
 from camomilla.models.page import UrlNode, AbstractPage
 from typing import Optional, Union, Callable, List
 from django.db.models.base import Model as DjangoModel

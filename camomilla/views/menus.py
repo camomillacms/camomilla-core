@@ -13,8 +13,6 @@ from camomilla.serializers.page import BasicUrlNodeSerializer
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import active_lang
 
-from django.utils.translation import get_language
-
 
 class MenuViewSet(BaseModelViewset):
     queryset = Menu.objects.all()

@@ -27,7 +27,7 @@ def test_crud_tag():
     token = login_superuser()
     client.credentials(HTTP_AUTHORIZATION="Token " + token)
     response = client.post("/api/camomilla/tags/", {"name_en": "First tag"})
-    
+
     assert response.json()["name"] == "First tag"
     assert len(Tag.objects.all()) == 1
     assert response.status_code == 201

@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from structured.pydantic.models import BaseModel
 
 
-
 class StructuredJSONField(serializers.JSONField):
     """
     This field allows to serialize and deserialize structured data.
