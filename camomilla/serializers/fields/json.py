@@ -3,10 +3,11 @@ from rest_framework import serializers
 from rest_framework.utils import model_meta
 from typing import TYPE_CHECKING, Any, Union, Dict, List
 
-from camomilla.structured.utils import pointed_setter
+from camomilla.utils.setters import pointed_setter
 
 if TYPE_CHECKING:
-    from camomilla.structured import BaseModel
+    from structured.pydantic.models import BaseModel
+
 
 
 class StructuredJSONField(serializers.JSONField):

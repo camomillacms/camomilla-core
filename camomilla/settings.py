@@ -79,10 +79,6 @@ TEMPLATE_CONTEXT_FILES = pointed_getter(
     django_settings, "CAMOMILLA.RENDER.TEMPLATE_CONTEXT_FILES", []
 )
 
-STRUCTURED_FIELD_CACHE_ENABLED = pointed_getter(
-    django_settings, "CAMOMILLA.STRUCTURED_FIELD.CACHE_ENABLED", True
-)
-
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
 
 # camomilla settings example

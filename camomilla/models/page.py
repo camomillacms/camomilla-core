@@ -167,6 +167,9 @@ class UrlNode(models.Model):
         for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
             setattr(self, lang_p_field, UrlNode.sanitize_permalink(getattr(self, lang_p_field)))
         super().save(*args, **kwargs)
+        
+    def __str__(self) -> str:
+        return self.permalink
 
 
 PAGE_CHILD_RELATED_NAME = "%(app_label)s_%(class)s_child_pages"

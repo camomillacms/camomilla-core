@@ -29,6 +29,8 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("admin/", admin.site.urls),
     path("api/camomilla/", include("camomilla.urls")),
+    path('api/models/', include('camomilla.model_api')),
+    path("", include("structured.urls")),
     path(
         "sitemap.xml",
         sitemap,
@@ -36,6 +38,7 @@ urlpatterns = [
         name="django.contrib.sitemaps.views.sitemap",
     )
 ]
+
 
 if getattr(settings, "DEBUG", False) or getattr(settings, "DEBUG404", False):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

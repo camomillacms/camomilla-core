@@ -18,10 +18,9 @@ dependencies = [
   "django-admin-interface>=0.26.0,<1.0.0",
   "Pillow>=6.2.0,<10.0.0",
   "django-ckeditor>=5.7.1,<7.0.0",
+  "django-structured-json-field==0.2.0",
   "python-magic>=0.4,<0.5",
-  "django-jsonform~=2.19.0",
   "Django>=3.2",
-  "pydantic~=2.2.1",
 ]
 description = "Django powered cms"
 dynamic = ["version"]

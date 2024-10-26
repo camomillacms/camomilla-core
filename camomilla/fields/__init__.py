@@ -1,7 +1,5 @@
 from django.db import models
 
-from camomilla.structured import StructuredJSONField
-
 from .json import ArrayField, JSONField
 
 ORDERING_ACCEPTED_FIELDS = (
@@ -12,4 +10,4 @@ ORDERING_ACCEPTED_FIELDS = (
     models.SmallIntegerField,
 )
 
-__all__ = ["StructuredJSONField", "JSONField", "ArrayField", "ORDERING_ACCEPTED_FIELDS"]
+__all__ = ["JSONField", "ArrayField", "ORDERING_ACCEPTED_FIELDS"]

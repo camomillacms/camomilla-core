@@ -7,7 +7,8 @@ from .models import Page
 
 
 def fetch(request, *args, **kwargs):
-    preview = request.user.is_staff and request.GET.get("preview", False)
+    can_preview = request.user.is_staff or settings.DEBUG
+    preview = can_preview and request.GET.get("preview", False)
     append_slash = getattr(django_settings, "APPEND_SLASH", True)
     if append_slash and not request.path.endswith("/"):
         return redirect(request.path + "/")

@@ -35,6 +35,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'camomilla',
     'camomilla.theme',
+    'structured',
+    'example.website',
     'djsuperadmin',
     'modeltranslation',
     'rest_framework',

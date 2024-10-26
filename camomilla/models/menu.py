@@ -12,9 +12,12 @@ from pydantic import (
     computed_field,
     model_serializer,
 )
-from camomilla import structured
-from camomilla.models.page import UrlNode
+from structured.pydantic.models import BaseModel
+from structured.fields import StructuredJSONField
+from structured.pydantic.fields import QuerySet
+from camomilla.models.page import UrlNode, AbstractPage
 from typing import Optional, Union, Callable, List
+from django.db.models.base import Model as DjangoModel
 
 
 class LinkTypes(str, Enum):
@@ -22,21 +25,29 @@ class LinkTypes(str, Enum):
     static = "ST"
 
 
-class MenuNodeLink(structured.BaseModel):
+class MenuNodeLink(BaseModel):
     link_type: LinkTypes = LinkTypes.static
     static: str = None
-    content_type: int = None
-    page_id: int = None
+    content_type: ContentType = None
+    page: AbstractPage = None
     url_node: UrlNode = None
 
     @model_serializer(mode="wrap", when_used="json")
     def update_relational(self, handler: Callable, info: SerializationInfo):
         if self.link_type == LinkTypes.relational:
-            if self.content_type and self.page_id:
-                c_type = ContentType.objects.filter(pk=self.content_type).first()
+            if self.content_type and self.page:
+                if isinstance(self.page, DjangoModel) and not self.page._meta.abstract:
+                    self.content_type = ContentType.objects.get_for_model(self.page.__class__)
+                ctype_id = getattr(self.content_type, "pk", self.content_type)
+                page_id = getattr(self.page, "pk", self.page)
+                c_type = ContentType.objects.filter(pk=ctype_id).first()
                 model = c_type and c_type.model_class()
-                page = model and model.objects.filter(pk=self.page_id).first()
+                page = model and model.objects.filter(pk=page_id).first()
                 self.url_node = page and page.url_node
+            elif self.url_node:
+                url_node_id = getattr(self.url_node, "pk", self.url_node)
+                self.page = UrlNode.objects.filter(pk=url_node_id).first().page
+                self.content_type = ContentType.objects.get_for_model(self.page.__class__)
         return handler(self)
 
     def get_url(self, request=None):
@@ -51,7 +62,7 @@ class MenuNodeLink(structured.BaseModel):
         return self.get_url()
 
 
-class MenuNode(structured.BaseModel):
+class MenuNode(BaseModel):
     id: str = Field(default_factory=uuid4)
     meta: dict = {}
     nodes: List["MenuNode"] = []
@@ -63,7 +74,7 @@ class Menu(models.Model):
     key = models.CharField(max_length=200, unique=True, editable=False)
     available_classes = models.JSONField(default=dict, editable=False)
     enabled = models.BooleanField(default=True)
-    nodes = structured.StructuredJSONField(default=list, schema=MenuNode)
+    nodes = StructuredJSONField(default=list, schema=MenuNode)
 
     class Meta:
         verbose_name = _("menu")
