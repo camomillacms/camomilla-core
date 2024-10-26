@@ -2,6 +2,25 @@
 
 
 
+## v6.0.0-beta.15 (2024-10-26)
+
+### Chore
+
+* chore: remove unused imports ([`28aef13`](https://github.com/lotrekagency/camomilla/commit/28aef13ebb7659d728e4e820ce2754b9171cdcb8))
+
+### Feature
+
+* feat(structured): upgrade features moving to django-structured-fields ([`1d27f5f`](https://github.com/lotrekagency/camomilla/commit/1d27f5f562ba86d0f81e3d3e40196eed03ef1aa3))
+
+* feat: removed slug and autogenerate permalink from title ([`1cf082f`](https://github.com/lotrekagency/camomilla/commit/1cf082fe0e5ff29372dcb3872fa93608b2883339))
+
+* feat: add permalink direct editing in abstract page ([`d42b341`](https://github.com/lotrekagency/camomilla/commit/d42b341084abe45175d9d3822b51c5540b7474a9))
+
+### Unknown
+
+* deps: fix rest framework versioning ([`c31ef16`](https://github.com/lotrekagency/camomilla/commit/c31ef169f9d6f455f749bbe70a85daf5027050ae))
+
+
 ## v6.0.0-beta.14 (2024-03-25)
 
 ### Fix
