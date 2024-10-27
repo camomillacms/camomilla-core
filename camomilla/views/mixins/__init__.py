@@ -33,6 +33,11 @@ class GetUserLanguageMixin(object):
         return self.model.objects.all()
 
 
+class CamomillaBasePermissionMixin:
+    def get_permissions(self):
+        return [*super().get_permissions(), CamomillaBasePermissions()]
+
+
 class OptimViewMixin:
     def get_serializer_class(self):
         if hasattr(self, "action_serializers"):
