@@ -6,7 +6,6 @@ from camomilla.models import Tag
 client = APIClient()
 
 
-
 @pytest.mark.django_db
 def test_create_tag_no_access():
     response = client.post("/api/camomilla/tags/", {"name_en": "First tag"})
