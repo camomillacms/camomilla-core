@@ -1,18 +1,10 @@
 import pytest
-from django.contrib.auth.models import User
 from rest_framework.test import APIClient
-
+from .utils.api import login_superuser
 from camomilla.models import Tag
 
 client = APIClient()
 
-
-def login_superuser():
-    User.objects.create_superuser("admin", "myemail@test.com", "adminadmin")
-    response = client.post(
-        "/api/camomilla/token-auth/", {"username": "admin", "password": "adminadmin"}
-    )
-    return response.json()["token"]
 
 
 @pytest.mark.django_db
