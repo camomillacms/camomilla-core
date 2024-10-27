@@ -2,13 +2,13 @@ import traceback
 from io import BytesIO
 
 from django.core.files.base import ContentFile
-from django.core.files.storage import get_storage_class
 from PIL import Image
 
 from camomilla import settings
+from camomilla.storages.default import get_default_storage_class
 
 
-class OptimizedStorage(get_storage_class()):
+class OptimizedStorage(get_default_storage_class()):
     MEDIA_MAX_WIDTH = settings.MEDIA_OPTIMIZE_MAX_WIDTH
     MEDIA_MAX_HEIGHT = settings.MEDIA_OPTIMIZE_MAX_HEIGHT
     MEDIA_DPI = settings.MEDIA_OPTIMIZE_DPI

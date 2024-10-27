@@ -150,7 +150,7 @@ class Media(models.Model):
                 img_bytes = self.file.storage.open(self.file.name, "rb")
             with Image.open(img_bytes) as orig_image:
                 image = orig_image.copy()
-                image.thumbnail((THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), Image.ANTIALIAS)
+                image.thumbnail((THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), Image.LANCZOS)
 
                 # Path to save to, name, and extension
                 thumb_name, thumb_extension = os.path.splitext(self.file.name)
