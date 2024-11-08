@@ -6,6 +6,4 @@ Pillow>=6.2.0,<10.0.0
 django-admin-interface>=0.26.0,<1.0.0
 django-ckeditor>=5.7.1,<7.0.0
 python-magic>=0.4<0.5
-Django>=3.2,<5
-django-jsonform~=2.19.0
-pydantic~=2.2.1
+Django>=3.2,<6
