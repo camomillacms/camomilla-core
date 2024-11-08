@@ -33,7 +33,7 @@ def test_simple_relation_model_api_endpoint():
     assert len(response.json()) == 8
     response = client.get("/api/models/simple-relation-model/1/")
     assert response.status_code == 404
-    assert response.json() == {"detail": "Not found."}
+    assert response.json() in [{"detail": "Not found."}, {'detail': 'No SimpleRelationModel matches the given query.'}]
 
 
 @pytest.mark.django_db

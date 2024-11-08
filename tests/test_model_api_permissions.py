@@ -36,4 +36,4 @@ def test_right_permissions():
     assert len(response.json()) == 0
     response = client.get("/api/models/test-model/1/")
     assert response.status_code == 404
-    assert response.json() == {"detail": "Not found."}
+    assert response.json() in [{"detail": "Not found."}, {'detail': 'No TestModel matches the given query.'}]
