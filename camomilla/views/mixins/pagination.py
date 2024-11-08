@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.postgres.search import SearchVector, SearchQuery, TrigramSimilarity
+from camomilla.utils.query_parser import ConditionParser
 
 
 class TrigramSearchMixin:
@@ -32,18 +33,9 @@ class PaginateStackMixin:
             list_handler, "shared_model", getattr(list_handler, "model", None)
         )
 
-    def parse_qs_value(self, string: str):
-        if string and string.startswith("[") and string.endswith("]"):
-            string = [self.parse_qs_value(substr) for substr in string[1:-1].split(",")]
-        elif string and string.lower() in ["true", "false"]:
-            string = string.lower() == "true"
-        elif string and string.isdigit():
-            string = int(string)
-        return string
-
     def parse_filter(self, filter):
-        filter_name, value = filter.split("=")
-        return filter_name, self.parse_qs_value(value)
+        parser = ConditionParser(filter)
+        return parser.parse_to_q()
 
     def handle_pagination(self, list_handler=None, items_per_page=None):
         list_handler = list_handler if list_handler is not None else self.get_queryset()
@@ -84,8 +76,7 @@ class PaginateStackMixin:
         filters = dict(self.request.GET).get("fltr", [])
         for filter in filters:
             try:
-                filter_name, value = self.parse_filter(filter)
-                list_handler = list_handler.filter(**{filter_name: value})
+                list_handler = list_handler.filter(self.parse_filter(filter))
             except Exception:
                 pass
         return list_handler
