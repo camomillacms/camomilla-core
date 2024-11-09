@@ -17,6 +17,7 @@ from structured.fields import StructuredJSONField
 from camomilla.models.page import UrlNode, AbstractPage
 from typing import Optional, Union, Callable, List
 from django.db.models.base import Model as DjangoModel
+from django.conf import settings
 
 
 class LinkTypes(str, Enum):
@@ -87,7 +88,8 @@ class Menu(models.Model):
     ):
         if isinstance(context, RequestContext):
             context = context.flatten()
-        context.update({"menu": self})
+        is_preview = bool(request.GET.get("preview", False))
+        context.update({"menu": self, "is_preview": is_preview})
         return mark_safe(render_to_string(template_path, context, request))
 
     class defaultdict(dict):

@@ -4,7 +4,7 @@
   {% for item in menu.nodes %}
   <li>
     {% if item.link.url %}
-      <a href="{{ item.link.url }}">{{ item.title }}</a>
+      <a href="{{ item.link.url }}{% if is_preview %}?preview=true{% endif %}">{{ item.title }}</a>
     {% else %}
       <span>{{item.title}}</span>
     {% endif %}
