@@ -4,10 +4,10 @@ from django.db import models
 from structured.fields import StructuredJSONField
 from structured.pydantic.fields import ForeignKey, QuerySet
 from structured.pydantic.models import BaseModel
-from camomilla.model_api import register
+from camomilla import model_api
 
 
-@register()
+@model_api.register()
 class SimpleRelationModel(models.Model):
     name = models.CharField(max_length=255)
 
@@ -28,10 +28,12 @@ def init_schema():
     return TestSchema(name="")
 
 
-@register()
+@model_api.register()
 class TestModel(models.Model):
     title = models.CharField(max_length=255)
     structured_data = StructuredJSONField(schema=TestSchema, default=init_schema)
+    fk_field = models.ForeignKey(SimpleRelationModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="fk_field")
+    m2m_field = models.ManyToManyField(SimpleRelationModel, blank=True, related_name="m2m_field")
 
     def __str__(self) -> str:
         return self.title
