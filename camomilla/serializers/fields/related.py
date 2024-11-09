@@ -18,6 +18,7 @@ class RelatedField(serializers.PrimaryKeyRelatedField):
     """
 
     def __init__(self, **kwargs):
+        self.inherited_fields_filter = kwargs.pop("inherited_fields_filter", [])
         self.serializer = kwargs.pop("serializer", None)
         self.lookup = kwargs.pop("lookup", "id")
         if self.serializer is not None:
@@ -42,7 +43,10 @@ class RelatedField(serializers.PrimaryKeyRelatedField):
 
     def to_representation(self, instance):
         if self.serializer:
-            return self.serializer(instance, context=self.context).data
+            kwargs = {"context": self.context}
+            if self.inherited_fields_filter:
+                kwargs["inherited_fields_filter"] = self.inherited_fields_filter
+            return self.serializer(instance, **kwargs).data
         return super().to_representation(instance)
 
     def to_internal_value(self, data):

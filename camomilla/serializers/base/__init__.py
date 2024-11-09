@@ -8,14 +8,16 @@ from ..mixins import (
     OrderingMixin,
     SetupEagerLoadingMixin,
 )
+from ..mixins.filter_fields import FilterFieldsMixin
 
 
 class BaseModelSerializer(
+    SetupEagerLoadingMixin,
     NestMixin,
+    FilterFieldsMixin,
     FieldsOverrideMixin,
     JSONFieldPatchMixin,
     OrderingMixin,
-    SetupEagerLoadingMixin,
     TranslationsMixin,
     serializers.ModelSerializer,
 ):

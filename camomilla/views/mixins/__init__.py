@@ -30,6 +30,8 @@ class GetUserLanguageMixin(object):
         return super().initialize_request(request, *args, **kwargs)
 
     def get_queryset(self):
+        if hasattr(super(), "get_queryset"):
+            return super().get_queryset()
         return self.model.objects.all()
 
 
@@ -51,8 +53,8 @@ class OptimViewMixin:
     def get_queryset(self):
         queryset = super().get_queryset()
         serializer = self.get_serializer_class()
-        if hasattr(serializer, "setup_eager_loading"):
-            queryset = self.get_serializer_class().setup_eager_loading(queryset)
+        if hasattr(serializer, "optimize_qs"):
+            queryset = serializer.optimize_qs(queryset, context=self.get_serializer_context())
         return queryset
 
 

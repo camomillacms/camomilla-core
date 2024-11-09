@@ -1,6 +1,7 @@
 def get_standard_bases() -> tuple:
     from rest_framework.serializers import ModelSerializer
     from camomilla.serializers.fields import FieldsOverrideMixin
+    from camomilla.serializers.mixins.filter_fields import FilterFieldsMixin
     from camomilla.contrib.rest_framework.serializer import RemoveTranslationsMixin
     from camomilla.serializers.mixins import (
         JSONFieldPatchMixin,
@@ -10,12 +11,13 @@ def get_standard_bases() -> tuple:
     )
 
     return (
+        SetupEagerLoadingMixin,
+        FilterFieldsMixin,
         NestMixin,
         FieldsOverrideMixin,
         JSONFieldPatchMixin,
         OrderingMixin,
         RemoveTranslationsMixin,
-        SetupEagerLoadingMixin,
         ModelSerializer,
     )
 
