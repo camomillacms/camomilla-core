@@ -26,6 +26,7 @@ def register(
     """
 
     def inner(model):
+        global urlpatterns
         base_meta = {
             "model": model,
             "fields": "__all__",
@@ -46,14 +47,18 @@ def register(
                 )
             },
         )
+        
+        def get_queryset(self, *args, **kwargs):
+            qs = super(base_viewset, self).get_queryset(*args, **kwargs)
+            return qs if filters is None else qs.filter(**filters)
 
         viewset = type(
             f"{model.__name__}ViewSet",
             (base_viewset,),
             {
-                "get_queryset": lambda self: model.objects.all()
-                if filters is None
-                else model.objects.filter(**filters),
+                "queryset": model.objects.all(),
+                "model": model,
+                "get_queryset": get_queryset,
                 "serializer_class": serializer,
                 **viewset_attrs,
             },
@@ -73,7 +78,7 @@ def register(
             viewset,
             f"{model.__name__.lower()}_api",
         )
-        urlpatterns.append(path("", include(router.urls)))
+        urlpatterns = [path("", include(router.urls))]
         return model
 
     return inner
