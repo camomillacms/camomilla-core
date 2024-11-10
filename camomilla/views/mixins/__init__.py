@@ -1,76 +1,17 @@
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from .pagination import *
-from .ordering import *
-from ...permissions import CamomillaBasePermissions
-from django.utils import translation
+from .bulk_actions import BulkDeleteMixin
+from .language import GetUserLanguageMixin
+from .optimize import OptimViewMixin
+from .ordering import OrderingMixin
+from .pagination import PaginateStackMixin, TrigramSearchMixin
+from .permissions import CamomillaBasePermissionMixin
 
 
-class GetUserLanguageMixin(object):
-    def _get_user_language(self, request):
-        self.active_language = request.GET.get(
-            "language",
-            request.GET.get(
-                "language_code", translation.get_language_from_request(request)
-            ),
-        )
-        self.language_fallbacks = True
-        if (
-            len(self.active_language.split("-")) == 2
-            and self.active_language.split("-")[0] == "nofallbacks"
-        ):
-            self.language_fallbacks = False
-            self.active_language = self.active_language.split("-")[1]
-        translation.activate(self.active_language)
-        return self.active_language
-
-    def initialize_request(self, request, *args, **kwargs):
-        self._get_user_language(request)
-        return super().initialize_request(request, *args, **kwargs)
-
-    def get_queryset(self):
-        if hasattr(super(), "get_queryset"):
-            return super().get_queryset()
-        return self.model.objects.all()
-
-
-class CamomillaBasePermissionMixin:
-    def get_permissions(self):
-        return [*super().get_permissions(), CamomillaBasePermissions()]
-
-
-class OptimViewMixin:
-    def get_serializer_class(self):
-        if hasattr(self, "action_serializers"):
-            if self.action in self.action_serializers:
-                return self.action_serializers[self.action]
-        return super().get_serializer_class()
-
-    def get_serializer_context(self):
-        return {"request": self.request, "action": self.action}
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        serializer = self.get_serializer_class()
-        if hasattr(serializer, "optimize_qs"):
-            queryset = serializer.optimize_qs(queryset, context=self.get_serializer_context())
-        return queryset
-
-
-class BulkDeleteMixin(object):
-    @action(
-        detail=False, methods=["post"], permission_classes=(CamomillaBasePermissions,)
-    )
-    def bulk_delete(self, request):
-        try:
-            self.model.objects.filter(pk__in=request.data).delete()
-            return Response(
-                {"detail": "Eliminazione multipla andata a buon fine"},
-                status=status.HTTP_200_OK,
-            )
-        except Exception:
-            return Response(
-                {"detail": "Eliminazione multipla non riuscita"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+__all__ = [
+    "BulkDeleteMixin",
+    "GetUserLanguageMixin",
+    "OptimViewMixin",
+    "OrderingMixin",
+    "PaginateStackMixin",
+    "TrigramSearchMixin",
+    "CamomillaBasePermissionMixin",
+]

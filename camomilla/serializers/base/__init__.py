@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
 from ...contrib.rest_framework.serializer import TranslationsMixin
-from ..fields import FieldsOverrideMixin
-from ..mixins import (
+from camomilla.serializers.mixins import (
     JSONFieldPatchMixin,
     NestMixin,
     OrderingMixin,
     SetupEagerLoadingMixin,
+    FilterFieldsMixin,
+    FieldsOverrideMixin
 )
-from ..mixins.filter_fields import FilterFieldsMixin
 
 
 class BaseModelSerializer(
