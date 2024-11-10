@@ -2,6 +2,49 @@
 
 
 
+## v6.0.0-beta.16 (2024-11-09)
+
+### Chore
+
+* chore: update example app ([`a84bb51`](https://github.com/lotrekagency/camomilla/commit/a84bb51b40f4de8bc936ad96aa8b8bb273087691))
+
+### Feature
+
+* feat(api): added possibility to filter api fields with fields query param (something like graphql) enjoy ⭐ ([`5a9b94b`](https://github.com/lotrekagency/camomilla/commit/5a9b94b107833ddd9d5945f19393e97861337036))
+
+* feat(api): added query parser for more complex query with and and or conditions ([`5f2bd5c`](https://github.com/lotrekagency/camomilla/commit/5f2bd5cca8bd99d7877d4ff3f83e344d313b2817))
+
+### Fix
+
+* fix(menu): follow preview link if previewing page ([`201c22d`](https://github.com/lotrekagency/camomilla/commit/201c22d64c7f9fb5da28194fc224f09b0bbc45ac))
+
+* fix(model_api): fix router urlpatterns registering on local var&#34; ([`4726328`](https://github.com/lotrekagency/camomilla/commit/4726328f83a64897e63a30044a91e4a65a88af99))
+
+* fix(openapi): fix openapi schema generation ([`03cada3`](https://github.com/lotrekagency/camomilla/commit/03cada3570b4d1b05fc9232d274e8d954bc47a4c))
+
+* fix(media): update optimization scripts to be compatible with future django versions ([`a307032`](https://github.com/lotrekagency/camomilla/commit/a3070328bb24bc3c4044d3d7c5315aa456773945))
+
+* fix(model_api): fix authentication problems on model_api registered endpoints ([`b2d5049`](https://github.com/lotrekagency/camomilla/commit/b2d5049c657ee113672b8add63592a93527b45ab))
+
+### Refactor
+
+* refactor: style 💅 ([`3c99ad8`](https://github.com/lotrekagency/camomilla/commit/3c99ad8c0afd481b270d2ea9f08a9c8e49b979f6))
+
+### Unknown
+
+* deps: update django deps ([`9d4a426`](https://github.com/lotrekagency/camomilla/commit/9d4a426df6779764122c3bc7c81ad88a8b23419e))
+
+* tests: fix tests for new django version ([`8c8adcb`](https://github.com/lotrekagency/camomilla/commit/8c8adcb8bd9db0ea6eb7997c3ee33bf7d934b6c1))
+
+* tests: removed some old tests ([`23cbcaa`](https://github.com/lotrekagency/camomilla/commit/23cbcaa730ed7fa638fcc0adf308a5796e2becba))
+
+* tests: more tests for media and model api ([`6fb5d6e`](https://github.com/lotrekagency/camomilla/commit/6fb5d6ed9fd4c10c587fda0a0f683ea8a46e9621))
+
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`5e4182e`](https://github.com/lotrekagency/camomilla/commit/5e4182e68e8c9936f46ca1ae5ab867a22e1e1d54))
+
+* tests: more tests ([`33d67db`](https://github.com/lotrekagency/camomilla/commit/33d67dbe54b5d707fd700e54873eea64f1a64867))
+
+
 ## v6.0.0-beta.15 (2024-10-26)
 
 ### Chore
