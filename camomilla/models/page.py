@@ -124,14 +124,14 @@ class UrlRedirect(models.Model):
         "UrlNode", on_delete=models.CASCADE, related_name="redirects"
     )
     permanent = models.BooleanField(default=True)
-    
+
     __q_string = ""
 
     def __str__(self) -> str:
         return f"[{self.language_code}] {self.from_url} -> {self.to_url}"
-    
+
     @classmethod
-    def find_redirect(cls, request, language_code: Optional[str]=None) -> Optional["UrlRedirect"]:
+    def find_redirect(cls, request, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
         path_decomposition = url_lang_decompose(request.path)
         language_code = language_code or path_decomposition["language"] or get_language()
         from_url = path_decomposition["permalink"]
@@ -139,10 +139,10 @@ class UrlRedirect(models.Model):
         if instance:
             instance.__q_string = request.META.get("QUERY_STRING", "")
         return instance
-    
+
     def redirect(self) -> str:
         return redirect(self.redirect_to, permanent=self.permanent)
-    
+
     @property
     def redirect_to(self) -> str:
         url_to = "/" + self.to_url.lstrip("/")
@@ -151,7 +151,7 @@ class UrlRedirect(models.Model):
         if self.language_code != settings.DEFAULT_LANGUAGE and settings.ENABLE_TRANSLATIONS:
             url_to = "/" + self.language_code + url_to
         return url_to + ("?" + self.__q_string if self.__q_string else "")
-    
+
     class Meta:
         verbose_name = _("Redirect")
         verbose_name_plural = _("Redirects")
@@ -550,4 +550,3 @@ def generate_redirects(sender, instance, **kwargs):
                 )
         if len(redirects) > 0:
             UrlRedirect.objects.bulk_create(redirects)
-

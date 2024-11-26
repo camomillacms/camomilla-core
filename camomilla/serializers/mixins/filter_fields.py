@@ -7,14 +7,12 @@ class FilterFieldsMixin(serializers.ModelSerializer):
     """
     Mixin to filter fields from a serializer, including handling nested fields.
     """
-    
+
     def __init__(self, *args, **kwargs):
         self.inherited_fields_filter = kwargs.pop("inherited_fields_filter", [])
         return super().__init__(*args, **kwargs)
-        
 
     inherited_fields_filter = []
-
 
     def get_default_field_names(self, *args):
         field_names = super().get_default_field_names(*args)
@@ -51,4 +49,3 @@ class FilterFieldsMixin(serializers.ModelSerializer):
         if len(inherited_fields_filter) > 0 and issubclass(field_class, RelatedField):
             field_kwargs["inherited_fields_filter"] = list(inherited_fields_filter)
         return field_class, field_kwargs
-        

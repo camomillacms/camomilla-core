@@ -47,7 +47,7 @@ def register(
                 )
             },
         )
-        
+
         def get_queryset(self, *args, **kwargs):
             qs = super(base_viewset, self).get_queryset(*args, **kwargs)
             return qs if filters is None else qs.filter(**filters)

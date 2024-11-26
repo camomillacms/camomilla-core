@@ -4,10 +4,11 @@ from django.db.models import Q
 CONDITION_PATTERN = re.compile(r"(\w+__\w+='[^']+'|\w+__\w+=\S+)")  # Updated regex to handle quoted values
 LOGICAL_OPERATORS = {"AND", "OR"}
 
+
 class ConditionParser:
     def __init__(self, query):
         self.query = query
-    
+
     def parse(self, query=None):
         """Parse the query or subquery. If no query is provided, use the instance's query."""
         if query is None:

@@ -17,7 +17,6 @@ from structured.fields import StructuredJSONField
 from camomilla.models.page import UrlNode, AbstractPage
 from typing import Optional, Union, Callable, List
 from django.db.models.base import Model as DjangoModel
-from django.conf import settings
 
 
 class LinkTypes(str, Enum):

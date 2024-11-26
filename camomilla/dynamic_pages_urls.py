@@ -3,10 +3,8 @@ from django.urls import path
 
 from camomilla import settings
 from django.conf import settings as django_settings
-
-from camomilla.utils.translation import url_lang_decompose
 from .models import Page, UrlRedirect
-from django.utils.translation import get_language
+
 
 def fetch(request, *args, **kwargs):
     can_preview = request.user.is_staff or settings.DEBUG

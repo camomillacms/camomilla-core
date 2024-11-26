@@ -4,6 +4,7 @@ from camomilla.utils.query_parser import (
     ConditionParser,
 )
 
+
 @pytest.mark.parametrize(
     "query, expected_q",
     [
@@ -55,5 +56,3 @@ def test_condition_parser(query, expected_q):
     parser = ConditionParser(query)
     q_object = parser.parse_to_q()
     assert q_object.__str__() == expected_q.__str__()
-
-
