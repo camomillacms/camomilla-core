@@ -2,8 +2,10 @@ from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django import forms
 from django.contrib import admin
 from django.http import HttpResponse
+from modeltranslation.translator import translator
 
 from camomilla import settings
+from camomilla.utils.translation import get_field_translation_accessors
 
 if settings.ENABLE_TRANSLATIONS:
     from modeltranslation.admin import (
@@ -12,16 +14,55 @@ if settings.ENABLE_TRANSLATIONS:
 else:
     from django.contrib.admin import ModelAdmin as TranslationAwareModelAdmin
 
-from camomilla.models import Article, Content, Media, MediaFolder, Page, Tag, Menu, UrlRedirect
+from camomilla.models import Article, Content, Media, MediaFolder, Page, Tag, Menu, UrlRedirect, UrlNode
+
+
+class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
+    def __new__(mcs, name, bases, attrs):
+        new_class = super().__new__(mcs, name, bases, attrs)
+        if not settings.ENABLE_TRANSLATIONS:
+            return new_class
+        permalink_fields = forms.fields_for_model(UrlNode, get_field_translation_accessors("permalink"))
+        new_class.base_fields.update(permalink_fields)
+        return new_class
+
+
+
+class AbstractPageModelForm(forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta):
+    def get_initial_for_field(self, field,field_name):
+        if settings.ENABLE_TRANSLATIONS and field_name in get_field_translation_accessors("permalink"):
+            return getattr(self.instance, field_name)
+        return super().get_initial_for_field(field, field_name)
+    
+    def save(self, commit:bool = True):
+        if not settings.ENABLE_TRANSLATIONS:
+            return super().save(commit=commit)
+        model = super().save(commit=False)
+        for field_name in get_field_translation_accessors("permalink"):
+            if field_name in self.cleaned_data:
+                setattr(model, field_name, self.cleaned_data[field_name])
+        if commit:
+            model.save()
+        return model
 
 
 class AbstractPageAdmin(TranslationAwareModelAdmin):
+    form = AbstractPageModelForm
     change_form_template = "admin/camomilla/page/change_form.html"
+    
+    
+    def __init__(self, *args, **kwargs):
+        if not settings.ENABLE_TRANSLATIONS:
+            return super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        fields_to_add = [get_field_translation_accessors("permalink"), "permalink"]
+        for name, field in translator.get_options_for_model(UrlNode).fields.items():
+            if name in fields_to_add:
+                self.trans_opts.fields.update({name: field})
 
 
 class UserProfileAdmin(admin.ModelAdmin):
     pass
-
 
 class ArticleAdminForm(forms.ModelForm):
     class Meta:
@@ -81,7 +122,8 @@ class MediaAdmin(TranslationAwareModelAdmin):
 
 
 class PageAdmin(AbstractPageAdmin):
-    readonly_fields = ("permalink",)
+    # readonly_fields = ("permalink",)
+    pass
 
 
 class MenuAdmin(TranslationAwareModelAdmin):
