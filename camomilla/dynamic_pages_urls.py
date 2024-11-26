@@ -12,15 +12,12 @@ def fetch(request, *args, **kwargs):
     can_preview = request.user.is_staff or settings.DEBUG
     preview = can_preview and request.GET.get("preview", False)
     append_slash = getattr(django_settings, "APPEND_SLASH", True)
-    path = url_lang_decompose(request.path)
-    redirect_obj = UrlRedirect.objects.filter(url=path["permalink"]).first()
+    redirect_obj = UrlRedirect.find_redirect(request)
     if redirect_obj:
-        q_string = request.META.get("QUERY_STRING")
-        print("q_string", q_string)
-        redirect_to = redirect_obj.redirect_to + ("?" + q_string if q_string else "")
-        return redirect(redirect_to, permanent=redirect_obj.permanent)
+        return redirect_obj.redirect()
     if append_slash and not request.path.endswith("/"):
-        return redirect(request.path + "/")
+        q_string = request.META.get("QUERY_STRING", "")
+        return redirect(request.path + "/" + ("?" + q_string if q_string else ""))
     if "permalink" in kwargs:
         page = Page.get_or_404(
             request, bypass_public_check=preview, bypass_type_check=True

@@ -88,7 +88,7 @@ class MenuAdmin(TranslationAwareModelAdmin):
     pass
 
 
-class UrlRedirectAdmin(TranslationAwareModelAdmin):
+class UrlRedirectAdmin(admin.ModelAdmin):
     pass
 
 

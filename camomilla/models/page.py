@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -7,6 +7,7 @@ from django.db import ProgrammingError, OperationalError, models, transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.http import Http404
+from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.functional import lazy
@@ -29,7 +30,6 @@ from camomilla.utils.getters import pointed_getter
 from camomilla import settings
 from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
-from modeltranslation.settings import AVAILABLE_LANGUAGES
 from modeltranslation.utils import build_localized_fieldname
 
 
@@ -117,25 +117,55 @@ class UrlNodeManager(models.Manager):
 
 
 class UrlRedirect(models.Model):
-    url = models.CharField(max_length=400, unique=True)
+    language_code = models.CharField(max_length=10, null=True)
+    from_url = models.CharField(max_length=400)
+    to_url = models.CharField(max_length=400)
     url_node = models.ForeignKey(
         "UrlNode", on_delete=models.CASCADE, related_name="redirects"
     )
     permanent = models.BooleanField(default=True)
-
-    @property
-    def redirect_to(self) -> str:
-        return self.url_node.routerlink
+    
+    __q_string = ""
 
     def __str__(self) -> str:
-        return f"{self.url} -> {self.url_node.routerlink}"
+        return f"[{self.language_code}] {self.from_url} -> {self.to_url}"
+    
+    @classmethod
+    def find_redirect(cls, request, language_code: Optional[str]=None) -> Optional["UrlRedirect"]:
+        path_decomposition = url_lang_decompose(request.path)
+        language_code = language_code or path_decomposition["language"] or get_language()
+        from_url = path_decomposition["permalink"]
+        instance = cls.objects.filter(from_url=from_url.rstrip("/"), language_code=language_code or get_language()).first()
+        if instance:
+            instance.__q_string = request.META.get("QUERY_STRING", "")
+        return instance
+    
+    def redirect(self) -> str:
+        return redirect(self.redirect_to, permanent=self.permanent)
+    
+    @property
+    def redirect_to(self) -> str:
+        url_to = "/" + self.to_url.lstrip("/")
+        if getattr(django_settings, "APPEND_SLASH", True) and not url_to.endswith("/"):
+            url_to += "/"
+        if self.language_code != settings.DEFAULT_LANGUAGE and settings.ENABLE_TRANSLATIONS:
+            url_to = "/" + self.language_code + url_to
+        return url_to + ("?" + self.__q_string if self.__q_string else "")
+    
+    class Meta:
+        verbose_name = _("Redirect")
+        verbose_name_plural = _("Redirects")
+        unique_together = ("from_url", "language_code")
+        indexes = [
+            models.Index(fields=["from_url", "language_code"]),
+        ]
 
 
 class UrlNode(models.Model):
 
     LANG_PERMALINK_FIELDS = [
         build_localized_fieldname("permalink", lang)
-        for lang in AVAILABLE_LANGUAGES
+        for lang in settings.AVAILABLE_LANGUAGES
         if settings.ENABLE_TRANSLATIONS
     ]
 
@@ -496,19 +526,28 @@ __url_node_history__ = {}
 
 @receiver(pre_save, sender=UrlNode)
 def cache_url_node(sender, instance, **kwargs):
-    __url_node_history__[instance.pk] = sender.objects.get(pk=instance.pk)
+    if instance.pk:
+        __url_node_history__[instance.pk] = sender.objects.filter(pk=instance.pk).first()
 
 
 @receiver(post_save, sender=UrlNode)
 def generate_redirects(sender, instance, **kwargs):
-    if not instance.page:
-        return
-    previous = __url_node_history__.pop(instance.pk)
-    redirect = UrlRedirect(url_node=instance)
-    for __ in activate_languages():
-        instance_permalink = get_nofallbacks(instance, "permalink")
-        UrlRedirect.objects.filter(url=instance_permalink).delete()
-        if previous and get_nofallbacks(previous, "permalink") != instance_permalink:
-            set_nofallbacks(redirect, "url", get_nofallbacks(previous, "permalink"))
-    if redirect.url:
-        redirect.save()
+    previous = __url_node_history__.pop(instance.pk, None)
+    if previous:
+        redirects = []
+        for lang in activate_languages():
+            new_permalink = get_nofallbacks(instance, "permalink")
+            old_permalink = get_nofallbacks(previous, "permalink")
+            UrlRedirect.objects.filter(from_url=new_permalink).delete()
+            if old_permalink and old_permalink != new_permalink:
+                redirects.append(
+                    UrlRedirect(
+                        from_url=old_permalink,
+                        to_url=new_permalink,
+                        url_node=instance,
+                        language_code=lang,
+                    )
+                )
+        if len(redirects) > 0:
+            UrlRedirect.objects.bulk_create(redirects)
+

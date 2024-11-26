@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from modeltranslation.settings import ENABLE_REGISTRATIONS
+from modeltranslation.settings import ENABLE_REGISTRATIONS, AVAILABLE_LANGUAGES
 
 from camomilla.utils.getters import pointed_getter
 
@@ -52,6 +52,10 @@ PAGE_INJECT_CONTEXT_FUNC = pointed_getter(
 ENABLE_TRANSLATIONS = (
     ENABLE_REGISTRATIONS and "modeltranslation" in django_settings.INSTALLED_APPS
 )
+
+DEFAULT_LANGUAGE = pointed_getter(django_settings, "LANGUAGE_CODE", "en")
+
+LANGUAGE_CODES = AVAILABLE_LANGUAGES
 
 MEDIA_OPTIMIZE_MAX_WIDTH = pointed_getter(
     django_settings, "CAMOMILLA.MEDIA.OPTIMIZE.MAX_WIDTH", 1980
