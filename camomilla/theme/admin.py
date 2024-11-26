@@ -12,7 +12,7 @@ if settings.ENABLE_TRANSLATIONS:
 else:
     from django.contrib.admin import ModelAdmin as TranslationAwareModelAdmin
 
-from camomilla.models import Article, Content, Media, MediaFolder, Page, Tag, Menu
+from camomilla.models import Article, Content, Media, MediaFolder, Page, Tag, Menu, UrlRedirect
 
 
 class AbstractPageAdmin(TranslationAwareModelAdmin):
@@ -88,6 +88,10 @@ class MenuAdmin(TranslationAwareModelAdmin):
     pass
 
 
+class UrlRedirectAdmin(TranslationAwareModelAdmin):
+    pass
+
+
 admin.site.register(Article, ArticleAdmin)
 admin.site.register(MediaFolder, MediaFolderAdmin)
 admin.site.register(Tag, TagAdmin)
@@ -95,3 +99,4 @@ admin.site.register(Content, ContentAdmin)
 admin.site.register(Media, MediaAdmin)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Menu, MenuAdmin)
+admin.site.register(UrlRedirect, UrlRedirectAdmin)

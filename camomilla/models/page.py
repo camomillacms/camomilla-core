@@ -4,7 +4,7 @@ from uuid import uuid4
 from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import ProgrammingError, OperationalError, models, transaction
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.http import Http404
 from django.urls import NoReverseMatch, reverse
@@ -33,7 +33,7 @@ from modeltranslation.settings import AVAILABLE_LANGUAGES
 from modeltranslation.utils import build_localized_fieldname
 
 
-class UrlPathValidator():
+class UrlPathValidator:
     pass
 
 
@@ -116,6 +116,21 @@ class UrlNodeManager(models.Manager):
             return super().get_queryset()
 
 
+class UrlRedirect(models.Model):
+    url = models.CharField(max_length=400, unique=True)
+    url_node = models.ForeignKey(
+        "UrlNode", on_delete=models.CASCADE, related_name="redirects"
+    )
+    permanent = models.BooleanField(default=True)
+
+    @property
+    def redirect_to(self) -> str:
+        return self.url_node.routerlink
+
+    def __str__(self) -> str:
+        return f"{self.url} -> {self.url_node.routerlink}"
+
+
 class UrlNode(models.Model):
 
     LANG_PERMALINK_FIELDS = [
@@ -185,14 +200,16 @@ PAGE_STATUS = (
 
 class PageBase(models.base.ModelBase):
     """
-        This models comes to implement a language based permalink logic
+    This models comes to implement a language based permalink logic
     """
+
     def perm_prop_factory(permalink_field):
         def getter(_self):
             return getattr(_self, f"__{permalink_field}", getattr(_self.url_node or object(), permalink_field, None))
 
         def setter(_self, value: str):
             setattr(_self, f"__{permalink_field}", value)
+
         return getter, setter
 
     def __new__(cls, name, bases, attrs, **kwargs):
@@ -444,7 +461,9 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         for lang in activate_languages():
             if lang in permalinks:
                 permalinks[lang] = (
-                    UrlNode.reverse_url(permalinks[lang]) if preview or self.is_public else None
+                    UrlNode.reverse_url(permalinks[lang])
+                    if preview or self.is_public
+                    else None
                 )
             if preview:
                 permalinks = {k: f"{v}?preview=true" for k, v in permalinks.items()}
@@ -470,3 +489,26 @@ class Page(AbstractPage):
 def auto_delete_url_node(sender, instance, **kwargs):
     if issubclass(sender, AbstractPage):
         instance.url_node and instance.url_node.delete()
+
+
+__url_node_history__ = {}
+
+
+@receiver(pre_save, sender=UrlNode)
+def cache_url_node(sender, instance, **kwargs):
+    __url_node_history__[instance.pk] = sender.objects.get(pk=instance.pk)
+
+
+@receiver(post_save, sender=UrlNode)
+def generate_redirects(sender, instance, **kwargs):
+    if not instance.page:
+        return
+    previous = __url_node_history__.pop(instance.pk)
+    redirect = UrlRedirect(url_node=instance)
+    for __ in activate_languages():
+        instance_permalink = get_nofallbacks(instance, "permalink")
+        UrlRedirect.objects.filter(url=instance_permalink).delete()
+        if previous and get_nofallbacks(previous, "permalink") != instance_permalink:
+            set_nofallbacks(redirect, "url", get_nofallbacks(previous, "permalink"))
+    if redirect.url:
+        redirect.save()
