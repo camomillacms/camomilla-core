@@ -34,8 +34,6 @@ class FilterFieldsMixin(serializers.ModelSerializer):
                     if parent_field in field_names:
                         self.filtered_fields.add(parent_field)
                         self.childs_fields[parent_field].add(child_field)
-
-                        
                 else:
                     if field in field_names:
                         self.filtered_fields.add(field)
