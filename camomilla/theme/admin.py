@@ -64,7 +64,7 @@ class AbstractPageAdmin(TranslationAwareModelAdmin):
 class UserProfileAdmin(admin.ModelAdmin):
     pass
 
-class ArticleAdminForm(forms.ModelForm):
+class ArticleAdminForm(AbstractPageModelForm):
     class Meta:
         model = Article
         fields = "__all__"
