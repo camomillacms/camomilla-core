@@ -535,18 +535,20 @@ def generate_redirects(sender, instance, **kwargs):
     previous = __url_node_history__.pop(instance.pk, None)
     if previous:
         redirects = []
-        for lang in activate_languages():
-            new_permalink = get_nofallbacks(instance, "permalink")
-            old_permalink = get_nofallbacks(previous, "permalink")
-            UrlRedirect.objects.filter(from_url=new_permalink).delete()
-            if old_permalink and old_permalink != new_permalink:
-                redirects.append(
-                    UrlRedirect(
-                        from_url=old_permalink,
-                        to_url=new_permalink,
-                        url_node=instance,
-                        language_code=lang,
+        with transaction.atomic():
+            for lang in activate_languages():
+                new_permalink = get_nofallbacks(instance, "permalink")
+                old_permalink = get_nofallbacks(previous, "permalink")
+                UrlRedirect.objects.filter(from_url=new_permalink, language_code=lang).delete()
+                if old_permalink and old_permalink != new_permalink:
+                    redirects.append(
+                        UrlRedirect(
+                            from_url=old_permalink,
+                            to_url=new_permalink,
+                            url_node=instance,
+                            language_code=lang,
+                        )
                     )
-                )
-        if len(redirects) > 0:
-            UrlRedirect.objects.bulk_create(redirects)
+                    UrlRedirect.objects.filter(to_url=old_permalink, language_code=lang).update(to_url=new_permalink)
+            if len(redirects) > 0:
+                UrlRedirect.objects.bulk_create(redirects)
