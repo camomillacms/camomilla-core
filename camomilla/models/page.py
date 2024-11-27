@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from django.db import ProgrammingError, OperationalError, models, transaction
+from django.db import models, transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.http import Http404
@@ -15,7 +15,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
 
-from camomilla.managers.pages import PageQuerySet
+from camomilla.managers.pages import PageQuerySet, UrlNodeManager
 from camomilla.models.mixins import MetaMixin, SeoMixin
 from camomilla.utils import (
     activate_languages,
@@ -33,87 +33,8 @@ from django.conf import settings as django_settings
 from modeltranslation.utils import build_localized_fieldname
 
 
-class UrlPathValidator:
-    pass
-
-
 def GET_TEMPLATE_CHOICES():
     return [(t, t) for t in get_all_templates_files()]
-
-
-class UrlNodeManager(models.Manager):
-    @property
-    def related_names(self):
-        self._related_names = getattr(
-            self,
-            "_related_names",
-            super().get_queryset().values_list("related_name", flat=True).distinct(),
-        )
-        return self._related_names
-
-    def _annotate_fields(
-        self,
-        qs: models.QuerySet,
-        field_names: Sequence[Tuple[str, models.Field, models.Value]],
-    ):
-        for field_name, output_field, default in field_names:
-            whens = [
-                models.When(
-                    related_name=related_name,
-                    then=models.F("__".join([related_name, field_name])),
-                )
-                for related_name in self.related_names
-            ]
-            qs = qs.annotate(
-                **{
-                    field_name: models.Case(
-                        *whens, output_field=output_field, default=default
-                    )
-                }
-            )
-        return self._annotate_is_public(qs)
-
-    def _annotate_is_public(self, qs: models.QuerySet):
-        return qs.annotate(
-            is_public=models.Case(
-                models.When(status="PUB", then=True),
-                models.When(
-                    status="PLA", publication_date__lte=timezone.now(), then=True
-                ),
-                default=False,
-                output_field=models.BooleanField(default=False),
-            )
-        )
-
-    def get_queryset(self):
-        try:
-            return self._annotate_fields(
-                super().get_queryset(),
-                [
-                    (
-                        "indexable",
-                        models.BooleanField(),
-                        models.Value(None, models.BooleanField()),
-                    ),
-                    (
-                        "status",
-                        models.CharField(),
-                        models.Value("DRF", models.CharField()),
-                    ),
-                    (
-                        "publication_date",
-                        models.DateTimeField(),
-                        models.Value(timezone.now(), models.DateTimeField()),
-                    ),
-                    (
-                        "date_updated_at",
-                        models.DateTimeField(),
-                        models.Value(timezone.now(), models.DateTimeField()),
-                    ),
-                ],
-            )
-        except (ProgrammingError, OperationalError):
-            return super().get_queryset()
 
 
 class UrlRedirect(models.Model):
