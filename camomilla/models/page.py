@@ -124,6 +124,8 @@ class UrlRedirect(models.Model):
         "UrlNode", on_delete=models.CASCADE, related_name="redirects"
     )
     permanent = models.BooleanField(default=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated_at = models.DateTimeField(auto_now=True)
 
     __q_string = ""
 
