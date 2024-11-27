@@ -1,4 +1,4 @@
-from ckeditor_uploader.widgets import CKEditorUploadingWidget
+from tinymce.widgets import TinyMCE
 from django import forms
 from django.contrib import admin
 from django.http import HttpResponse
@@ -15,7 +15,7 @@ class ArticleAdminForm(AbstractPageModelForm):
     class Meta:
         model = Article
         fields = "__all__"
-        widgets = {"content": CKEditorUploadingWidget}
+        widgets = {"content": TinyMCE()}
 
 
 class ArticleAdmin(AbstractPageAdmin):
@@ -35,7 +35,7 @@ class ContentAdminForm(forms.ModelForm):
     class Meta:
         model = Content
         fields = "__all__"
-        widgets = {"content": CKEditorUploadingWidget}
+        widgets = {"content": TinyMCE()}
 
 
 class ContentAdmin(TranslationAwareModelAdmin):

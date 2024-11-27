@@ -29,12 +29,8 @@ class CamomillaThemeConfig(AppConfig):
     name = "camomilla.theme"
 
     def ready(self):
-        set_default_settings(
-            CKEDITOR_UPLOAD_PATH="editor-uploads/", X_FRAME_OPTIONS="SAMEORIGIN"
-        )
         add_apps(
-            "ckeditor_uploader",
-            "ckeditor",
+            "tinymce",
             "django_jsonform",
             "admin_interface",
             "colorfield",

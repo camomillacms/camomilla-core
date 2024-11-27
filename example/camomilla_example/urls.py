@@ -25,7 +25,7 @@ from camomilla.sitemap import camomilla_sitemaps
 
 
 urlpatterns = [
-    path("ckeditor/", include("ckeditor_uploader.urls")),
+    path('tinymce/', include('tinymce.urls')),
     path("i18n/", include("django.conf.urls.i18n")),
     path("admin/", admin.site.urls),
     path("api/camomilla/", include("camomilla.urls")),
