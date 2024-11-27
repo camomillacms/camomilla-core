@@ -124,7 +124,6 @@ class UrlRedirect(models.Model):
         "UrlNode", on_delete=models.CASCADE, related_name="redirects"
     )
     permanent = models.BooleanField(default=True)
-    
 
     __q_string = ""
 
@@ -137,14 +136,13 @@ class UrlRedirect(models.Model):
         if instance:
             instance.__q_string = request.META.get("QUERY_STRING", "")
         return instance
-    
+
     @classmethod
     def find_redirect_from_url(cls, from_url: str, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
         path_decomposition = url_lang_decompose(from_url)
         language_code = language_code or path_decomposition["language"] or get_language()
         from_url = path_decomposition["permalink"]
         return cls.objects.filter(from_url=from_url.rstrip("/"), language_code=language_code or get_language()).first()
-        
 
     def redirect(self) -> str:
         return redirect(self.redirect_to, permanent=self.permanent)

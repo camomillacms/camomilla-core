@@ -21,7 +21,7 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
 
 @active_lang()
 @api_view(["GET"])
-@permission_classes([permissions.AllowAny,])
+@permission_classes([permissions.AllowAny, ])
 def fetch_page(request, permalink=""):
     redirect = UrlRedirect.find_redirect_from_url(f"/{permalink}")
     if redirect:

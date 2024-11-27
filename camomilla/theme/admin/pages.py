@@ -2,7 +2,6 @@ from django import forms
 from camomilla import settings
 from .translations import TranslationAwareModelAdmin
 from camomilla.models import UrlNode
-from django.utils.translation import gettext_lazy as _
 
 
 class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
