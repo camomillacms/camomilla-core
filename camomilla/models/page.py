@@ -132,13 +132,18 @@ class UrlRedirect(models.Model):
 
     @classmethod
     def find_redirect(cls, request, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
-        path_decomposition = url_lang_decompose(request.path)
-        language_code = language_code or path_decomposition["language"] or get_language()
-        from_url = path_decomposition["permalink"]
-        instance = cls.objects.filter(from_url=from_url.rstrip("/"), language_code=language_code or get_language()).first()
+        instance = cls.find_redirect_from_url(request.path, language_code)
         if instance:
             instance.__q_string = request.META.get("QUERY_STRING", "")
         return instance
+    
+    @classmethod
+    def find_redirect_from_url(cls, from_url: str, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
+        path_decomposition = url_lang_decompose(from_url)
+        language_code = language_code or path_decomposition["language"] or get_language()
+        from_url = path_decomposition["permalink"]
+        return cls.objects.filter(from_url=from_url.rstrip("/"), language_code=language_code or get_language()).first()
+        
 
     def redirect(self) -> str:
         return redirect(self.redirect_to, permanent=self.permanent)
@@ -263,27 +268,12 @@ class PageBase(models.base.ModelBase):
 
 
 class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
+    identifier = models.CharField(max_length=200, null=True, unique=True, default=uuid4)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated_at = models.DateTimeField(auto_now=True)
-    url_node = models.OneToOneField(
-        UrlNode,
-        on_delete=models.CASCADE,
-        related_name=URL_NODE_RELATED_NAME,
-        null=True,
-        editable=False,
-    )
     breadcrumbs_title = models.CharField(max_length=128, null=True, blank=True)
-    autopermalink = models.BooleanField(default=True)
-    status = models.CharField(
-        max_length=3,
-        choices=PAGE_STATUS,
-        default="DRF",
-    )
     template = models.CharField(max_length=500, null=True, blank=True, choices=[])
     template_data = models.JSONField(default=dict, null=False, blank=True)
-    identifier = models.CharField(max_length=200, null=True, unique=True, default=uuid4)
-    publication_date = models.DateTimeField(null=True, blank=True)
-    indexable = models.BooleanField(default=True)
     ordering = models.PositiveIntegerField(default=0, blank=False, null=False)
     parent_page = models.ForeignKey(
         "self",
@@ -292,6 +282,21 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         blank=True,
         on_delete=models.CASCADE,
     )
+    url_node = models.OneToOneField(
+        UrlNode,
+        on_delete=models.CASCADE,
+        related_name=URL_NODE_RELATED_NAME,
+        null=True,
+        editable=False,
+    )
+    publication_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=3,
+        choices=PAGE_STATUS,
+        default="DRF",
+    )
+    indexable = models.BooleanField(default=True)
+    autopermalink = models.BooleanField(default=True)
 
     objects = PageQuerySet.as_manager()
 
@@ -409,7 +414,10 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def update_childs(self) -> None:
         # without pk, no childs there
         if self.pk is not None:
-            for child in self.childs.all():
+            exclude_kwargs = {}
+            if self.childs.model == self.__class__:
+                exclude_kwargs["pk"] = self.pk
+            for child in self.childs.exclude(**exclude_kwargs):
                 child.save()
 
     def save(self, *args, **kwargs) -> None:
