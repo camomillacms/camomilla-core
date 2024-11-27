@@ -22,19 +22,31 @@ class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
         new_class = super().__new__(mcs, name, bases, attrs)
         if not settings.ENABLE_TRANSLATIONS:
             return new_class
-        permalink_fields = forms.fields_for_model(UrlNode, get_field_translation_accessors("permalink"))
+        permalink_fields = forms.fields_for_model(
+            UrlNode, get_field_translation_accessors("permalink")
+        )
+        for i, field_name in enumerate(permalink_fields.keys()):
+            field_classes = ["mt", f"mt-field-{field_name.replace('_', '-')}"]
+            i == 0 and field_classes.append("mt-default")
+            permalink_fields[field_name].widget.attrs.update(
+                {"class": " ".join(field_classes)}
+            )
         new_class.base_fields.update(permalink_fields)
         return new_class
 
 
-
-class AbstractPageModelForm(forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta):
-    def get_initial_for_field(self, field,field_name):
-        if settings.ENABLE_TRANSLATIONS and field_name in get_field_translation_accessors("permalink"):
+class AbstractPageModelForm(
+    forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta
+):
+    def get_initial_for_field(self, field, field_name):
+        if (
+            settings.ENABLE_TRANSLATIONS
+            and field_name in get_field_translation_accessors("permalink")
+        ):
             return getattr(self.instance, field_name)
         return super().get_initial_for_field(field, field_name)
-    
-    def save(self, commit:bool = True):
+
+    def save(self, commit: bool = True):
         if not settings.ENABLE_TRANSLATIONS:
             return super().save(commit=commit)
         model = super().save(commit=False)
@@ -49,8 +61,7 @@ class AbstractPageModelForm(forms.models.BaseModelForm, metaclass=AbstractPageMo
 class AbstractPageAdmin(TranslationAwareModelAdmin):
     form = AbstractPageModelForm
     change_form_template = "admin/camomilla/page/change_form.html"
-    
-    
+
     def __init__(self, *args, **kwargs):
         if not settings.ENABLE_TRANSLATIONS:
             return super().__init__(*args, **kwargs)
@@ -63,6 +74,7 @@ class AbstractPageAdmin(TranslationAwareModelAdmin):
 
 class UserProfileAdmin(admin.ModelAdmin):
     pass
+
 
 class ArticleAdminForm(AbstractPageModelForm):
     class Meta:
@@ -122,7 +134,6 @@ class MediaAdmin(TranslationAwareModelAdmin):
 
 
 class PageAdmin(AbstractPageAdmin):
-    # readonly_fields = ("permalink",)
     pass
 
 
