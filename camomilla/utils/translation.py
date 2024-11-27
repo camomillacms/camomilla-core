@@ -70,7 +70,3 @@ def is_translatable(model: Model) -> bool:
     from modeltranslation.translator import translator
 
     return model in translator.get_registered_models()
-
-
-def get_field_translation_accessors(field_name: str):
-    return [build_localized_fieldname(field_name, lang) for lang in AVAILABLE_LANGUAGES]

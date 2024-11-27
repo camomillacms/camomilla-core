@@ -124,6 +124,7 @@ class UrlRedirect(models.Model):
         "UrlNode", on_delete=models.CASCADE, related_name="redirects"
     )
     permanent = models.BooleanField(default=True)
+    
 
     __q_string = ""
 
@@ -171,8 +172,7 @@ class UrlNode(models.Model):
     LANG_PERMALINK_FIELDS = [
         build_localized_fieldname("permalink", lang)
         for lang in settings.AVAILABLE_LANGUAGES
-        if settings.ENABLE_TRANSLATIONS
-    ]
+    ] if settings.ENABLE_TRANSLATIONS else ["permalink"]
 
     permalink = models.CharField(max_length=400, unique=True, null=True)
     related_name = models.CharField(max_length=200)
@@ -255,10 +255,11 @@ class PageBase(models.base.ModelBase):
         for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
             computed_prop = property(*cls.perm_prop_factory(lang_p_field))
             setattr(new_class, lang_p_field, computed_prop)
-        setattr(new_class, "permalink", property(
-            lambda _self: getattr(_self, build_localized_fieldname("permalink", get_language()), None),
-            lambda _self, value: setattr(_self, f"__{build_localized_fieldname('permalink', get_language())}", value)
-        ))
+        if settings.ENABLE_TRANSLATIONS:
+            setattr(new_class, "permalink", property(
+                lambda _self: getattr(_self, build_localized_fieldname("permalink", get_language()), None),
+                lambda _self, value: setattr(_self, f"__{build_localized_fieldname('permalink', get_language())}", value)
+            ))
         if page_meta:
             for name, value in getattr(base_page_meta, "__dict__", {}).items():
                 if name not in page_meta.__dict__:

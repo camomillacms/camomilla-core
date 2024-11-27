@@ -38,11 +38,11 @@ class AbstractPageMixin(serializers.ModelSerializer):
             return filtered_fields
         if RemoveTranslationsMixin in self.__class__.__bases__:  # noqa: E501
             return default_fields
-        return (
+        return list(set(
             [f for f in default_fields if f != "url_node"]
             + UrlNode.LANG_PERMALINK_FIELDS
             + ["permalink"]
-        )
+        ))
 
     def build_field(self, field_name, info, model_class, nested_depth):
         if field_name in UrlNode.LANG_PERMALINK_FIELDS + ["permalink"]:

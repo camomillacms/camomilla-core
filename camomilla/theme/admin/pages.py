@@ -1,7 +1,5 @@
 from django import forms
-from modeltranslation.translator import translator
 from camomilla import settings
-from camomilla.utils.translation import get_field_translation_accessors
 from .translations import TranslationAwareModelAdmin
 from camomilla.models import UrlNode
 from django.utils.translation import gettext_lazy as _
@@ -10,37 +8,30 @@ from django.utils.translation import gettext_lazy as _
 class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
     def __new__(mcs, name, bases, attrs):
         new_class = super().__new__(mcs, name, bases, attrs)
-        if not settings.ENABLE_TRANSLATIONS:
-            return new_class
-        permalink_fields = forms.fields_for_model(
-            UrlNode, get_field_translation_accessors("permalink")
-        )
-        for i, field_name in enumerate(permalink_fields.keys()):
-            field_classes = ["mt", f"mt-field-{field_name.replace('_', '-')}"]
-            i == 0 and field_classes.append("mt-default")
-            permalink_fields[field_name].widget.attrs.update(
-                {"class": " ".join(field_classes)}
-            )
-        new_class.base_fields.update(permalink_fields)
+        fields_to_add = forms.fields_for_model(UrlNode, UrlNode.LANG_PERMALINK_FIELDS)
+        if settings.ENABLE_TRANSLATIONS:
+            for i, field_name in enumerate(fields_to_add.keys()):
+                field_classes = ["mt", f"mt-field-{field_name.replace('_', '-')}"]
+                i == 0 and field_classes.append("mt-default")
+                fields_to_add[field_name].widget.attrs.update(
+                    {"class": " ".join(field_classes)}
+                )
+        new_class.base_fields.update(fields_to_add)
         return new_class
 
 
 class AbstractPageModelForm(
     forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta
 ):
+
     def get_initial_for_field(self, field, field_name):
-        if (
-            settings.ENABLE_TRANSLATIONS
-            and field_name in get_field_translation_accessors("permalink")
-        ):
+        if field_name in UrlNode.LANG_PERMALINK_FIELDS:
             return getattr(self.instance, field_name)
         return super().get_initial_for_field(field, field_name)
 
     def save(self, commit: bool = True):
-        if not settings.ENABLE_TRANSLATIONS:
-            return super().save(commit=commit)
         model = super().save(commit=False)
-        for field_name in get_field_translation_accessors("permalink"):
+        for field_name in UrlNode.LANG_PERMALINK_FIELDS:
             if field_name in self.cleaned_data:
                 if getattr(model, field_name) != self.cleaned_data[field_name]:
                     # sets autopermalink to False if permalink is manually set
@@ -49,17 +40,8 @@ class AbstractPageModelForm(
         if commit:
             model.save()
         return model
-    
+
 
 class AbstractPageAdmin(TranslationAwareModelAdmin):
     form = AbstractPageModelForm
     change_form_template = "admin/camomilla/page/change_form.html"
-
-    def __init__(self, *args, **kwargs):
-        if not settings.ENABLE_TRANSLATIONS:
-            return super().__init__(*args, **kwargs)
-        super().__init__(*args, **kwargs)
-        fields_to_add = [get_field_translation_accessors("permalink"), "permalink"]
-        for name, field in translator.get_options_for_model(UrlNode).fields.items():
-            if name in fields_to_add:
-                self.trans_opts.fields.update({name: field})
