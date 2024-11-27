@@ -69,11 +69,14 @@ CAMOMILLA = {
 
 ### Set the permalink
 
-By default camomilla Page gives you the possibility to define the page `slug` field only.
-The permalink will be generated from page `slug` and `parent_page` field.
-With parent page field you can set a parent-child structure to pages.
+By default camomilla Page autogenerates it's permalink by slugification of the SEO title.
+If the page has a `parent_page` field and a page model associated with it, the permalink will be generated as a concatenation of the parent page permalink and the current page slug.
 
-For example to generate the permalink `slug1/slug2` you will need to create 2 Pages, one with slug `slug1` and one with the slug `slug2` then set the first page as the parent page of the second.
+For example to generate the permalink `page_1/page_2` you will need to create 2 Pages, one with title `Page 1` and one with the title `Page 2` then set the first page as the parent page of the second and save it.
+
+Otherwise, you can set the permalink manually by setting the `permalink` field.
+Manual permalink modification is available only if `autopermalink` field is set to `False`.
+While editing in django admin, if the user manually sets the permalink, the `autopermalink` field will be set to `False` automatically.
 
 ## 🖇️ The AbstractPage Model
 
