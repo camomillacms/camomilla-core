@@ -52,6 +52,9 @@ class AbstractPageModelForm(
         model = super().save(commit=False)
         for field_name in get_field_translation_accessors("permalink"):
             if field_name in self.cleaned_data:
+                if getattr(model, field_name) != self.cleaned_data[field_name]:
+                    # sets autopermalink to False if permalink is manually set
+                    setattr(model, f"auto{field_name}", False)
                 setattr(model, field_name, self.cleaned_data[field_name])
         if commit:
             model.save()
