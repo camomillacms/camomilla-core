@@ -33,10 +33,6 @@ class PaginateStackMixin:
             list_handler, "shared_model", getattr(list_handler, "model", None)
         )
 
-    def parse_filter(self, filter):
-        parser = ConditionParser(filter)
-        return parser.parse_to_q()
-
     def handle_pagination(self, list_handler=None, items_per_page=None):
         list_handler = list_handler if list_handler is not None else self.get_queryset()
         items_per_page = int(
@@ -76,7 +72,7 @@ class PaginateStackMixin:
         filters = dict(self.request.GET).get("fltr", [])
         for filter in filters:
             try:
-                list_handler = list_handler.filter(self.parse_filter(filter))
+                list_handler = list_handler.filter(ConditionParser(filter).db_query)
             except Exception:
                 pass
         return list_handler

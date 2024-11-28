@@ -1,15 +1,19 @@
 import re
 from django.db.models import Q
-
-CONDITION_PATTERN = re.compile(r"(\w+__\w+='[^']+'|\w+__\w+=\S+)")  # Updated regex to handle quoted values
-LOGICAL_OPERATORS = {"AND", "OR"}
+from typing import List, Dict, Optional
 
 
 class ConditionParser:
-    def __init__(self, query):
+    CONDITION_PATTERN = re.compile(r"(\w+__\w+='[^']+'|\w+__\w+=\S+|\w+='[^']+'|\w+=\S+)")
+    LOGICAL_OPERATORS = {"AND", "OR"}
+
+    __db_query: Optional[Q] = None
+
+    def __init__(self, query: str):
+        self.__db_query = None
         self.query = query
 
-    def parse(self, query=None):
+    def parse(self, query: str = None) -> Dict:
         """Parse the query or subquery. If no query is provided, use the instance's query."""
         if query is None:
             query = self.query
@@ -20,31 +24,31 @@ class ConditionParser:
             return tokens[0]
         return self.build_tree(tokens)
 
-    def tokenize(self, query):
+    def tokenize(self, query: str) -> List:
         tokens = []
         i = 0
         while i < len(query):
-            if query[i] == '(':
+            if query[i] == "(":
                 j = i + 1
                 open_parens = 1
                 while j < len(query) and open_parens > 0:
-                    if query[j] == '(':
+                    if query[j] == "(":
                         open_parens += 1
-                    elif query[j] == ')':
+                    elif query[j] == ")":
                         open_parens -= 1
                     j += 1
                 if open_parens == 0:
-                    subquery = query[i + 1:j - 1]
+                    subquery = query[i + 1 : j - 1]
                     tokens.append(self.parse(subquery))  # Pass the subquery here
                     i = j
                 else:
                     raise ValueError("Mismatched parentheses")
-            elif query[i:i+3] == 'AND' or query[i:i+2] == 'OR':
-                operator = 'AND' if query[i:i+3] == 'AND' else 'OR'
+            elif query[i : i + 3] == "AND" or query[i : i + 2] == "OR":
+                operator = "AND" if query[i : i + 3] == "AND" else "OR"
                 tokens.append(operator)
-                i += 3 if operator == 'AND' else 2
+                i += 3 if operator == "AND" else 2
             else:
-                match = CONDITION_PATTERN.match(query[i:])
+                match = self.CONDITION_PATTERN.match(query[i:])
                 if match:
                     condition = self.parse_condition(match.group())
                     tokens.append(condition)
@@ -53,10 +57,10 @@ class ConditionParser:
                     i += 1
         return tokens
 
-    def parse_condition(self, condition_str):
+    def parse_condition(self, condition: str) -> Optional[Dict]:
         """Parse a single condition into field lookup and value."""
-        if '=' in condition_str:
-            field_lookup, value = condition_str.split("=")
+        if "=" in condition:
+            field_lookup, value = condition.split("=")
             value = value.strip("'").strip('"')  # Remove single or double quotes
             value = self.parse_value(value)  # Parse the value
             return {"field_lookup": field_lookup, "value": value}
@@ -72,7 +76,7 @@ class ConditionParser:
             string = int(string)
         return string
 
-    def build_tree(self, tokens):
+    def build_tree(self, tokens: List[str]) -> Dict:
         """Build a tree-like structure with operators and conditions."""
         if not tokens:
             return None
@@ -89,23 +93,26 @@ class ConditionParser:
                     if isinstance(output_stack[-1], dict):
                         output_stack[-1] = {
                             "operator": operator,
-                            "conditions": [output_stack[-1], token]
+                            "conditions": [output_stack[-1], token],
                         }
                     else:
                         output_stack[-1]["conditions"].append(token)
                 else:
                     output_stack.append(token)
 
-            elif token in LOGICAL_OPERATORS:
+            elif token in self.LOGICAL_OPERATORS:
                 # Operator found (AND/OR), handle precedence
                 operator_stack.append(token)
 
         # If only one item in output_stack, return it directly
         if len(output_stack) == 1:
             return output_stack[0]
-        return {"operator": "AND", "conditions": output_stack}  # Default to AND if no operators
+        return {
+            "operator": "AND",
+            "conditions": output_stack,
+        }  # Default to AND if no operators
 
-    def to_q(self, parsed_tree):
+    def to_q(self, parsed_tree: Dict) -> Q:
         """Convert parsed tree structure into Q objects."""
         if isinstance(parsed_tree, list):
             # If parsed_tree is a list, combine all conditions with AND by default
@@ -141,9 +148,18 @@ class ConditionParser:
 
         raise ValueError("Parsed tree structure is invalid")
 
-    def parse_to_q(self):
+    def parse_to_q(self) -> Q:
         """Parse the query and convert to Q object."""
         parsed_tree = self.parse()
         if not parsed_tree:
             return Q()  # Return an empty Q if parsing fails
         return self.to_q(parsed_tree)
+
+    @property
+    def db_query(self) -> Q:
+        if self.__db_query is None:
+            self.__db_query = self.parse_to_q()
+        return self.__db_query
+
+    def __str__(self) -> str:
+        return f"ConditionParser({self.db_query})"
