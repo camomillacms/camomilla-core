@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
-from django.http import Http404
+from django.http import Http404, HttpRequest
 from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
@@ -54,7 +54,7 @@ class UrlRedirect(models.Model):
         return f"[{self.language_code}] {self.from_url} -> {self.to_url}"
 
     @classmethod
-    def find_redirect(cls, request, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
+    def find_redirect(cls, request: HttpRequest, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
         instance = cls.find_redirect_from_url(request.path, language_code)
         if instance:
             instance.__q_string = request.META.get("QUERY_STRING", "")
@@ -104,7 +104,7 @@ class UrlNode(models.Model):
         return getattr(self, self.related_name)
 
     @staticmethod
-    def reverse_url(permalink: str) -> str:
+    def reverse_url(permalink: str, request: Optional[HttpRequest] = None) -> str:
         append_slash = getattr(django_settings, "APPEND_SLASH", True)
         try:
             if permalink == "/":
@@ -112,6 +112,8 @@ class UrlNode(models.Model):
             url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
             if append_slash and not url.endswith("/"):
                 url += "/"
+            if request:
+                url = request.build_absolute_uri(url)
             return url
         except NoReverseMatch:
             return None
@@ -242,7 +244,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def __str__(self) -> str:
         return "(%s) %s" % (self.__class__.__name__, self.title or self.permalink)
 
-    def get_context(self, request=None):
+    def get_context(self, request: Optional[HttpRequest]=None):
         context = {
             "page": self,
             "page_model": {"class": self.__class__.__name__, "module": self.__module__},
@@ -287,7 +289,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             return bool(publication_date) and timezone.now() > publication_date
         return False
 
-    def get_template_path(self, request=None) -> str:
+    def get_template_path(self, request: Optional[HttpRequest] = None) -> str:
         return self.template or pointed_getter(self, "_page_meta.default_template")
 
     @property
@@ -351,7 +353,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 hasattr(self, f"__{lang_p_field}") and delattr(self, f"__{lang_p_field}")
 
     @classmethod
-    def get(cls, request, *args, **kwargs) -> "AbstractPage":
+    def get(cls, request: HttpRequest, *args, **kwargs) -> "AbstractPage":
         bypass_type_check = kwargs.pop("bypass_type_check", False)
         bypass_public_check = kwargs.pop("bypass_public_check", False)
         if len(kwargs.keys()) > 0:
@@ -384,7 +386,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         return page
 
     @classmethod
-    def get_or_create(cls, request, *args, **kwargs) -> Tuple["AbstractPage", bool]:
+    def get_or_create(cls, request: HttpRequest, *args, **kwargs) -> Tuple["AbstractPage", bool]:
         try:
             return cls.get(request, *args, **kwargs), False
         except ObjectDoesNotExist:
@@ -404,14 +406,14 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             return cls.get_or_create(None, permalink="/")
 
     @classmethod
-    def get_or_404(cls, request, *args, **kwargs) -> "AbstractPage":
+    def get_or_404(cls, request: HttpRequest, *args, **kwargs) -> "AbstractPage":
         try:
             return cls.get(request, *args, **kwargs)
         except ObjectDoesNotExist as ex:
             raise Http404(ex)
 
     def alternate_urls(self, *args, **kwargs) -> dict:
-        request = False
+        request: Union[HttpRequest, bool] = False
         if len(args) > 0:
             request = args[0]
         if "request" in kwargs:
