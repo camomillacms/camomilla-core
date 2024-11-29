@@ -83,6 +83,10 @@ TEMPLATE_CONTEXT_FILES = pointed_getter(
     django_settings, "CAMOMILLA.RENDER.TEMPLATE_CONTEXT_FILES", []
 )
 
+API_TRANSLATION_ACCESSOR = pointed_getter(
+    django_settings, "CAMOMILLA.API.TRANSLATION_ACCESSOR", "translations"
+)
+
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
 
 # camomilla settings example
@@ -104,6 +108,6 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #     "STRUCTURED_FIELD": {
 #         "CACHE_ENABLED": True
 #     }
-#     "API": {"NESTING_DEPTH": 10 },
+#     "API": {"NESTING_DEPTH": 10, "TRANSLATION_ACCESSOR": "translations"},
 #     "DEBUG": False
 # }

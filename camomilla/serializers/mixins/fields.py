@@ -2,7 +2,9 @@ from django.db import models
 from rest_framework import serializers
 
 from structured.fields import StructuredJSONField as ModelStructuredJSONField
-from camomilla.serializers.fields import StructuredJSONField, FileField, ImageField, RelatedField
+from camomilla.serializers.fields import FileField, ImageField, RelatedField
+from structured.contrib.restframework import StructuredJSONField
+
 
 
 class FieldsOverrideMixin:

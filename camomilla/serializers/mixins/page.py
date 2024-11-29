@@ -30,7 +30,7 @@ class AbstractPageMixin(serializers.ModelSerializer):
         return super().translation_fields + ["permalink"]
 
     def get_default_field_names(self, *args):
-        from camomilla.contrib.rest_framework.serializer import RemoveTranslationsMixin
+        from camomilla.serializers.mixins.translation import RemoveTranslationsMixin
 
         default_fields = super().get_default_field_names(*args)
         filtered_fields = getattr(self, "filtered_fields", [])
