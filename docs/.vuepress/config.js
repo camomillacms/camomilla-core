@@ -7,12 +7,12 @@ module.exports = {
   globalUIComponents: [
     'ThemeManager'
   ],
-  base: '/camomilla/',
+  base: '/camomilla-core/',
   themeConfig: {
     nextLinks: false,
     prevLinks: false,
     smoothScroll: true,
-    repo: 'lotrekagency/camomilla',
+    repo: 'camomillacms/camomilla-core',
     nav: [
       { text: 'Home', link: '/' },
       { text: 'How to', link: '/How%20To/' },

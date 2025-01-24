@@ -34,7 +34,7 @@ content-type = "text/markdown"
 file = "README.md"
 
 [project.urls]
-Homepage = "https://github.com/lotrekagency/camomilla"
+Homepage = "https://github.com/camomillacms/camomilla-core"
 
 [tool.setuptools]
 include-package-data = true

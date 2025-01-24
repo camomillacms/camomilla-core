@@ -1,4 +1,4 @@
-# camomilla django cms [![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms) ![Codecov](https://img.shields.io/codecov/c/github/lotrekagency/camomilla?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/lotrekagency/camomilla/Test,%20Coverage%20and%20Release?style=flat-square) [![GitHub](https://img.shields.io/github/license/lotrekagency/camomilla?style=flat-square)](./LICENSE)
+# camomilla django cms [![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms) ![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/camomillacms/camomilla-core/Test,%20Coverage%20and%20Release?style=flat-square) [![GitHub](https://img.shields.io/github/license/camomillacms/camomilla-core?style=flat-square)](./LICENSE)
 
 ## Install 
 

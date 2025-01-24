@@ -9,4 +9,4 @@ test: clean
 	@pytest --cov=camomilla -s --cov-report=xml --cov-report=term-missing
 
 docs: clean
-	@npm run docs:publish
+	@NODE_OPTIONS=--openssl-legacy-provider npm run docs:publish

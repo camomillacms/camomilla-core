@@ -16,6 +16,6 @@ git init
 git add -A
 git commit -m 'deploy'
 
-git push -f git@github.com:lotrekagency/camomilla.git master:gh-pages
+git push -f git@github.com:camomillacms/camomilla-core.git master:gh-pages
 
 cd -
