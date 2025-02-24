@@ -7,7 +7,7 @@ def get_standard_bases() -> tuple:
         SetupEagerLoadingMixin,
         FieldsOverrideMixin,
         FilterFieldsMixin,
-        RemoveTranslationsMixin
+        RemoveTranslationsMixin,
     )
 
     return (

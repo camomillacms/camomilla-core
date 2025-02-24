@@ -7,7 +7,7 @@ from camomilla.serializers.mixins import (
     SetupEagerLoadingMixin,
     FilterFieldsMixin,
     FieldsOverrideMixin,
-    TranslationsMixin
+    TranslationsMixin,
 )
 
 

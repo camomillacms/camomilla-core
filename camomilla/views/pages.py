@@ -21,13 +21,15 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
 
 @active_lang()
 @api_view(["GET"])
-@permission_classes([permissions.AllowAny, ])
+@permission_classes(
+    [
+        permissions.AllowAny,
+    ]
+)
 def fetch_page(request, permalink=""):
     redirect = UrlRedirect.find_redirect_from_url(f"/{permalink}")
     if redirect:
         redirect = redirect.redirect()
-        return Response(
-            {"redirect": redirect.url, "status": redirect.status_code}
-        )
+        return Response({"redirect": redirect.url, "status": redirect.status_code})
     node = get_object_or_404(UrlNode, permalink=f"/{permalink}")
     return Response(UrlNodeSerializer(node, context={"request": request}).data)

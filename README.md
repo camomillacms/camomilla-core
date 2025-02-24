@@ -9,7 +9,7 @@ $ pip install django-camomilla-cms
 ## Setup 
 ```shell
 $ mkdir -p camomilla_migrations
-$ touch camomilla_migrations.__init__.py
+$ touch camomilla_migrations/__init__.py
 $ python manage.py makemigrations camomilla
 $ python manage.py migrate camomilla
 ```
@@ -44,3 +44,7 @@ INSTALLED_APPS = [
 
     pip install -r requirements-dev.txt
     make test
+
+## Run format with black
+
+    black camomilla

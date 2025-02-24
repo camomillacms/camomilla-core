@@ -22,11 +22,16 @@ class TranslationsMixin(serializers.ModelSerializer):
     While in deserialization, the serializer will transform:
     `{"translations": {"en": {"title": "Hello"}, "it": {"title": "Ciao"}}` -> `{"title_en": "Hello", "title_it": "Ciao"}`
     """
+
     def _transform_input(self, data):
-        return nest_to_plain(data, self.translation_fields or [], API_TRANSLATION_ACCESSOR)
-    
+        return nest_to_plain(
+            data, self.translation_fields or [], API_TRANSLATION_ACCESSOR
+        )
+
     def _transform_output(self, data):
-        return plain_to_nest(data, self.translation_fields or [], API_TRANSLATION_ACCESSOR)
+        return plain_to_nest(
+            data, self.translation_fields or [], API_TRANSLATION_ACCESSOR
+        )
 
     @cached_property
     def translation_fields(self) -> List[str]:

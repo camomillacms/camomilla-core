@@ -27,7 +27,7 @@ dynamic = ["version"]
 keywords = ["cms", "django", "api cms"]
 license = {text = "MIT"}
 name = "django-camomilla-cms"
-requires-python = ">= 3.6"
+requires-python = ">= 3.8, <=3.10"
 
 [project.readme]
 content-type = "text/markdown"

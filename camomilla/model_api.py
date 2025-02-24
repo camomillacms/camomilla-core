@@ -66,9 +66,11 @@ def register(
 
         model_path = "".join(
             [
-                "-" + character.lower()
-                if character.isupper() and index > 0
-                else character
+                (
+                    "-" + character.lower()
+                    if character.isupper() and index > 0
+                    else character
+                )
                 for index, character in enumerate(model.__name__)
             ]
         ).lstrip("-")

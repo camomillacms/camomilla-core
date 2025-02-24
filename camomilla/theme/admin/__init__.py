@@ -4,7 +4,16 @@ from django.contrib import admin
 from django.http import HttpResponse
 from .pages import AbstractPageModelForm, AbstractPageAdmin
 from .translations import TranslationAwareModelAdmin
-from camomilla.models import Article, Content, Media, MediaFolder, Page, Tag, Menu, UrlRedirect
+from camomilla.models import (
+    Article,
+    Content,
+    Media,
+    MediaFolder,
+    Page,
+    Tag,
+    Menu,
+    UrlRedirect,
+)
 
 
 class UserProfileAdmin(admin.ModelAdmin):

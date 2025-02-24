@@ -6,11 +6,11 @@ from camomilla.serializers.fields import FileField, ImageField, RelatedField
 from structured.contrib.restframework import StructuredJSONField
 
 
-
 class FieldsOverrideMixin:
     """
     This mixin automatically overrides the fields of the serializer with camomilla's backed ones.
     """
+
     serializer_field_mapping = {
         **serializers.ModelSerializer.serializer_field_mapping,
         models.FileField: FileField,
