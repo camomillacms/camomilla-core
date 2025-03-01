@@ -1,10 +1,11 @@
-django-modeltranslation>=0.18.7
+django-modeltranslation>=0.18.7,<=0.18.12
 djsuperadmin>=0.9,<1.0.0
-djangorestframework>=3.10.0,<4.0.0
-django-structured-json-field>=0.2.0,<1.0.0
-Pillow>=6.2.0,<10.0.0
+djangorestframework>=3.10.0,<=3.14.0
+django-structured-json-field>=0.4.1
+Pillow>=10.0.0
 django-admin-interface>=0.26.0,<1.0.0
 django-ckeditor>=5.7.1,<7.0.0
 django-tinymce>=4.1.0,<5.0.0
 python-magic>=0.4,<0.5
 Django>=3.2,<6
+django_jsonform>=2.23

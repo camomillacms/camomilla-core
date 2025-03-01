@@ -16,7 +16,13 @@ class SeoMixinTranslationOptions(TranslationOptions):
 
 
 class AbstractPageTranslationOptions(SeoMixinTranslationOptions):
-    fields = ("breadcrumbs_title", "autopermalink", "status", "indexable", "template_data")
+    fields = (
+        "breadcrumbs_title",
+        "autopermalink",
+        "status",
+        "indexable",
+        "template_data",
+    )
 
 
 @register(Article)

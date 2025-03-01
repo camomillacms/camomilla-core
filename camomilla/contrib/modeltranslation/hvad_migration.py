@@ -56,12 +56,12 @@ class KeepTranslationsMixin:
                         )
                     )
                     rows = cursor.fetchall()
-                    self._saved_data_from_plain[
-                        modelPath
-                    ] = self._saved_data_from_plain.get(modelPath, {})
-                    self._saved_data_from_plain[modelPath][
-                        master[0]
-                    ] = self._saved_data_from_plain[modelPath].get(master[0], [])
+                    self._saved_data_from_plain[modelPath] = (
+                        self._saved_data_from_plain.get(modelPath, {})
+                    )
+                    self._saved_data_from_plain[modelPath][master[0]] = (
+                        self._saved_data_from_plain[modelPath].get(master[0], [])
+                    )
                     for row in rows:
                         self._saved_data_from_plain[modelPath][master[0]].append(
                             dict(zip(fields, row))
@@ -83,9 +83,9 @@ class KeepTranslationsMixin:
                         )
                     )
                     rows = cursor.fetchall()
-                    self._saved_data_from_plain[
-                        modelPath
-                    ] = self._saved_data_from_plain.get(modelPath, [])
+                    self._saved_data_from_plain[modelPath] = (
+                        self._saved_data_from_plain.get(modelPath, [])
+                    )
                     for row in rows:
                         row_data = dict(zip(("master_id", *fields), row))
                         row_data.update({"language_code": lang})

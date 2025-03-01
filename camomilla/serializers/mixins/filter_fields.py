@@ -44,8 +44,14 @@ class FilterFieldsMixin(serializers.ModelSerializer):
         return field_names
 
     def build_field(self, field_name, info, model_class, nested_depth):
-        field_class, field_kwargs = super().build_field(field_name, info, model_class, nested_depth)
-        inherited_fields_filter = self.childs_fields.get(field_name, []) if hasattr(self, "childs_fields") else []
+        field_class, field_kwargs = super().build_field(
+            field_name, info, model_class, nested_depth
+        )
+        inherited_fields_filter = (
+            self.childs_fields.get(field_name, [])
+            if hasattr(self, "childs_fields")
+            else []
+        )
         if len(inherited_fields_filter) > 0 and issubclass(field_class, RelatedField):
             field_kwargs["inherited_fields_filter"] = list(inherited_fields_filter)
         return field_class, field_kwargs

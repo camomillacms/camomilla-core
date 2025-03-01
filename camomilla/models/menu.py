@@ -36,7 +36,9 @@ class MenuNodeLink(BaseModel):
         if self.link_type == LinkTypes.relational:
             if self.content_type and self.page:
                 if isinstance(self.page, DjangoModel) and not self.page._meta.abstract:
-                    self.content_type = ContentType.objects.get_for_model(self.page.__class__)
+                    self.content_type = ContentType.objects.get_for_model(
+                        self.page.__class__
+                    )
                 ctype_id = getattr(self.content_type, "pk", self.content_type)
                 page_id = getattr(self.page, "pk", self.page)
                 c_type = ContentType.objects.filter(pk=ctype_id).first()
@@ -46,7 +48,9 @@ class MenuNodeLink(BaseModel):
             elif self.url_node:
                 url_node_id = getattr(self.url_node, "pk", self.url_node)
                 self.page = UrlNode.objects.filter(pk=url_node_id).first().page
-                self.content_type = ContentType.objects.get_for_model(self.page.__class__)
+                self.content_type = ContentType.objects.get_for_model(
+                    self.page.__class__
+                )
         return handler(self)
 
     def get_url(self, request=None):

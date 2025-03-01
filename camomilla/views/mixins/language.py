@@ -1,14 +1,18 @@
 from django.utils import translation
+from camomilla import settings
 
 
 class GetUserLanguageMixin:
     def _get_user_language(self, request):
-        self.active_language = request.GET.get(
-            "language",
-            request.GET.get(
-                "language_code", translation.get_language_from_request(request)
-            ),
+        active_language_from_request = translation.get_language_from_request(request)
+        active_language = (
+            active_language_from_request
+            if active_language_from_request
+            else settings.DEFAULT_LANGUAGE
         )
+        active_language = request.GET.get("language_code", active_language)
+        active_language = request.GET.get("language", active_language)
+        self.active_language = active_language
         self.language_fallbacks = True
         if (
             len(self.active_language.split("-")) == 2

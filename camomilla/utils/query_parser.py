@@ -4,7 +4,9 @@ from typing import List, Dict, Optional
 
 
 class ConditionParser:
-    CONDITION_PATTERN = re.compile(r"(\w+__\w+='[^']+'|\w+__\w+=\S+|\w+='[^']+'|\w+=\S+)")
+    CONDITION_PATTERN = re.compile(
+        r"(\w+__\w+='[^']+'|\w+__\w+=\S+|\w+='[^']+'|\w+=\S+)"
+    )
     LOGICAL_OPERATORS = {"AND", "OR"}
 
     __db_query: Optional[Q] = None

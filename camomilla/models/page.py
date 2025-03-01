@@ -54,18 +54,26 @@ class UrlRedirect(models.Model):
         return f"[{self.language_code}] {self.from_url} -> {self.to_url}"
 
     @classmethod
-    def find_redirect(cls, request: HttpRequest, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
+    def find_redirect(
+        cls, request: HttpRequest, language_code: Optional[str] = None
+    ) -> Optional["UrlRedirect"]:
         instance = cls.find_redirect_from_url(request.path, language_code)
         if instance:
             instance.__q_string = request.META.get("QUERY_STRING", "")
         return instance
 
     @classmethod
-    def find_redirect_from_url(cls, from_url: str, language_code: Optional[str] = None) -> Optional["UrlRedirect"]:
+    def find_redirect_from_url(
+        cls, from_url: str, language_code: Optional[str] = None
+    ) -> Optional["UrlRedirect"]:
         path_decomposition = url_lang_decompose(from_url)
-        language_code = language_code or path_decomposition["language"] or get_language()
+        language_code = (
+            language_code or path_decomposition["language"] or get_language()
+        )
         from_url = path_decomposition["permalink"]
-        return cls.objects.filter(from_url=from_url.rstrip("/"), language_code=language_code or get_language()).first()
+        return cls.objects.filter(
+            from_url=from_url.rstrip("/"), language_code=language_code or get_language()
+        ).first()
 
     def redirect(self) -> str:
         return redirect(self.redirect_to, permanent=self.permanent)
@@ -75,7 +83,10 @@ class UrlRedirect(models.Model):
         url_to = "/" + self.to_url.lstrip("/")
         if getattr(django_settings, "APPEND_SLASH", True) and not url_to.endswith("/"):
             url_to += "/"
-        if self.language_code != settings.DEFAULT_LANGUAGE and settings.ENABLE_TRANSLATIONS:
+        if (
+            self.language_code != settings.DEFAULT_LANGUAGE
+            and settings.ENABLE_TRANSLATIONS
+        ):
             url_to = "/" + self.language_code + url_to
         return url_to + ("?" + self.__q_string if self.__q_string else "")
 
@@ -90,10 +101,14 @@ class UrlRedirect(models.Model):
 
 class UrlNode(models.Model):
 
-    LANG_PERMALINK_FIELDS = [
-        build_localized_fieldname("permalink", lang)
-        for lang in settings.AVAILABLE_LANGUAGES
-    ] if settings.ENABLE_TRANSLATIONS else ["permalink"]
+    LANG_PERMALINK_FIELDS = (
+        [
+            build_localized_fieldname("permalink", lang)
+            for lang in settings.AVAILABLE_LANGUAGES
+        ]
+        if settings.ENABLE_TRANSLATIONS
+        else ["permalink"]
+    )
 
     permalink = models.CharField(max_length=400, unique=True, null=True)
     related_name = models.CharField(max_length=200)
@@ -131,14 +146,20 @@ class UrlNode(models.Model):
     def sanitize_permalink(permalink):
         if isinstance(permalink, str):
             p_parts = permalink.split("/")
-            permalink = "/".join([slugify(p, allow_unicode=True).strip() for p in p_parts])
+            permalink = "/".join(
+                [slugify(p, allow_unicode=True).strip() for p in p_parts]
+            )
             if not permalink.startswith("/"):
                 permalink = f"/{permalink}"
         return permalink
 
     def save(self, *args, **kwargs) -> None:
         for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
-            setattr(self, lang_p_field, UrlNode.sanitize_permalink(getattr(self, lang_p_field)))
+            setattr(
+                self,
+                lang_p_field,
+                UrlNode.sanitize_permalink(getattr(self, lang_p_field)),
+            )
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -163,7 +184,11 @@ class PageBase(models.base.ModelBase):
 
     def perm_prop_factory(permalink_field):
         def getter(_self):
-            return getattr(_self, f"__{permalink_field}", getattr(_self.url_node or object(), permalink_field, None))
+            return getattr(
+                _self,
+                f"__{permalink_field}",
+                getattr(_self.url_node or object(), permalink_field, None),
+            )
 
         def setter(_self, value: str):
             setattr(_self, f"__{permalink_field}", value)
@@ -179,10 +204,22 @@ class PageBase(models.base.ModelBase):
             computed_prop = property(*cls.perm_prop_factory(lang_p_field))
             setattr(new_class, lang_p_field, computed_prop)
         if settings.ENABLE_TRANSLATIONS:
-            setattr(new_class, "permalink", property(
-                lambda _self: getattr(_self, build_localized_fieldname("permalink", get_language()), None),
-                lambda _self, value: setattr(_self, f"__{build_localized_fieldname('permalink', get_language())}", value)
-            ))
+            setattr(
+                new_class,
+                "permalink",
+                property(
+                    lambda _self: getattr(
+                        _self,
+                        build_localized_fieldname("permalink", get_language()),
+                        None,
+                    ),
+                    lambda _self, value: setattr(
+                        _self,
+                        f"__{build_localized_fieldname('permalink', get_language())}",
+                        value,
+                    ),
+                ),
+            )
         if page_meta:
             for name, value in getattr(base_page_meta, "__dict__", {}).items():
                 if name not in page_meta.__dict__:
@@ -244,7 +281,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def __str__(self) -> str:
         return "(%s) %s" % (self.__class__.__name__, self.title or self.permalink)
 
-    def get_context(self, request: Optional[HttpRequest]=None):
+    def get_context(self, request: Optional[HttpRequest] = None):
         context = {
             "page": self,
             "page_model": {"class": self.__class__.__name__, "module": self.__module__},
@@ -350,7 +387,9 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             super().save(*args, **kwargs)
             self.__cached_db_instance = None
             for lang_p_field in UrlNode.LANG_PERMALINK_FIELDS:
-                hasattr(self, f"__{lang_p_field}") and delattr(self, f"__{lang_p_field}")
+                hasattr(self, f"__{lang_p_field}") and delattr(
+                    self, f"__{lang_p_field}"
+                )
 
     @classmethod
     def get(cls, request: HttpRequest, *args, **kwargs) -> "AbstractPage":
@@ -386,7 +425,9 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         return page
 
     @classmethod
-    def get_or_create(cls, request: HttpRequest, *args, **kwargs) -> Tuple["AbstractPage", bool]:
+    def get_or_create(
+        cls, request: HttpRequest, *args, **kwargs
+    ) -> Tuple["AbstractPage", bool]:
         try:
             return cls.get(request, *args, **kwargs), False
         except ObjectDoesNotExist:
@@ -459,7 +500,9 @@ __url_node_history__ = {}
 @receiver(pre_save, sender=UrlNode)
 def cache_url_node(sender, instance, **kwargs):
     if instance.pk:
-        __url_node_history__[instance.pk] = sender.objects.filter(pk=instance.pk).first()
+        __url_node_history__[instance.pk] = sender.objects.filter(
+            pk=instance.pk
+        ).first()
 
 
 @receiver(post_save, sender=UrlNode)
@@ -471,7 +514,9 @@ def generate_redirects(sender, instance, **kwargs):
             for lang in activate_languages():
                 new_permalink = get_nofallbacks(instance, "permalink")
                 old_permalink = get_nofallbacks(previous, "permalink")
-                UrlRedirect.objects.filter(from_url=new_permalink, language_code=lang).delete()
+                UrlRedirect.objects.filter(
+                    from_url=new_permalink, language_code=lang
+                ).delete()
                 if old_permalink and old_permalink != new_permalink:
                     redirects.append(
                         UrlRedirect(
@@ -481,6 +526,8 @@ def generate_redirects(sender, instance, **kwargs):
                             language_code=lang,
                         )
                     )
-                    UrlRedirect.objects.filter(to_url=old_permalink, language_code=lang).update(to_url=new_permalink)
+                    UrlRedirect.objects.filter(
+                        to_url=old_permalink, language_code=lang
+                    ).update(to_url=new_permalink)
             if len(redirects) > 0:
                 UrlRedirect.objects.bulk_create(redirects)

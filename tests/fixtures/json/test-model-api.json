@@ -22,7 +22,7 @@
                 {
                     "id": 4,
                     "name": "test4",
-                    "model": "gid://website.simplerelationmodel/4"
+                    "model": "website.simplerelationmodel"
                 }
             ]
         },

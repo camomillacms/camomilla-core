@@ -31,9 +31,13 @@ class UniquePermalinkValidator:
         for language in activate_languages():
             autopermalink_f = build_localized_fieldname("autopermalink", language)
             f_name = build_localized_fieldname("permalink", language)
-            permalink = value.get(f_name, instance and get_nofallbacks(instance, "permalink"))
+            permalink = value.get(
+                f_name, instance and get_nofallbacks(instance, "permalink")
+            )
             permalink = UrlNode.sanitize_permalink(permalink)
-            autopermalink = value.get(autopermalink_f, instance and get_nofallbacks(instance, "autopermalink"))
+            autopermalink = value.get(
+                autopermalink_f, instance and get_nofallbacks(instance, "autopermalink")
+            )
             if autopermalink:
                 continue
             fake_instance = serializer.Meta.model()

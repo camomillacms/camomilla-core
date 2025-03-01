@@ -61,7 +61,7 @@ class MediaFolderViewSet(
         ).data
         media_data = self.format_output(
             *self.handle_pagination_stack(media_queryset),
-            SerializerClass=MediaListSerializer
+            SerializerClass=MediaListSerializer,
         )
         return {
             "folders": folder_data,
