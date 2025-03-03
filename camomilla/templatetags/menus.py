@@ -22,6 +22,9 @@ def render_menu(
     menu_key: str,
     template_path: str = "defaults/parts/menu.html",
 ):
+    if context is not None and not isinstance(context, dict):
+        context = context.__dict__
+
     return context.get("menus", Menu.defaultdict())[menu_key].render(
         template_path=template_path,
         context=context,
