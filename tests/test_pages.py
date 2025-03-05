@@ -140,7 +140,6 @@ class PagesTestCase(TestCase):
             },
             format='json'
         )
-
         assert response.status_code == 201
 
         # EN manual url creation
@@ -161,7 +160,6 @@ class PagesTestCase(TestCase):
               "parent_page": 2
             }
         )
-
         assert response.status_code == 201
 
         # EN parent page with automatic url creation

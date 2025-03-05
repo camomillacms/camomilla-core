@@ -5,8 +5,6 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
 from .utils.media import load_asset_and_remove_media
-from django.template import Template, Context
-from camomilla.models import Page, Media
 
 class TemoplateContextTestCase(TestCase):
     def setUp(self):
@@ -28,7 +26,6 @@ class TemoplateContextTestCase(TestCase):
             },
             format="multipart",
         )
-
         assert response.status_code == 201
 
         # Create media for custom context
@@ -62,7 +59,6 @@ class TemoplateContextTestCase(TestCase):
             },
             format="multipart",
         )
-
         assert response.status_code == 201
 
         # Create media for custom context
@@ -96,7 +92,6 @@ class TemoplateContextTestCase(TestCase):
             },
             format="multipart",
         )
-
         assert response.status_code == 201
 
         # Create media for custom context

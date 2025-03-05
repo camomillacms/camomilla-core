@@ -1,0 +1,10 @@
+{% load menus %}
+{% if menu.nodes|length %}
+<ul>
+  {% for item in menu.nodes %}
+  <li>
+    This is custom menu: {{ item.title }}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
