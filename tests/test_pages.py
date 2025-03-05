@@ -1,5 +1,4 @@
 import pytest
-import json
 from django.test import TestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
@@ -26,9 +25,13 @@ class PagesTestCase(TestCase):
         response = self.client.post(
             "/api/camomilla/pages/",
             {
-              "title_it": "title_page_1",
+              "translations": {
+                "it": {
+                  "title": "title_page_1",
+                }
+              }
             },
-            format="multipart",
+            format='json'
         )
 
         assert response.status_code == 201
@@ -42,8 +45,7 @@ class PagesTestCase(TestCase):
             "/api/camomilla/pages/",
             {
               "title_it": "title_page_2",
-            },
-            format="multipart",
+            }
         )
 
         assert response.status_code == 201
@@ -55,11 +57,15 @@ class PagesTestCase(TestCase):
 
          # Update page
         response = self.client.patch(
-            "/api/camomilla/pages/2/",
-            {
-              "title_it": "title_page_2_updated",
-            },
-            format="multipart",
+          "/api/camomilla/pages/2/",
+          {
+            "translations": {
+              "it": {
+                "title": "title_page_2_updated",
+              }
+            }
+          },
+          format='json'
         )
 
         assert response.status_code == 200
@@ -101,8 +107,7 @@ class PagesTestCase(TestCase):
             {
               "title_en": "title_page_1",
               "title_it": "titolo_pagina_1",
-            },
-            format="multipart",
+            }
         )
 
         assert response.status_code == 201
@@ -120,14 +125,20 @@ class PagesTestCase(TestCase):
         response = self.client.post(
             "/api/camomilla/pages/",
             {
-              "title_en": "title_page_2",
-              "title_it": "titolo_pagina_2",
-              "autopermalink_en": False,
-              "permalink_en": "permalink_manual_en_2",
-              "autopermalink_it": False,
-              "permalink_it": "permalink_manuale_it_2",
+              "translations": {
+                "it": {
+                  "title": "titolo_pagina_2",
+                  "permalink": "permalink_manuale_it_2",
+                  "autopermalink": False
+                },
+                "en": {
+                  "title": "title_page_2",
+                  "permalink": "permalink_manual_en_2",
+                  "autopermalink": False
+                }
+              }
             },
-            format="multipart",
+            format='json'
         )
 
         assert response.status_code == 201
@@ -148,8 +159,7 @@ class PagesTestCase(TestCase):
               "title_en": "title_page_3",
               "title_it": "titolo_pagina_3",
               "parent_page": 2
-            },
-            format="multipart",
+            }
         )
 
         assert response.status_code == 201
@@ -169,8 +179,7 @@ class PagesTestCase(TestCase):
             {
               "autopermalink_en": False,
               "permalink_en": "permalink_manual_en_2",
-            },
-            format="multipart",
+            }
         )
 
         # Client error when url check uniqueness and consistency fail
@@ -181,10 +190,14 @@ class PagesTestCase(TestCase):
         response = self.client.post(
             "/api/camomilla/pages/",
             {
-              "autopermalink_it": False,
-              "permalink_it": "permalink_manuale_it_2",
+              "translations": {
+                "it": {
+                  "autopermalink": False,
+                  "permalink": "permalink_manuale_it_2",
+                }
+              }
             },
-            format="multipart",
+            format='json'
         )
 
         # Client error when url check uniqueness and consistency fail
@@ -194,14 +207,17 @@ class PagesTestCase(TestCase):
     @pytest.mark.django_db
     def test_pages_url_nodes_navigation(self):
         #Test the camomilla.dynamic_pages_url handler for navigating and rendering UrlNodes
-        self.client.post("/api/camomilla/pages/", {
-          "autopermalink_en": False,
-          "permalink_en": "permalink_4_en",
-          "status_en": "PUB",
-          "autopermalink_it": False,
-          "permalink_it": "permalink_4_it",
-          "status_it": "PUB",
-        }, format="multipart")
+        self.client.post(
+            "/api/camomilla/pages/", 
+            {
+              "autopermalink_en": False,
+              "permalink_en": "permalink_4_en",
+              "status_en": "PUB",
+              "autopermalink_it": False,
+              "permalink_it": "permalink_4_it",
+              "status_it": "PUB",
+            }
+        )
 
         response = self.client.get("/permalink_4_en/")
         assert response.status_code == 200
@@ -209,14 +225,24 @@ class PagesTestCase(TestCase):
         assert response.status_code == 200
 
         #Test draft - published - planned and ?preview=true
-        self.client.post("/api/camomilla/pages/", {
-          "autopermalink_en": False,
-          "permalink_en": "permalink_5_en",
-          "status_en": "DRF",
-          "autopermalink_it": False,
-          "permalink_it": "permalink_5_it",
-          "status_it": "PLA",
-        }, format="multipart")
+        self.client.post(
+            "/api/camomilla/pages/", 
+            {
+              "translations": {
+                "it": {
+                  "autopermalink": False,
+                  "permalink": "permalink_5_it",
+                  "status": "PLA",
+                },
+                "en": {
+                  "autopermalink": False,
+                  "permalink": "permalink_5_en",
+                  "status": "DRF",
+                }
+              }
+            },
+            format='json'
+        )
 
         response = self.client.get("/permalink_5_en/")
         assert response.status_code == 404
@@ -229,8 +255,7 @@ class PagesTestCase(TestCase):
             "/api/camomilla/pages/2/",
             {
               "publication_date": (datetime.now() - timedelta(1)).strftime('%Y-%m-%d') +  " 00:00:00",
-            },
-            format="multipart",
+            }
         )
 
         response = self.client.get("/it/permalink_5_it/")
@@ -239,14 +264,24 @@ class PagesTestCase(TestCase):
     @pytest.mark.django_db
     def test_pages_url_nodes_navigation_redirects(self):
         #Test the camomilla.dynamic_pages_url handler for navigating and rendering UrlNodes
-        self.client.post("/api/camomilla/pages/", {
-          "autopermalink_en": False,
-          "permalink_en": "permalink_6_en",
-          "status_en": "PUB",
-          "autopermalink_it": False,
-          "permalink_it": "permalink_6_it",
-          "status_it": "PUB",
-        }, format="multipart")
+        self.client.post(
+            "/api/camomilla/pages/", 
+            {
+              "translations": {
+                "it": {
+                  "autopermalink": False,
+                  "permalink": "permalink_6_it",
+                  "status": "PUB",
+                },
+                "en": {
+                  "autopermalink": False,
+                  "permalink": "permalink_6_en",
+                  "status": "PUB",
+                }
+              }
+            },
+            format='json'
+        )
 
         #EN Insert Moved Permanently Redirect 
         url_redirect = UrlRedirect.objects.create(
@@ -284,3 +319,27 @@ class PagesTestCase(TestCase):
         url_redirect.save()
         response = self.client.get("/it/urlreindirizzamento_1/")
         assert response.status_code == 302
+
+        # Test auto redirect after permalink change
+        self.client.patch(
+            "/api/camomilla/pages/1/",
+            {
+              "translations": {
+                "it": {
+                  "permalink": "permalink_6_it_changed",
+                },
+                "en": {
+                  "permalink": "permalink_6_en_changed",
+                }
+              }
+            },
+            format='json'
+        )
+
+        response = self.client.get("/permalink_6_en/")
+        assert response.status_code == 301
+        assert response.url == '/permalink_6_en_changed/'
+
+        response = self.client.get("/it/permalink_6_it/")
+        assert response.status_code == 301
+        assert response.url == '/it/permalink_6_it_changed/'
