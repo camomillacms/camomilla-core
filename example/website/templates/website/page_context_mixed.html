@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <!-- Template context -->
+  <h1>{{page_context_template_based.title}}</h1>
+  <p>{{page_context_template_based.content}}</p>
+  {% if page_context_template_based.media_gallery|length %}
+  <ul>
+    {% for media in page_context_template_based.media_gallery %}
+    <li>
+      {{media}}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  
+  <!-- Model context -->
+  <h1>{{page_context_model_based.title}}</h1>
+  <p>{{page_context_model_based.content}}</p>
+  {% if page_context_model_based.media_gallery|length %}
+  <ul>
+    {% for media in page_context_model_based.media_gallery %}
+    <li>
+      {{media}}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</body>
+</html>

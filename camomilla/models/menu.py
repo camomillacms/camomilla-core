@@ -91,7 +91,9 @@ class Menu(models.Model):
     ):
         if isinstance(context, RequestContext):
             context = context.flatten()
-        is_preview = bool(request.GET.get("preview", False))
+        is_preview = (
+            False if request is None else bool(request.GET.get("preview", False))
+        )
         context.update({"menu": self, "is_preview": is_preview})
         return mark_safe(render_to_string(template_path, context, request))
 

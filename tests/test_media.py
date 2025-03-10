@@ -4,17 +4,11 @@ import os
 from camomilla.models import Media
 from .fixtures import load_asset
 from .utils.api import login_superuser
+from .utils.media import load_asset_and_remove_media
 from rest_framework.test import APIClient
 from django.conf import settings
 
 client = APIClient()
-
-
-def load_asset_and_remove_media(filename):
-    asset = load_asset(filename)
-    if os.path.exists(f"{settings.MEDIA_ROOT}/{filename}"):
-        os.remove(f"{settings.MEDIA_ROOT}/{filename}")
-    return asset
 
 
 @pytest.mark.django_db
