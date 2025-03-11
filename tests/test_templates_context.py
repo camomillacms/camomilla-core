@@ -42,7 +42,7 @@ class TemoplateContextTestCase(TestCase):
 
         response = self.client.get("/permalink_context_template/")
         assert response.status_code == 200
-        assert re.sub('[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontexttemplatebased</h1><p>Contentpageforpagecontexttemplatebased</p><ul><li>Testmedia</li></ul></body></html>'
+        assert re.sub(r'[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontexttemplatebased</h1><p>Contentpageforpagecontexttemplatebased</p><ul><li>Testmedia</li></ul></body></html>'
 
 
     @pytest.mark.django_db
@@ -75,7 +75,7 @@ class TemoplateContextTestCase(TestCase):
 
         response = self.client.get("/permalink_context_template/")
         assert response.status_code == 200
-        assert re.sub('[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontextmodelbased</h1><p>Contentpageforpagecontextmodelbased</p><ul><li>Testmedia</li></ul></body></html>'
+        assert re.sub(r'[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontextmodelbased</h1><p>Contentpageforpagecontextmodelbased</p><ul><li>Testmedia</li></ul></body></html>'
 
 
     @pytest.mark.django_db
@@ -108,4 +108,4 @@ class TemoplateContextTestCase(TestCase):
 
         response = self.client.get("/permalink_context_template/")
         assert response.status_code == 200
-        assert re.sub('[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><!--Templatecontext--><h1>Titlepageforpagecontexttemplatebased</h1><p>Contentpageforpagecontexttemplatebased</p><ul><li>Testmedia</li></ul><!--Modelcontext--><h1>Titlepageforpagecontextmodelbased</h1><p>Contentpageforpagecontextmodelbased</p><ul><li>Testmedia</li></ul></body></html>'
+        assert re.sub(r'[\s+]', '', response.content.decode()) == '<!DOCTYPEhtml><html><body><!--Templatecontext--><h1>Titlepageforpagecontexttemplatebased</h1><p>Contentpageforpagecontexttemplatebased</p><ul><li>Testmedia</li></ul><!--Modelcontext--><h1>Titlepageforpagecontextmodelbased</h1><p>Contentpageforpagecontextmodelbased</p><ul><li>Testmedia</li></ul></body></html>'
