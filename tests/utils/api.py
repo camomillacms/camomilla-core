@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
-from example.website.models import TestModel
 
 client = APIClient()
 
