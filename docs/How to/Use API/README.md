@@ -119,10 +119,10 @@ This syntax can be repeated multiple times.
 
 In place of `field_name` you can use any [django filter argument](https://docs.djangoproject.com/en/4.2/topics/db/queries/#retrieving-specific-objects-with-filters).  
 
-If the value has commas like `val1,val2,val3` it will be treated as an array.
+If the value has commas and is between square brackets like `[val1,val2,val3]` it will be treated as an array.
 For example you can filter some model like this:
 
-```/api/camomilla/<model_name>?fltr=field_name__in=val1,val2```
+```/api/camomilla/<model_name>?fltr=field_name__in=[val1,val2]```
 
 ### Use Search
 

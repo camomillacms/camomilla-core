@@ -6,5 +6,7 @@ omit =
     camomilla/admin.py
     camomilla/apps.py
     camomilla/defaults.py
+    camomilla/contrib/modeltranslation/hvad_migration.py
+    camomilla/management/commands/regenerate_thumbnails.py
 [report]
 show_missing = True

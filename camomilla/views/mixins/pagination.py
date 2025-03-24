@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.postgres.search import SearchVector, SearchQuery, TrigramSimilarity
 from camomilla.utils.query_parser import ConditionParser
+from django.conf import settings
 
 
 class TrigramSearchMixin:
@@ -82,9 +83,15 @@ class PaginateStackMixin:
         search_string = self.request.GET.get("search", None)
         search_fields = search_fields or getattr(self, "search_fields", [])
         if search_string and len(search_fields) > 0:
-            return list_handler.annotate(
-                search=SearchVector(*search_fields),
-            ).filter(search=SearchQuery(search_string))
+            if "sqlite" in settings.DATABASES["default"]["ENGINE"]:
+                filter_statement = Q()
+                for field in search_fields:
+                    filter_statement |= Q(**{field + '__icontains': search_string})
+                return list_handler.filter(filter_statement)
+            else:
+                return list_handler.annotate(
+                    search=SearchVector(*search_fields),
+                ).filter(search=SearchQuery(search_string))
 
         return list_handler
 
