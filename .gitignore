@@ -1,5 +1,6 @@
 # System
 venv
+.venv
 *.mo
 *.pyc
 *.zip
