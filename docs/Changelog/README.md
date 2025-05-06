@@ -2,6 +2,107 @@
 
 
 
+## v6.0.0-beta.17 (2025-05-06)
+
+### Chore
+
+* chore: Code review changes ([`f99b6da`](https://github.com/camomillacms/camomilla-core/commit/f99b6daf7d8618d6ea2ff805cea9120291503b28))
+
+* chore: Test model api register ([`8ed0c95`](https://github.com/camomillacms/camomilla-core/commit/8ed0c95c38e4ed651cc976c84fb29f92dc7f9f83))
+
+* chore: Add test for menu features - 2 ([`45cb1b8`](https://github.com/camomillacms/camomilla-core/commit/45cb1b8736ca14460556b056776ee5d1b2aac7d8))
+
+* chore: Add tests for Pages - 2 ([`c3aad58`](https://github.com/camomillacms/camomilla-core/commit/c3aad580789744283275304c48d07521ec968159))
+
+* chore: Add tests for Page Context ([`03fbe6b`](https://github.com/camomillacms/camomilla-core/commit/03fbe6b9c24560eccb0b83df5469fd7a14dabfe1))
+
+* chore: Add tests for Pages ([`7df3c95`](https://github.com/camomillacms/camomilla-core/commit/7df3c95bbe8966fd0d4cc2f31982c3e77a48a418))
+
+* chore: Add test for menu features ([`6ac0f94`](https://github.com/camomillacms/camomilla-core/commit/6ac0f94f3031aed0a6d819c9c96e6d8b4fdbc707))
+
+* chore: Merge pull request #20 from marcobeca/next
+
+Make test suite work again and extended testing matrix for cross version testing 🚀 ([`a4c1787`](https://github.com/camomillacms/camomilla-core/commit/a4c17873ac665f6b37747a2004764e72175d3717))
+
+* chore: update pyproject.toml ([`ea64cbb`](https://github.com/camomillacms/camomilla-core/commit/ea64cbb08ec5bfd5dc5dee8d2e010247a7aa4839))
+
+* chore: Update test matrix ([`18d3a8e`](https://github.com/camomillacms/camomilla-core/commit/18d3a8e219fb48caff3f162dd20c462ec66553bc))
+
+* chore: pipeline test restore ([`77bee79`](https://github.com/camomillacms/camomilla-core/commit/77bee7997835250fda767f377af4814561fa3414))
+
+* chore: fix requirements ([`e403494`](https://github.com/camomillacms/camomilla-core/commit/e403494f74f8cb79d164821b6dca231e5d90124f))
+
+* chore: move repo ([`6992c85`](https://github.com/camomillacms/camomilla-core/commit/6992c853334c87366452c4e5031b6a703488e22e))
+
+* chore: update docs script ([`094ca16`](https://github.com/camomillacms/camomilla-core/commit/094ca163d9554fbc165d94332b9aff7c5987b901))
+
+### Documentation
+
+* docs: update docs for pages and structured fields ([`332ceb7`](https://github.com/camomillacms/camomilla-core/commit/332ceb7c506665c67e2c2f1945d3af0a2b3a2819))
+
+### Feature
+
+* feat: added date updated and date created autofields to UrlRedirect ([`f263224`](https://github.com/camomillacms/camomilla-core/commit/f26322469804f4a08a0439aaab3db228c6c38b14))
+
+* feat: remove autopermalink flag if permalink is manually edited from admin page ([`8ac6cca`](https://github.com/camomillacms/camomilla-core/commit/8ac6cca4505241b7fa6387cacc11035dac887778))
+
+* feat: added redirect management to router api ([`0a16ecc`](https://github.com/camomillacms/camomilla-core/commit/0a16eccd17a5f418b42fd9ba668f914634084b54))
+
+* feat: added possibility to manipulate permalink from django admin page ([`9a117d5`](https://github.com/camomillacms/camomilla-core/commit/9a117d585901c55db80b881279f6000fec2edd7d))
+
+* feat: added autoredirect ([`21bb77b`](https://github.com/camomillacms/camomilla-core/commit/21bb77bbb499ddfe351840da0bfe8861aa0c389d))
+
+### Fix
+
+* fix: fix filter parser not working with simple cases 🥸 ([`0b93d63`](https://github.com/camomillacms/camomilla-core/commit/0b93d6319ed9496b53bf52ac8d177cd9b014f0ef))
+
+* fix: added redirects for old urls for retrocompatibility ([`17965fd`](https://github.com/camomillacms/camomilla-core/commit/17965fd28b36a071ca2fcbfa145381697c5ed2f4))
+
+* fix: fix permalink management on disabled translation ([`769ffa9`](https://github.com/camomillacms/camomilla-core/commit/769ffa96e7670195509f0417bc6081678d62730c))
+
+* fix: fix admin permalink editing ([`e1df3b2`](https://github.com/camomillacms/camomilla-core/commit/e1df3b2b77e5e0cfcdcf44a7e3167fb5c1837ca2))
+
+* fix: fix article admin page ([`414b677`](https://github.com/camomillacms/camomilla-core/commit/414b677e3778ced2118d0c20b23f6d4ea0407d39))
+
+* fix: fix redirects consistency ([`110e16e`](https://github.com/camomillacms/camomilla-core/commit/110e16e5667ec937bf2c99cf79b61135009a2923))
+
+### Refactor
+
+* refactor: removed some old code and refactor Translations mixins ([`ee92457`](https://github.com/camomillacms/camomilla-core/commit/ee92457c2cd28d9d898e502a55f37c45acf8edc9))
+
+* refactor: better abstract page method typing ([`2d9ecf8`](https://github.com/camomillacms/camomilla-core/commit/2d9ecf83a230c1fc71dc0660db821bdb31b9e8a5))
+
+* refactor: move urlnode manager to manager directory ([`53e2a16`](https://github.com/camomillacms/camomilla-core/commit/53e2a16d4ede0f341f62bd42e2f9940a7f1fc837))
+
+* refactor: autopep8 💅 ([`a9fc426`](https://github.com/camomillacms/camomilla-core/commit/a9fc426d19b5b892373ed4d018f0762705fa2e2e))
+
+* refactor: refactor camomilla theme admin code disposition ([`d311032`](https://github.com/camomillacms/camomilla-core/commit/d311032501f4069cd49e8ddb2e2e7ce45507c4f5))
+
+* refactor: autopep8 💅 ([`90389a2`](https://github.com/camomillacms/camomilla-core/commit/90389a2a23cbe08ddcb2493adeb0dacda615d8ee))
+
+* refactor: refactor redirects code ([`0cccb00`](https://github.com/camomillacms/camomilla-core/commit/0cccb00611390013dcf154864c3e5fea13a5f023))
+
+* refactor: refactor all optimize serializer mixin code ([`6327502`](https://github.com/camomillacms/camomilla-core/commit/63275026da5b95e93cd428ee15458324e4baa1d3))
+
+* refactor(api): change file structures of views and serializers mixins ([`20b7937`](https://github.com/camomillacms/camomilla-core/commit/20b79370c82c0f888b88dc72b79f5297a9335018))
+
+### Unknown
+
+* Merge pull request #23 from marcobeca/next
+
+Add Tests for Media models and register api ([`1af8c8c`](https://github.com/camomillacms/camomilla-core/commit/1af8c8cccb2b31dc08d99bb2576455beb9eb1ae7))
+
+*  chore: Update tests for Media Models ([`e7e9c66`](https://github.com/camomillacms/camomilla-core/commit/e7e9c6687482ec93b07f4fc0796c78527756d15e))
+
+* Merge pull request #22 from marcobeca/next
+
+Add Tests ([`9c08a40`](https://github.com/camomillacms/camomilla-core/commit/9c08a4071e34477b040537991982e04d57d3c3e9))
+
+* deps: update deps and sobstitute ckdeitor with tinymce ([`8bc3a99`](https://github.com/camomillacms/camomilla-core/commit/8bc3a9918116d5da24dce6dc1c035a703ff69197))
+
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`41b57de`](https://github.com/camomillacms/camomilla-core/commit/41b57de0ce189a2b9003b1c19cc35c5aad175f97))
+
+
 ## v6.0.0-beta.16 (2024-11-09)
 
 ### Chore
@@ -40,7 +141,7 @@
 
 * tests: more tests for media and model api ([`6fb5d6e`](https://github.com/camomillacms/camomilla-core/commit/6fb5d6ed9fd4c10c587fda0a0f683ea8a46e9621))
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`5e4182e`](https://github.com/camomillacms/camomilla-core/commit/5e4182e68e8c9936f46ca1ae5ab867a22e1e1d54))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`5e4182e`](https://github.com/camomillacms/camomilla-core/commit/5e4182e68e8c9936f46ca1ae5ab867a22e1e1d54))
 
 * tests: more tests ([`33d67db`](https://github.com/camomillacms/camomilla-core/commit/33d67dbe54b5d707fd700e54873eea64f1a64867))
 
@@ -72,7 +173,7 @@
 
 ### Unknown
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`3af75ba`](https://github.com/camomillacms/camomilla-core/commit/3af75ba08c6fc7fef1fa07905968245a93293cb0))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`3af75ba`](https://github.com/camomillacms/camomilla-core/commit/3af75ba08c6fc7fef1fa07905968245a93293cb0))
 
 
 ## v6.0.0-beta.13 (2024-03-25)
@@ -109,7 +210,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 ### Unknown
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`8abeec6`](https://github.com/camomillacms/camomilla-core/commit/8abeec632a22abffd590743df01f788fa2d4e942))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`8abeec6`](https://github.com/camomillacms/camomilla-core/commit/8abeec632a22abffd590743df01f788fa2d4e942))
 
 
 ## v6.0.0-beta.10 (2023-11-08)
@@ -122,7 +223,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 ### Unknown
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`a9f6365`](https://github.com/camomillacms/camomilla-core/commit/a9f6365791f566af22d0bd9737f20738f3a8689d))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`a9f6365`](https://github.com/camomillacms/camomilla-core/commit/a9f6365791f566af22d0bd9737f20738f3a8689d))
 
 
 ## v6.0.0-beta.9 (2023-11-08)
@@ -256,7 +357,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 * Merge branch &#39;master&#39; into next ([`b7f0656`](https://github.com/camomillacms/camomilla-core/commit/b7f0656b2f86179ac672deaa1b24668efa5d50ff))
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`88ad9a2`](https://github.com/camomillacms/camomilla-core/commit/88ad9a2b45d88e621f1f5ae422c9bf8fccb66020))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`88ad9a2`](https://github.com/camomillacms/camomilla-core/commit/88ad9a2b45d88e621f1f5ae422c9bf8fccb66020))
 
 * Merge branch &#39;master&#39; into next ([`cccacea`](https://github.com/camomillacms/camomilla-core/commit/cccaceace13ab576a990daa9d7344d3043be8a4c))
 
@@ -488,7 +589,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 * deps: remove djlotrek dependency ([`c6ffffb`](https://github.com/camomillacms/camomilla-core/commit/c6ffffbb011efa6f9a932f61af6481327e94f504))
 
-* Merge branch &#39;next&#39; of github.com:camomillacms/camomilla-core into next ([`a2d5bf9`](https://github.com/camomillacms/camomilla-core/commit/a2d5bf92042a4a9b7f81bfb07438d551a2204070))
+* Merge branch &#39;next&#39; of github.com:lotrekagency/camomilla into next ([`a2d5bf9`](https://github.com/camomillacms/camomilla-core/commit/a2d5bf92042a4a9b7f81bfb07438d551a2204070))
 
 
 ## v6.0.0-beta.1 (2023-07-31)
@@ -692,7 +793,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`91fe6c1`](https://github.com/camomillacms/camomilla-core/commit/91fe6c1d9c2c8994964a44a173e86677e0d6910c))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`91fe6c1`](https://github.com/camomillacms/camomilla-core/commit/91fe6c1d9c2c8994964a44a173e86677e0d6910c))
 
 
 ## v5.8.2 (2022-12-21)
@@ -720,7 +821,7 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 Added all permissions array to user profile ([`15891b1`](https://github.com/camomillacms/camomilla-core/commit/15891b1d52d8d1b493822d902fc0bdffbc921770))
 
-* Merge branch &#39;hotfix/userpermissions&#39; of github.com:camomillacms/camomilla-core into hotfix/userpermissions ([`aba3d89`](https://github.com/camomillacms/camomilla-core/commit/aba3d89b0894da44acf5b6f2bb6cd8de1487fb04))
+* Merge branch &#39;hotfix/userpermissions&#39; of github.com:lotrekagency/camomilla into hotfix/userpermissions ([`aba3d89`](https://github.com/camomillacms/camomilla-core/commit/aba3d89b0894da44acf5b6f2bb6cd8de1487fb04))
 
 
 ## v5.8.0 (2022-12-20)
@@ -920,7 +1021,7 @@ Added all permissions array to user profile ([`15891b1`](https://github.com/camo
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`7dfbe03`](https://github.com/camomillacms/camomilla-core/commit/7dfbe03c27ae5f53b4d7c7b6e880bc9899ba66ea))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`7dfbe03`](https://github.com/camomillacms/camomilla-core/commit/7dfbe03c27ae5f53b4d7c7b6e880bc9899ba66ea))
 
 
 ## v5.5.1 (2022-02-14)
@@ -943,7 +1044,7 @@ Added all permissions array to user profile ([`15891b1`](https://github.com/camo
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`0dc22e3`](https://github.com/camomillacms/camomilla-core/commit/0dc22e3b479f8c5b070407c1974dd752ba03d49f))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`0dc22e3`](https://github.com/camomillacms/camomilla-core/commit/0dc22e3b479f8c5b070407c1974dd752ba03d49f))
 
 
 ## v5.5.0 (2022-02-12)
@@ -995,7 +1096,7 @@ Added Trigram search mixin ([`3ff1bd2`](https://github.com/camomillacms/camomill
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`f713e25`](https://github.com/camomillacms/camomilla-core/commit/f713e252b5ca129fbce2c14841af026ebdf0f4a1))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`f713e25`](https://github.com/camomillacms/camomilla-core/commit/f713e252b5ca129fbce2c14841af026ebdf0f4a1))
 
 
 ## v5.4.1 (2022-01-17)
@@ -1117,7 +1218,7 @@ Handle multisort on PaginateStackMixin ([`33616c7`](https://github.com/camomilla
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`296623a`](https://github.com/camomillacms/camomilla-core/commit/296623a161d056b7539de08d2a2f06d8cebddd57))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`296623a`](https://github.com/camomillacms/camomilla-core/commit/296623a161d056b7539de08d2a2f06d8cebddd57))
 
 * Merge pull request #3 from lotrekagency/hotfix/search_field
 
@@ -1144,7 +1245,7 @@ Added option to disable pagination on views ([`2e32c18`](https://github.com/camo
 
 ### Unknown
 
-* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`3b40fd5`](https://github.com/camomillacms/camomilla-core/commit/3b40fd5a4a649ed33163950ebab225bd20529d45))
+* Merge branch &#39;master&#39; of github.com:lotrekagency/camomilla ([`3b40fd5`](https://github.com/camomillacms/camomilla-core/commit/3b40fd5a4a649ed33163950ebab225bd20529d45))
 
 * added MIT license ([`2c517c5`](https://github.com/camomillacms/camomilla-core/commit/2c517c57d60f7de8cf53aee16c5ad98ceb17b888))
 
