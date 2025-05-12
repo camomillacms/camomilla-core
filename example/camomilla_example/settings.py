@@ -160,3 +160,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
 }
+
+CAMOMILLA = {
+    "RENDER": {
+        "REGISTERED_TEMPLATES_APPS": [
+            "website",
+        ],
+    }
+}

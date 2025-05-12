@@ -87,6 +87,11 @@ API_TRANSLATION_ACCESSOR = pointed_getter(
     django_settings, "CAMOMILLA.API.TRANSLATION_ACCESSOR", "translations"
 )
 
+REGISTERED_TEMPLATES_APPS = pointed_getter(
+    django_settings,
+    "CAMOMILLA.RENDER.REGISTERED_TEMPLATES_APPS", None
+)
+
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
 
 # camomilla settings example
@@ -104,6 +109,7 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #         "AUTO_CREATE_HOMEPAGE": True,
 #         "ARTICLE": {"DEFAULT_TEMPLATE": "", "INJECT_CONTEXT": None },
 #         "PAGE": {"DEFAULT_TEMPLATE": "", "INJECT_CONTEXT": None }
+#         "REGISTERED_TEMPLATE_APPS": []
 #     },
 #     "STRUCTURED_FIELD": {
 #         "CACHE_ENABLED": True
