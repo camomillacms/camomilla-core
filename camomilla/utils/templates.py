@@ -5,11 +5,12 @@ from django import template as django_template
 from os.path import relpath
 from camomilla.settings import REGISTERED_TEMPLATES_APPS
 
+
 def get_all_templates_files() -> Sequence[str]:
     files = []
 
     for engine in django_template.loader.engines.all():
-        
+
         if REGISTERED_TEMPLATES_APPS:
             dirs = [
                 d for d in engine.template_dirs
