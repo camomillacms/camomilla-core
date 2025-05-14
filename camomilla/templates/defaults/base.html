@@ -1,5 +1,7 @@
 {% load menus %}
 {% load i18n %}
+{% load model_extras %}
+
 {% get_current_language as current_lang %}
 
 
@@ -9,9 +11,6 @@
     <title>Camomilla CMS</title>
     <style>
         html,
-        body {
-            height: 100%;
-        }
 
         body {
             background-color: #f7fafc;
@@ -48,6 +47,45 @@
         .temp_type{
             font-size: 18px;
             font-style: italic;
+        }
+        .accordion {
+            margin: 2rem auto;
+            border: 1px solid #000;
+            font-family: monospace;
+            width: 800px;
+            max-width: 800px;
+        }
+
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .accordion-icon {
+            width: 1rem;
+            height: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-toggle:checked + .accordion-header .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .accordion-toggle:checked + .accordion-header + .accordion-body {
+            max-height: 30vh;
+            padding: 1rem;
+            border-top: 1px solid #000;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -104,11 +142,29 @@
         - <b>Module:</b> {{page_model.module}} <br>
         - <b>Identifier:</b> {{page.pk}} <br>
         - <b>Permalink:</b> {{page.permalink}} <br>
-        - <b>Language:</b> {{current_lang}} <br>        
+        - <b>Language:</b> {{current_lang}} <br>             
     </code>
+    
     {% endblock %}
+
     {% block content %}
     {% endblock %}
+    
+    <div class="accordion">
+    <input type="checkbox" id="accordion-toggle" class="accordion-toggle" hidden>
+    <label for="accordion-toggle" class="accordion-header">
+        <span>Page data</span>
+        <svg class="accordion-icon" viewBox="0 0 24 24">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+    </label>
+    <div class="accordion-body">
+        <pre>{{ page|to_pretty_dict|safe }}</pre>
+    </div>
+</div>
+
+</div>
+
 </body>
 
 </html>
