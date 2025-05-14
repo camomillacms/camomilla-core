@@ -34,4 +34,5 @@ class CamomillaThemeConfig(AppConfig):
             "django_jsonform",
             "admin_interface",
             "colorfield",
+            "structured",
         )
