@@ -9,11 +9,13 @@ from datetime import datetime
 
 register = template.Library()
 
+
 def custom_json_serializer(obj):
     """Serialize custom objects to JSON."""
     if isinstance(obj, datetime):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
+
 
 def pretty_dict(data, indent_level=0):
     """
@@ -48,6 +50,7 @@ def pretty_dict(data, indent_level=0):
 
     return "\n".join(result).rstrip(',')
 
+
 @register.filter
 def to_pretty_dict(instance):
     data = model_to_dict(instance)
@@ -68,4 +71,3 @@ def to_pretty_dict(instance):
     )
 
     return mark_safe(f"<pre>{highlighted}</pre>")
-
