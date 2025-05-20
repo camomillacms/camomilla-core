@@ -2,6 +2,41 @@
 
 
 
+## v6.0.0-beta.18 (2025-05-20)
+
+### Documentation
+
+* docs: update changelog ([`b5c99b9`](https://github.com/camomillacms/camomilla-core/commit/b5c99b98af9f5925f00fc64cc29f62e4af729c4d))
+
+### Feature
+
+* feat(templates): added template tag and accordion in base.html ([`4d56f9d`](https://github.com/camomillacms/camomilla-core/commit/4d56f9d6febd382f32a5d0ab5ee016d3e8fc447b))
+
+### Fix
+
+* fix(apps.py): added &#39;structured&#39; in apps because needed in django admin ([`95db0f4`](https://github.com/camomillacms/camomilla-core/commit/95db0f4f9156a0500ea4fd0d137a86c32d69cfe8))
+
+### Style
+
+* style: autopep8 formatting on model_extras.py ([`60e65f3`](https://github.com/camomillacms/camomilla-core/commit/60e65f36048962264360dbf420d8d4b5e0f20c7e))
+
+* style: autopep8 formatting ([`54dde80`](https://github.com/camomillacms/camomilla-core/commit/54dde80b753c7f8fc2d58de27e85fb4212cca9cb))
+
+### Unknown
+
+* Merge pull request #26 from camomillacms/feature/page-data-in-default-template
+
+feat(templates): added template tag and accordion in base.html ([`f197fb8`](https://github.com/camomillacms/camomilla-core/commit/f197fb83501d790ad38faeb398667156faac2166))
+
+* Merge pull request #25 from camomillacms/hotfix/structured-in-apps
+
+fix(apps.py): added &#39;structured&#39; in apps because needed in django admin ([`e87c4a9`](https://github.com/camomillacms/camomilla-core/commit/e87c4a902e56e31765ce5065ff7bfe8b90b135ff))
+
+* Merge pull request #24 from camomillacms/feature/registered-templates-apps
+
+Added REGISTERED_TEMPLATES_APPS to filter out unwanted templates from selector ([`ea3b34f`](https://github.com/camomillacms/camomilla-core/commit/ea3b34f505cf8d53f0a7ac28320359e6fd313fb3))
+
+
 ## v6.0.0-beta.17 (2025-05-06)
 
 ### Chore
@@ -41,6 +76,8 @@ Make test suite work again and extended testing matrix for cross version testing
 * docs: update docs for pages and structured fields ([`332ceb7`](https://github.com/camomillacms/camomilla-core/commit/332ceb7c506665c67e2c2f1945d3af0a2b3a2819))
 
 ### Feature
+
+* feat(templates): use REGISTERED_TEMPLATES_APPS if exists to select templates files ([`cc4b4b4`](https://github.com/camomillacms/camomilla-core/commit/cc4b4b46df4d6c8bec03c8617b929081fc85f07b))
 
 * feat: added date updated and date created autofields to UrlRedirect ([`f263224`](https://github.com/camomillacms/camomilla-core/commit/f26322469804f4a08a0439aaab3db228c6c38b14))
 

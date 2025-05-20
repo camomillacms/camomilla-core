@@ -1,4 +1,4 @@
-__version__ = "6.0.0-beta.17"
+__version__ = "6.0.0-beta.18"
 
 
 def get_core_apps():
