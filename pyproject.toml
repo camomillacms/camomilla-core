@@ -15,7 +15,7 @@ dependencies = [
   "django-modeltranslation>=0.18.7,<=0.18.12",
   "djsuperadmin>=0.9,<1.0.0",
   "djangorestframework>=3.10.0,<=3.14.0",
-  "django-structured-json-field>=0.4.1",
+  "django-structured-json-field>=0.4.2",
   "Pillow>=10.0.0",
   "django-admin-interface>=0.26.0,<1.0.0",
   "django-ckeditor>=5.7.1,<7.0.0",
