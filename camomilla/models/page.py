@@ -10,7 +10,6 @@ from django.http import Http404, HttpRequest
 from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
-from django.utils.functional import lazy
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
@@ -23,18 +22,13 @@ from camomilla.utils import (
     get_nofallbacks,
     lang_fallback_query,
     set_nofallbacks,
-    url_lang_decompose,
-    get_all_templates_files,
+    url_lang_decompose
 )
 from camomilla.utils.getters import pointed_getter
 from camomilla import settings
 from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
 from modeltranslation.utils import build_localized_fieldname
-
-
-def GET_TEMPLATE_CHOICES():
-    return [(t, t) for t in get_all_templates_files()]
 
 
 class UrlRedirect(models.Model):
@@ -233,7 +227,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated_at = models.DateTimeField(auto_now=True)
     breadcrumbs_title = models.CharField(max_length=128, null=True, blank=True)
-    template = models.CharField(max_length=500, null=True, blank=True, choices=[])
+    template = models.CharField(max_length=500, null=True, blank=True)
     template_data = models.JSONField(default=dict, null=False, blank=True)
     ordering = models.PositiveIntegerField(default=0, blank=False, null=False)
     parent_page = models.ForeignKey(
@@ -276,7 +270,6 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
 
     def __init__(self, *args, **kwargs):
         super(AbstractPage, self).__init__(*args, **kwargs)
-        self._meta.get_field("template").choices = lazy(GET_TEMPLATE_CHOICES, list)()
 
     def __str__(self) -> str:
         return "(%s) %s" % (self.__class__.__name__, self.title or self.permalink)

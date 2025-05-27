@@ -166,5 +166,11 @@ CAMOMILLA = {
         "REGISTERED_TEMPLATES_APPS": [
             "website",
         ],
+    },
+    "INTEGRATIONS": {
+        "ASTRO": {
+            "ENABLE": True,
+            "API_URL": "http://localhost:4321/api/templates",
+        }
     }
 }

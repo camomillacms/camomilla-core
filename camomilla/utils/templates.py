@@ -1,12 +1,17 @@
 from pathlib import Path
 from typing import Sequence
+import requests
 
 from django import template as django_template
 from os.path import relpath
-from camomilla.settings import REGISTERED_TEMPLATES_APPS
+from camomilla.settings import (
+    REGISTERED_TEMPLATES_APPS,
+    INTEGRATIONS_ASTRO_ENABLE,
+    INTEGRATIONS_ASTRO_API_URL
+)
 
 
-def get_all_templates_files() -> Sequence[str]:
+def get_templates(request) -> Sequence[str]:
     files = []
 
     for engine in django_template.loader.engines.all():
@@ -28,5 +33,21 @@ def get_all_templates_files() -> Sequence[str]:
         for d in dirs:
             base = Path(d)
             files.extend(relpath(f, d) for f in base.rglob("*.html"))
+
+    if INTEGRATIONS_ASTRO_ENABLE:
+        try:
+            response = requests.get(
+                INTEGRATIONS_ASTRO_API_URL,
+                cookies={
+                    "sessionid": request.COOKIES.get("sessionid"),
+                    "csrftoken": request.COOKIES.get("csrftoken")
+                }
+            )
+            if (response.status_code == 200):
+                astro_templates = response.json()
+                for template in astro_templates:
+                    files.append(f"astro/{template}")
+        except requests.exceptions.RequestException:
+            pass
 
     return files
