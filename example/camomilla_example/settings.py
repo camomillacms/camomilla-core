@@ -170,7 +170,7 @@ CAMOMILLA = {
     "INTEGRATIONS": {
         "ASTRO": {
             "ENABLE": True,
-            "API_URL": "http://localhost:4321/api/templates",
+            "URL": "http://localhost:4321",
         }
     }
 }

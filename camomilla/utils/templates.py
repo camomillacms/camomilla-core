@@ -7,7 +7,7 @@ from os.path import relpath
 from camomilla.settings import (
     REGISTERED_TEMPLATES_APPS,
     INTEGRATIONS_ASTRO_ENABLE,
-    INTEGRATIONS_ASTRO_API_URL
+    INTEGRATIONS_ASTRO_URL
 )
 
 
@@ -37,7 +37,7 @@ def get_templates(request) -> Sequence[str]:
     if INTEGRATIONS_ASTRO_ENABLE:
         try:
             response = requests.get(
-                INTEGRATIONS_ASTRO_API_URL,
+                INTEGRATIONS_ASTRO_URL + "/api/templates",
                 cookies={
                     "sessionid": request.COOKIES.get("sessionid"),
                     "csrftoken": request.COOKIES.get("csrftoken")
