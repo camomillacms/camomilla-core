@@ -11,7 +11,7 @@ from camomilla.settings import (
 )
 
 
-def get_templates(request) -> Sequence[str]:
+def get_templates(request=None) -> Sequence[str]:
     files = []
 
     for engine in django_template.loader.engines.all():
@@ -34,7 +34,7 @@ def get_templates(request) -> Sequence[str]:
             base = Path(d)
             files.extend(relpath(f, d) for f in base.rglob("*.html"))
 
-    if INTEGRATIONS_ASTRO_ENABLE:
+    if INTEGRATIONS_ASTRO_ENABLE and request is not None:
         try:
             response = requests.get(
                 INTEGRATIONS_ASTRO_URL + "/api/templates",
