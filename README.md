@@ -1,10 +1,10 @@
 [![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms)
 [![Django Versions](https://img.shields.io/badge/django-3.2%20%7C%204.2%20%7C%205.1-blue?style=flat-square)](https://www.djangoproject.com/)
 [![Build](https://img.shields.io/github/actions/workflow/status/camomillacms/camomilla-core/ci.yml?branch=master&style=flat-square)](https://github.com/camomillacms/camomilla-core/actions)
-[![Last Commit](https://img.shields.io/github/last-commit/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/commits/master)
 [![Contributors](https://img.shields.io/github/contributors/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/graphs/contributors)
-[![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square)](https://app.codecov.io/gh/camomillacms/camomilla-core/tree/master/camomilla)
 [![Open Issues](https://img.shields.io/github/issues/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/issues)
+[![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square)](https://app.codecov.io/gh/camomillacms/camomilla-core/tree/master/camomilla)
 [![License](https://img.shields.io/github/license/camomillacms/camomilla-core?style=flat-square)](./LICENSE)
 
 
