@@ -11,7 +11,7 @@
         <img alt="Fallback image description" src="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-light.svg?v=1" style="width: 250px; height: auto;">
     </picture>
 </div>
-<h3 style="text-align: center;">Our beloved Django CMS</h3>
+<h3 align="center"">Our beloved Django CMS</h3>
 <br>
 
 ## ⭐️ Features
