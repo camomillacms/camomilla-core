@@ -7,11 +7,16 @@
     "docs:build": "vuepress build docs",
     "docs:publish": "./docs/.vuepress/publishDOCS.sh"
   },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.4",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "vuepress": "^1.9.9",
+    "vuepress": "^1.9.10",
     "vuepress-theme-succinct": "^1.7.2"
   }
 }
