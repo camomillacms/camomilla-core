@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms) ![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square) [![License](https://img.shields.io/github/license/camomillacms/camomilla-core?style=flat-square)](./LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms) [![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square)](https://app.codecov.io/gh/camomillacms/camomilla-core/tree/master/camomilla) [![License](https://img.shields.io/github/license/camomillacms/camomilla-core?style=flat-square)](./LICENSE)
 
 <br>
 <br>
