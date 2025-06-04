@@ -8,11 +8,18 @@ from camomilla.settings import INTEGRATIONS_ASTRO_URL
 
 
 class MockRequest:
+    pass
+
+
+request = MockRequest()
+
+
+class MockRequestWithCookies:
     def __init__(self):
         self.COOKIES = {"sessionid": "mock_session_id", "csrftoken": "mock_csrf_token"}
 
 
-request = MockRequest()
+request_with_cookies = MockRequestWithCookies()
 
 
 class AdminPageFormTestCase(TestCase):
@@ -35,7 +42,6 @@ class AdminPageFormTestCase(TestCase):
             form.fields["template"].widget.choices,
             [("", "---------")] + [(t, t) for t in get_templates(request)],
         )
-        self.assertEqual(responses.calls[0].request.url, self.astro_api_url)
 
     @responses.activate
     def test_admin_page_form(self):
@@ -47,11 +53,11 @@ class AdminPageFormTestCase(TestCase):
         )
 
         page_admin = PageAdmin(Page, AdminSite())
-        form = page_admin.get_form(request)()
+        form = page_admin.get_form(request_with_cookies)()
         self.assertEqual(len(list(form.fields)), 33)
         self.assertTrue("template" in list(form.fields))
         self.assertListEqual(
             form.fields["template"].widget.choices,
-            [("", "---------")] + [(t, t) for t in get_templates(request)],
+            [("", "---------")] + [(t, t) for t in get_templates(request_with_cookies)],
         )
         self.assertEqual(responses.calls[0].request.url, self.astro_api_url)

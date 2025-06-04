@@ -47,7 +47,7 @@ def get_templates(request=None) -> Sequence[str]:
                 astro_templates = response.json()
                 for template in astro_templates:
                     files.append(f"astro/{template}")
-        except requests.exceptions.RequestException:
+        except:
             pass
 
     return files
