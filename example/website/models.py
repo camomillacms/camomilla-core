@@ -16,6 +16,7 @@ class SimpleRelationModel(models.Model):
     def __str__(self) -> str:
         return self.name
 
+
 class TestSchema(BaseModel):
     name: str
     age: int = None
@@ -33,8 +34,16 @@ def init_schema():
 class TestModel(models.Model):
     title = models.CharField(max_length=255)
     structured_data = StructuredJSONField(schema=TestSchema, default=init_schema)
-    fk_field = models.ForeignKey(SimpleRelationModel, on_delete=models.SET_NULL, null=True, blank=True, related_name="fk_field")
-    m2m_field = models.ManyToManyField(SimpleRelationModel, blank=True, related_name="m2m_field")
+    fk_field = models.ForeignKey(
+        SimpleRelationModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fk_field",
+    )
+    m2m_field = models.ManyToManyField(
+        SimpleRelationModel, blank=True, related_name="m2m_field"
+    )
 
     def __str__(self) -> str:
         return self.title
@@ -42,28 +51,28 @@ class TestModel(models.Model):
 
 @model_api.register(
     base_serializer=CustomBaseArgumentsRegisterModelSerializer,
-    base_viewset=CustomBaseArgumentsRegisterModelViewSet
+    base_viewset=CustomBaseArgumentsRegisterModelViewSet,
 )
 class CustomBaseArgumentsRegisterModel(models.Model):
     description = models.CharField(max_length=255)
+
     def __str__(self) -> str:
         return self.description
 
 
 @model_api.register(
-    serializer_meta={"fields": ["name"]},
-    viewset_attrs={"search_fields": ["name"]}
+    serializer_meta={"fields": ["name"]}, viewset_attrs={"search_fields": ["name"]}
 )
 class CustomArgumentsRegisterModel(models.Model):
     name = models.CharField(max_length=255)
+
     def __str__(self) -> str:
         return self.name
 
 
-@model_api.register(
-    filters={"field_filtered__icontains": "test"}
-)
+@model_api.register(filters={"field_filtered__icontains": "test"})
 class FilteredRegisterModel(models.Model):
     field_filtered = models.CharField(max_length=255)
+
     def __str__(self) -> str:
         return self.field_filtered

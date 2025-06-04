@@ -11,10 +11,10 @@ class MenuTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' +  token)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    def renderTemplate(self, template, context = None):
-        return Template('{% load menus %}' + template).render(Context(context))
+    def renderTemplate(self, template, context=None):
+        return Template("{% load menus %}" + template).render(Context(context))
 
     @pytest.mark.django_db
     def test_template_render_menu(self):
@@ -35,7 +35,7 @@ class MenuTestCase(TestCase):
         self.renderTemplate('{% render_menu "key_3" %}')
         self.renderTemplate('{% render_menu "key_4" %}')
 
-        rendered = html.unescape(self.renderTemplate('{% get_menus %}'))
+        rendered = html.unescape(self.renderTemplate("{% get_menus %}"))
         assert rendered == "{'key_3': <Menu: key_3>, 'key_4': <Menu: key_4>}"
 
         rendered = html.unescape(self.renderTemplate('{% get_menus "arg" %}'))
@@ -43,9 +43,11 @@ class MenuTestCase(TestCase):
 
         rendered = html.unescape(self.renderTemplate('{% get_menus "key_3" %}'))
         assert rendered == "{'key_3': <Menu: key_3>}"
-        
+
         menus = 'test "menus" in context'
-        rendered =  html.unescape(self.renderTemplate('{% get_menus %}', {"menus": menus}))
+        rendered = html.unescape(
+            self.renderTemplate("{% get_menus %}", {"menus": menus})
+        )
         assert rendered == menus
 
     @pytest.mark.django_db
@@ -53,7 +55,9 @@ class MenuTestCase(TestCase):
         self.renderTemplate('{% render_menu "key_5" %}')
 
         menu = Menu.objects.first()
-        menu.nodes = [{"title": "key_5_node_title", "link":{"static": "key_5_url_static"}}]
+        menu.nodes = [
+            {"title": "key_5_node_title", "link": {"static": "key_5_url_static"}}
+        ]
         menu.save()
 
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_5" %}'))
@@ -64,11 +68,17 @@ class MenuTestCase(TestCase):
         self.renderTemplate('{% render_menu "key_6_custom" %}')
 
         menu = Menu.objects.first()
-        menu.nodes = [{"title": "key_6_node_title", "link":{"static": "key_6_url_static"}}]
+        menu.nodes = [
+            {"title": "key_6_node_title", "link": {"static": "key_6_url_static"}}
+        ]
         menu.save()
 
-        rendered = html.unescape(self.renderTemplate('{% render_menu "key_6_custom" "website/menu_custom.html" %}'))
-        assert {'This is custom menu: key_6_node_title' in rendered}
+        rendered = html.unescape(
+            self.renderTemplate(
+                '{% render_menu "key_6_custom" "website/menu_custom.html" %}'
+            )
+        )
+        assert {"This is custom menu: key_6_node_title" in rendered}
 
     @pytest.mark.django_db
     def test_menu_in_page_template(self):
@@ -77,20 +87,25 @@ class MenuTestCase(TestCase):
         response = self.client.post(
             "/api/camomilla/pages/",
             {
-              "translations": {
-                "en": {
-                  "title": "title_page_menu_1",
-                  "permalink": "permalink_page_menu_en_1",
-                  "autopermalink": False
+                "translations": {
+                    "en": {
+                        "title": "title_page_menu_1",
+                        "permalink": "permalink_page_menu_en_1",
+                        "autopermalink": False,
+                    }
                 }
-              }
             },
-            format='json'
+            format="json",
         )
         assert response.status_code == 201
 
         menu = Menu.objects.first()
-        menu.nodes = [{"title": "key_7_node_title", "link":{"page": { "id": 1, "model":"camomilla.page" }}}]
+        menu.nodes = [
+            {
+                "title": "key_7_node_title",
+                "link": {"page": {"id": 1, "model": "camomilla.page"}},
+            }
+        ]
         menu.save()
 
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_7" %}'))

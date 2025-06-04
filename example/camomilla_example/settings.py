@@ -33,19 +33,19 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'camomilla',
-    'camomilla.theme',
-    'structured',
-    'example.website',
-    'djsuperadmin',
-    'modeltranslation',
-    'rest_framework',
-    'rest_framework.authtoken',
+    "camomilla",
+    "camomilla.theme",
+    "structured",
+    "example.website",
+    "djsuperadmin",
+    "modeltranslation",
+    "rest_framework",
+    "rest_framework.authtoken",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
-    'django.contrib.sitemaps',
+    "django.contrib.sitemaps",
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
@@ -58,7 +58,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'django.middleware.locale.LocaleMiddleware',
+    "django.middleware.locale.LocaleMiddleware",
 ]
 
 ROOT_URLCONF = "example.camomilla_example.urls"
@@ -118,8 +118,8 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en"
 
 LANGUAGES = (
-    ('it', _('Italian')),
-    ('en', _('English')),
+    ("it", _("Italian")),
+    ("en", _("English")),
 )
 
 TIME_ZONE = "UTC"
@@ -143,22 +143,22 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://localhost:8000"]
 
 MEDIA_ROOT = Path(BASE_DIR / "media")
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_PARSER_CLASSES': (
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.FormParser',
-        'rest_framework.parsers.MultiPartParser',
+    "DEFAULT_PARSER_CLASSES": (
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
     ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'camomilla.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication'
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "camomilla.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ]
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+    ],
 }
 
 CAMOMILLA = {

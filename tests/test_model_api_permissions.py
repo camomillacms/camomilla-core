@@ -26,7 +26,9 @@ def test_right_permissions():
     assert len(response.json()) == 1
     response = client.get("/api/models/test-model/1/")
     assert response.status_code == 200
-    response = client.patch("/api/models/test-model/1/", {"title": "updated"}, format="json")
+    response = client.patch(
+        "/api/models/test-model/1/", {"title": "updated"}, format="json"
+    )
     assert response.status_code == 200
     assert response.json()["title"] == "updated"
     response = client.delete("/api/models/test-model/1/")
@@ -36,4 +38,7 @@ def test_right_permissions():
     assert len(response.json()) == 0
     response = client.get("/api/models/test-model/1/")
     assert response.status_code == 404
-    assert response.json() in [{"detail": "Not found."}, {'detail': 'No TestModel matches the given query.'}]
+    assert response.json() in [
+        {"detail": "Not found."},
+        {"detail": "No TestModel matches the given query."},
+    ]

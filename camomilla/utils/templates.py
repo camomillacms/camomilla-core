@@ -13,21 +13,20 @@ def get_all_templates_files() -> Sequence[str]:
 
         if REGISTERED_TEMPLATES_APPS:
             dirs = [
-                d for d in engine.template_dirs
+                d
+                for d in engine.template_dirs
                 if any(app in str(d) for app in REGISTERED_TEMPLATES_APPS)
             ]
         else:
             # Exclude pip installed site package template dirs
             dirs = [
-                d for d in engine.template_dirs
+                d
+                for d in engine.template_dirs
                 if "site-packages" not in str(d) or "camomilla" in str(d)
             ]
 
         for d in dirs:
             base = Path(d)
-            files.extend(
-                relpath(f, d)
-                for f in base.rglob("*.html")
-            )
+            files.extend(relpath(f, d) for f in base.rglob("*.html"))
 
     return files

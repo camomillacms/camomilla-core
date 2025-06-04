@@ -88,8 +88,7 @@ API_TRANSLATION_ACCESSOR = pointed_getter(
 )
 
 REGISTERED_TEMPLATES_APPS = pointed_getter(
-    django_settings,
-    "CAMOMILLA.RENDER.REGISTERED_TEMPLATES_APPS", None
+    django_settings, "CAMOMILLA.RENDER.REGISTERED_TEMPLATES_APPS", None
 )
 
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)

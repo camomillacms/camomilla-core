@@ -17,7 +17,9 @@ class CamomillaFiltersTestCase(TestCase):
         pass
 
     def test_filter_content(self):
-        Page.objects.create(identifier="path", title="Path", permalink="/path", status="PUB")
+        Page.objects.create(
+            identifier="path", title="Path", permalink="/path", status="PUB"
+        )
         request_factory = RequestFactory()
         request = request_factory.get("/path")
         request.META["HTTP_HOST"] = "localhost"
@@ -33,9 +35,11 @@ class CamomillaFiltersTestCase(TestCase):
         self.assertEqual(content.content, "Hello World!")
 
     def test_filter_alternate_urls(self):
-        Page.objects.create(identifier="path", title="Path", permalink="/path", status="PUB")
+        Page.objects.create(
+            identifier="path", title="Path", permalink="/path", status="PUB"
+        )
         request = RequestFactory().get("/path")
         request.META["HTTP_HOST"] = "localhost"
         page = Page.get(request)
         alt_urls = dict(alternate_urls(page, request))
-        self.assertEqual(alt_urls, {'it': None, 'en': '/path/'})
+        self.assertEqual(alt_urls, {"it": None, "en": "/path/"})

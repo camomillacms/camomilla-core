@@ -8,11 +8,12 @@ from rest_framework.test import APIClient
 
 client = APIClient()
 
+
 class MediaTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' +  token)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
     @pytest.mark.django_db
     def test_media_api_crud(self):
@@ -22,7 +23,17 @@ class MediaTestCase(TestCase):
             "/api/camomilla/media/",
             {
                 "file": asset,
-                "data": json.dumps({"translations": {"en": {"alt_text": "Test 1", "title": "Test 1", "description": "Test 1"}}}),
+                "data": json.dumps(
+                    {
+                        "translations": {
+                            "en": {
+                                "alt_text": "Test 1",
+                                "title": "Test 1",
+                                "description": "Test 1",
+                            }
+                        }
+                    }
+                ),
             },
             format="multipart",
         )
@@ -40,13 +51,23 @@ class MediaTestCase(TestCase):
             "/api/camomilla/media/",
             {
                 "file": asset,
-                "data": json.dumps({"translations": {"en": {"alt_text": "Test 2", "title": "Test 2", "description": "Test 2"}}}),
+                "data": json.dumps(
+                    {
+                        "translations": {
+                            "en": {
+                                "alt_text": "Test 2",
+                                "title": "Test 2",
+                                "description": "Test 2",
+                            }
+                        }
+                    }
+                ),
             },
             format="multipart",
         )
         assert response.status_code == 201
         assert Media.objects.count() == 2
-        media = Media.objects.first() # Ordering in model is descending -pk
+        media = Media.objects.first()  # Ordering in model is descending -pk
         assert media.alt_text == "Test 2"
         assert media.title == "Test 2"
         assert media.description == "Test 2"
@@ -55,17 +76,17 @@ class MediaTestCase(TestCase):
         # Read media
         response = self.client.get("/api/camomilla/media/2/")
         assert response.status_code == 200
-        assert response.json()['id'] == 2
-        assert response.json()['title'] == "Test 2"
-        assert response.json()['file'] == "http://testserver/media/37059501.png"
+        assert response.json()["id"] == 2
+        assert response.json()["title"] == "Test 2"
+        assert response.json()["file"] == "http://testserver/media/37059501.png"
 
         # Read medias
         response = self.client.get("/api/camomilla/media/")
         assert response.status_code == 200
-        assert response.json()[0]['id'] == 2 # Ordering in model is descending -pk
-        assert response.json()[0]['title'] == "Test 2"
-        assert response.json()[1]['id'] == 1
-        assert response.json()[1]['title'] == "Test 1"
+        assert response.json()[0]["id"] == 2  # Ordering in model is descending -pk
+        assert response.json()[0]["title"] == "Test 2"
+        assert response.json()[1]["id"] == 1
+        assert response.json()[1]["title"] == "Test 1"
 
         # Delete media
         response = self.client.delete("/api/camomilla/media/2/")
@@ -75,7 +96,6 @@ class MediaTestCase(TestCase):
         assert media.id == 1
         assert media.title == "Test 1"
 
-
     @pytest.mark.django_db
     def test_media_compression(self):
         asset = load_asset_and_remove_media("Sample-jpg-image-10mb.jpg")
@@ -84,7 +104,17 @@ class MediaTestCase(TestCase):
             "/api/camomilla/media/",
             {
                 "file": asset,
-                "data": json.dumps({"translations": {"en": {"alt_text": "Test", "title": "Test", "description": "Test"}}}),
+                "data": json.dumps(
+                    {
+                        "translations": {
+                            "en": {
+                                "alt_text": "Test",
+                                "title": "Test",
+                                "description": "Test",
+                            }
+                        }
+                    }
+                ),
             },
             format="multipart",
         )
@@ -94,7 +124,6 @@ class MediaTestCase(TestCase):
         assert media.file.size < asset_size
         assert media.file.size < 1000000  # 1MB
 
-
     @pytest.mark.django_db
     def test_inflating_prevent(self):
         asset = load_asset_and_remove_media("optimized.jpg")
@@ -103,7 +132,17 @@ class MediaTestCase(TestCase):
             "/api/camomilla/media/",
             {
                 "file": asset,
-                "data": json.dumps({"translations": {"en": {"alt_text": "Test", "title": "Test", "description": "Test"}}}),
+                "data": json.dumps(
+                    {
+                        "translations": {
+                            "en": {
+                                "alt_text": "Test",
+                                "title": "Test",
+                                "description": "Test",
+                            }
+                        }
+                    }
+                ),
             },
             format="multipart",
         )

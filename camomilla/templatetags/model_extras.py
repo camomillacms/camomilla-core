@@ -42,13 +42,17 @@ def pretty_dict(data, indent_level=0):
                 if isinstance(item, dict):
                     result.append(pretty_dict(item, indent_level + 1))
                 else:
-                    result.append(f"{indent}  {json.dumps(item, default=custom_json_serializer)},")
+                    result.append(
+                        f"{indent}  {json.dumps(item, default=custom_json_serializer)},"
+                    )
             result.append(f"{indent}],")
 
         else:
-            result.append(f"{indent}'{key}': {json.dumps(value, default=custom_json_serializer)},")
+            result.append(
+                f"{indent}'{key}': {json.dumps(value, default=custom_json_serializer)},"
+            )
 
-    return "\n".join(result).rstrip(',')
+    return "\n".join(result).rstrip(",")
 
 
 @register.filter
@@ -67,7 +71,7 @@ def to_pretty_dict(instance):
     highlighted = re.sub(
         r"(&#x27;)([^&#]+?)(&#x27;):",
         r"<span style='color:#df3079'>'\2'</span>:",
-        escaped
+        escaped,
     )
 
     return mark_safe(f"<pre>{highlighted}</pre>")

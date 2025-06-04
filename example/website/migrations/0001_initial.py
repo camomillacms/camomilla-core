@@ -10,25 +10,62 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='SimpleRelationModel',
+            name="SimpleRelationModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='TestModel',
+            name="TestModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('structured_data', structured.fields.StructuredJSONField(default=example.website.models.init_schema, schema=example.website.models.TestSchema)),
-                ('fk_field', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fk_field', to='website.simplerelationmodel')),
-                ('m2m_field', models.ManyToManyField(blank=True, related_name='m2m_field', to='website.simplerelationmodel')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                (
+                    "structured_data",
+                    structured.fields.StructuredJSONField(
+                        default=example.website.models.init_schema,
+                        schema=example.website.models.TestSchema,
+                    ),
+                ),
+                (
+                    "fk_field",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="fk_field",
+                        to="website.simplerelationmodel",
+                    ),
+                ),
+                (
+                    "m2m_field",
+                    models.ManyToManyField(
+                        blank=True,
+                        related_name="m2m_field",
+                        to="website.simplerelationmodel",
+                    ),
+                ),
             ],
         ),
     ]

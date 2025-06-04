@@ -86,7 +86,7 @@ class PaginateStackMixin:
             if "sqlite" in settings.DATABASES["default"]["ENGINE"]:
                 filter_statement = Q()
                 for field in search_fields:
-                    filter_statement |= Q(**{field + '__icontains': search_string})
+                    filter_statement |= Q(**{field + "__icontains": search_string})
                 return list_handler.filter(filter_statement)
             else:
                 return list_handler.annotate(

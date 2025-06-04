@@ -25,11 +25,14 @@ def create_migration_folders():
 @pytest.fixture(scope="session")
 def django_db_setup(django_db_blocker):
     from django.conf import settings
+
     db_name = "test_db.sqlite3"
     settings.DATABASES["default"]["NAME"] = db_name
     create_migration_folders()
     with django_db_blocker.unblock():
-        call_command("sqlflush",)
+        call_command(
+            "sqlflush",
+        )
         call_command("makemigrations", interactive=False)
         call_command("migrate", interactive=False)
     yield
