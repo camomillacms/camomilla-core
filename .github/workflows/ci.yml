@@ -42,5 +42,7 @@ jobs:
     - name: 🔬 Test with pytest and calculate coverage 
       run: make test
     - name: 🩺 Upload coverage to codecov.io
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v4
       if: matrix.python-version == '3.13' && matrix.django-version == '5.1' # Only upload coverage once
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
