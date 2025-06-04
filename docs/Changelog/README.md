@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v6.0.0 (2025-06-04)
+
+Welcome to our brand new camomilla major release! This version introduces a host of new features, improvements, and bug fixes to enhance your experience.
+
+### 🌟 Release Highlights:
+
+#### 🥨 Beaked page abstract model to let you manage everything you need as a page.
+With this new release we completely reworked the way you manage pages in camomilla.
+Every page that inherits from camomilla `AbstractPage` now is coupled with a single `UrlNode` that determines the url of the page.
+This allows to manage uniquenes of urls on a moltitude of page models and provides a more flexible and powerful way to handle page URLs while navigating.
+#### 🏞️ Optimized media management with autoresize
+Media management has been significantly improved with the introduction of autoresize functionality. This feature automatically resizes images and media files to optimize storage and performance, ensuring a smoother user experience. This kind of optimization works on any type of storage backend, including local and cloud storage solutions.
+#### 👯 Enable relations inside django JSONFields
+With the help of [`django-structured-field`](https://github.com/bnznamco/django-structured-field), you can now validate and serialize JSON contents in models. This feature relies on Django JSONFields increasing their potential with `pydantic` models schemas. You can find more on the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20StructuredJSONField/).
+#### 🚏 Enabled Autorouting
+With the new page model camomilla can hanle the routing of pages automatically. The only thing you need to do is to add camomilla urls to your `urls.py` file.
+Check the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20Pages/#%F0%9F%93%8E-the-page-model) for more details.
+#### 🧩 Settings revamped 
+The settings system has been completely revamped to provide a more options and flexibility. You can now easily configure various aspects of camomilla to suit your needs. Check the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20Settings/) for more details.
+
+
+
+**Detailed Changes**: (https://github.com/camomillacms/camomilla-core/compare/v5.8.6...v6.0.0)
+
 
 ## v6.0.0-beta.18 (2025-05-20)
 
