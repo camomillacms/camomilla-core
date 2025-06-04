@@ -43,3 +43,4 @@ jobs:
       run: make test
     - name: 🩺 Upload coverage to codecov.io
       uses: codecov/codecov-action@v2
+      if: matrix.python-version == '3.13' && matrix.django-version == '5.1' # Only upload coverage once
