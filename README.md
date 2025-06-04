@@ -1,7 +1,6 @@
 [![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms)
 [![Django Versions](https://img.shields.io/badge/django-3.2%20%7C%204.2%20%7C%205.1-blue?style=flat-square)](https://www.djangoproject.com/)
 [![Build](https://img.shields.io/github/actions/workflow/status/camomillacms/camomilla-core/ci.yml?branch=master&style=flat-square)](https://github.com/camomillacms/camomilla-core/actions)
-[![Wheel](https://img.shields.io/pypi/wheel/django-camomilla-cms)](https://pypi.org/project/django-camomilla-cms/)
 [![Last Commit](https://img.shields.io/github/last-commit/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/commits/main)
 [![Contributors](https://img.shields.io/github/contributors/camomillacms/camomilla-core?style=flat-square)](https://github.com/camomillacms/camomilla-core/graphs/contributors)
 [![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square)](https://app.codecov.io/gh/camomillacms/camomilla-core/tree/master/camomilla)
