@@ -166,5 +166,11 @@ CAMOMILLA = {
         "REGISTERED_TEMPLATES_APPS": [
             "website",
         ],
-    }
+    },
+    "INTEGRATIONS": {
+        "ASTRO": {
+            "ENABLE": True,
+            "URL": "http://localhost:4321",
+        }
+    },
 }

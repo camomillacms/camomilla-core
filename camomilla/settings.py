@@ -91,6 +91,14 @@ REGISTERED_TEMPLATES_APPS = pointed_getter(
     django_settings, "CAMOMILLA.RENDER.REGISTERED_TEMPLATES_APPS", None
 )
 
+INTEGRATIONS_ASTRO_ENABLE = pointed_getter(
+    django_settings, "CAMOMILLA.INTEGRATIONS.ASTRO.ENABLE", False
+)
+
+INTEGRATIONS_ASTRO_URL = pointed_getter(
+    django_settings, "CAMOMILLA.INTEGRATIONS.ASTRO.URL", ""
+)
+
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
 
 # camomilla settings example
@@ -112,6 +120,12 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #     },
 #     "STRUCTURED_FIELD": {
 #         "CACHE_ENABLED": True
+#     }
+#     "INTEGRATIONS": {
+#         "ASTRO": {
+#             "ENABLE": True,
+#             "URL": "http://localhost:4321"
+#         }
 #     }
 #     "API": {"NESTING_DEPTH": 10, "TRANSLATION_ACCESSOR": "translations"},
 #     "DEBUG": False

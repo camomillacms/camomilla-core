@@ -3,6 +3,8 @@ from camomilla import settings
 from .translations import TranslationAwareModelAdmin
 from camomilla.models import UrlNode
 
+from camomilla.utils import get_templates
+
 
 class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
     def __new__(mcs, name, bases, attrs):
@@ -22,6 +24,12 @@ class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
 class AbstractPageModelForm(
     forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta
 ):
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        templates = [(t, t) for t in get_templates(request)]
+        templates.insert(0, ("", "---------"))
+        self.fields["template"] = forms.ChoiceField(choices=templates)
 
     def get_initial_for_field(self, field, field_name):
         if field_name in UrlNode.LANG_PERMALINK_FIELDS:
@@ -43,4 +51,16 @@ class AbstractPageModelForm(
 
 class AbstractPageAdmin(TranslationAwareModelAdmin):
     form = AbstractPageModelForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        kwargs["form"] = self.form
+        form = super().get_form(request, obj, **kwargs)
+
+        class FormWithRequest(form):
+            def __new__(cls, *args, **kwargs_):
+                kwargs_["request"] = request
+                return form(*args, **kwargs_)
+
+        return FormWithRequest
+
     change_form_template = "admin/camomilla/page/change_form.html"

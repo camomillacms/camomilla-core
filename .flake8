@@ -14,5 +14,6 @@ per-file-ignores =
     camomilla/structured/cache.py: C901
     camomilla/utils/translation.py: W605,E203
     camomilla/utils/query_parser.py: E203
+    camomilla/utils/templates.py: E722
 
 max-complexity = 12
