@@ -172,5 +172,5 @@ CAMOMILLA = {
             "ENABLE": True,
             "URL": "http://localhost:4321",
         }
-    }
+    },
 }

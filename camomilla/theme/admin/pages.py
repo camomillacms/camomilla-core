@@ -25,11 +25,11 @@ class AbstractPageModelForm(
     forms.models.BaseModelForm, metaclass=AbstractPageModelFormMeta
 ):
     def __init__(self, *args, **kwargs):
-        request = kwargs.pop('request', None)
+        request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         templates = [(t, t) for t in get_templates(request)]
-        templates.insert(0, ('', '---------'))
-        self.fields['template'] = forms.ChoiceField(choices=templates)
+        templates.insert(0, ("", "---------"))
+        self.fields["template"] = forms.ChoiceField(choices=templates)
 
     def get_initial_for_field(self, field, field_name):
         if field_name in UrlNode.LANG_PERMALINK_FIELDS:
@@ -53,12 +53,12 @@ class AbstractPageAdmin(TranslationAwareModelAdmin):
     form = AbstractPageModelForm
 
     def get_form(self, request, obj=None, **kwargs):
-        kwargs['form'] = self.form
+        kwargs["form"] = self.form
         form = super().get_form(request, obj, **kwargs)
 
         class FormWithRequest(form):
             def __new__(cls, *args, **kwargs_):
-                kwargs_['request'] = request
+                kwargs_["request"] = request
                 return form(*args, **kwargs_)
 
         return FormWithRequest

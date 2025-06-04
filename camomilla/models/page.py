@@ -22,7 +22,7 @@ from camomilla.utils import (
     get_nofallbacks,
     lang_fallback_query,
     set_nofallbacks,
-    url_lang_decompose
+    url_lang_decompose,
 )
 from camomilla.utils.getters import pointed_getter
 from camomilla import settings

@@ -92,13 +92,11 @@ REGISTERED_TEMPLATES_APPS = pointed_getter(
 )
 
 INTEGRATIONS_ASTRO_ENABLE = pointed_getter(
-    django_settings,
-    "CAMOMILLA.INTEGRATIONS.ASTRO.ENABLE", False
+    django_settings, "CAMOMILLA.INTEGRATIONS.ASTRO.ENABLE", False
 )
 
 INTEGRATIONS_ASTRO_URL = pointed_getter(
-    django_settings,
-    "CAMOMILLA.INTEGRATIONS.ASTRO.URL", ''
+    django_settings, "CAMOMILLA.INTEGRATIONS.ASTRO.URL", ""
 )
 
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
