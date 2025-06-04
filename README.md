@@ -1,17 +1,23 @@
 [![PyPI](https://img.shields.io/pypi/v/django-camomilla-cms?style=flat-square)](https://pypi.org/project/django-camomilla-cms) ![Codecov](https://img.shields.io/codecov/c/github/camomillacms/camomilla-core?style=flat-square) [![License](https://img.shields.io/github/license/camomillacms/camomilla-core?style=flat-square)](./LICENSE)
 
-<picture style="display: block; margin: -50px auto -100px auto; width: 300px; height: auto;">
-  <source media="(prefers-color-scheme: dark)" srcset="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-light.svg">
-  <img alt="Fallback image description" src="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-light.svg" style="width: 300px; height: auto;">
-</picture>
-
+<br>
+<br>
+<br>
+<br>
+<div align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-dark.svg?v=1">
+        <source media="(prefers-color-scheme: light)" srcset="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-light.svg?v=1">
+        <img alt="Fallback image description" src="https://camomillacms.github.io/camomilla-core/images/camomilla-logo-light.svg?v=1" style="width: 250px; height: auto;">
+    </picture>
+</div>
 <h3 style="text-align: center;">Our beloved Django CMS</h3>
-
+<br>
 
 ## ⭐️ Features
 
 <!-- Highlight some of the features your module provide here -->
+
 - 🧘‍♀️ &nbsp;Built on top of the django framework
 - 🥨 &nbsp;Beaked page abstract model to let you manage everything you need as a page.
 - 🏞️ &nbsp;Optimized media management with autoresize
@@ -19,20 +25,18 @@
 - ⚡️ &nbsp;AutoCreate api endpoints from models
 - 🚧 &nbsp;Enable JsonSchema directly in models endpoints
 
-
-
 Camomilla is a Django CMS that allows you to create and manage your website's content with ease. It provides a simple and intuitive interface for managing pages, media, and other content types. Camomilla is built on top of the Django framework, which means it inherits all the features and benefits of Django framework.
 We try to continuously improve Camomilla by adding new features and fixing bugs. You can check the [CHANGELOG](./CHANGELOG.md) to see what has been added in the latest releases.
-
 
 ## 📦 Quick Start
 
 Here you can find some quick setup instructions to get started with Camomilla. For more detailed information, please refer to the [documentation](https://camomillacms.github.io/camomilla-core/).
 
-> [!TIP] 
+> [!TIP]
+>
 > #### Env Virtualization 👾
+>
 > Use a virtualenv to isolate your project's dependencies from the system's python installation before starting. Check out [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) for more information.
-
 
 Install django-camomilla-cms and django from pip
 
