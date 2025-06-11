@@ -46,7 +46,7 @@ def get_templates(request=None) -> Sequence[str]:
             if response.status_code == 200:
                 astro_templates = response.json()
                 for template in astro_templates:
-                    files.append(f"astro/{template}")
+                    files.append(template)
         except:
             pass
 
