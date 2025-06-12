@@ -4,6 +4,8 @@ from ..mixins import (
     OrderingMixin,
     CamomillaBasePermissionMixin,
 )
+from camomilla.serializers.mixins import TranslationsMixin
+from camomilla.utils.translation import plain_to_nest
 from rest_framework import viewsets
 from rest_framework.metadata import SimpleMetadata
 from structured.contrib.restframework import StructuredJSONField
@@ -29,8 +31,8 @@ class BaseViewMetadata(SimpleMetadata):
 
     def get_serializer_info(self, serializer):
         info = super().get_serializer_info(serializer)
-        if hasattr(serializer, "plain_to_nest"):
-            info.update(serializer.plain_to_nest(info))
+        if isinstance(serializer, TranslationsMixin) and serializer.is_translatable:
+            info.update(plain_to_nest(info, serializer.translation_fields))
         return info
 
 
