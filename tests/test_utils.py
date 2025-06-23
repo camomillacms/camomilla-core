@@ -51,6 +51,6 @@ class UtilsTestCase(TestCase):
             status=200,
         )
         templates = get_templates(request=RequestFactory().get("/"))
-        self.assertTrue("astro/mock_template/1" in templates)
-        self.assertTrue("astro/mock_template/2" in templates)
+        self.assertTrue("mock_template/1" in templates)
+        self.assertTrue("mock_template/2" in templates)
         self.assertEqual(responses.calls[0].request.url, self.astro_api_url)
