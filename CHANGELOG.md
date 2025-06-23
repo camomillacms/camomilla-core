@@ -1,29 +1,103 @@
 # CHANGELOG
 
 
+
+## v6.0.1 (2025-06-23)
+
+### Chore
+
+* chore: change badge links ([`c99ffb5`](https://github.com/camomillacms/camomilla-core/commit/c99ffb5246309f2748bc33164015e670a8e93af5))
+
+* chore: remove well badge ([`03b33dd`](https://github.com/camomillacms/camomilla-core/commit/03b33dd99c485db9cb2ac5970938c079bc4db19f))
+
+* chore: added some badges to readme ([`63cfe52`](https://github.com/camomillacms/camomilla-core/commit/63cfe52affb307ed0d2e4faa6de97a04f7d81ecf))
+
+* chore: update readme coverage link ([`ae5de5a`](https://github.com/camomillacms/camomilla-core/commit/ae5de5a6fca9c1a7b298d925587d247ec2bbcc2a))
+
+* chore: remove black version for older python versions ([`6ffef00`](https://github.com/camomillacms/camomilla-core/commit/6ffef003b4dfc7b7f74ea97cd378abef52b8f408))
+
+### Documentation
+
+* docs: update changelog ([`9eb74a1`](https://github.com/camomillacms/camomilla-core/commit/9eb74a17c5322051443a1cdcdf18ef1b83579af0))
+
+### Fix
+
+* fix(drf): fix data update on permelinks in disabled i18n environments ([`d29eccf`](https://github.com/camomillacms/camomilla-core/commit/d29eccf1a1e79ab58145c922501670161ae76305))
+
+* fix: added plain to nest to have coherent option schema in DRF ([`828e26e`](https://github.com/camomillacms/camomilla-core/commit/828e26e3c8ac19f230b8aa9948a652b2989fcce6))
+
+* fix: solve remove astro template prefix ([`a6d7eba`](https://github.com/camomillacms/camomilla-core/commit/a6d7eba1db0d5b9d9bbc563b5bc8b1b7282d47fc))
+
+### Unknown
+
+* deps: fix uritemplate deps for python 3.8 ([`8527f66`](https://github.com/camomillacms/camomilla-core/commit/8527f66fa86d8097d8e0be4f4cc4a78b544fff7b))
+
+* Merge pull request #30 from camomillacms/fix/remove-astro-template-fix
+
+fix: solve remove astro template prefix ([`39503ef`](https://github.com/camomillacms/camomilla-core/commit/39503efdefe1ab45649530a52df27ef8930a954c))
+
+* deps: update deps for drf Autoschema generation ([`58d981f`](https://github.com/camomillacms/camomilla-core/commit/58d981f3ecf6c815a004a11f869d0f2a84a40025))
+
+* Merge pull request #27 from camomillacms/feature/camomilla-template-sync
+
+feature: solve camomilla template sync ([`2699b73`](https://github.com/camomillacms/camomilla-core/commit/2699b73b081ef0004d1e5f0323debe5036e45258))
+
+* feature: solve camomilla template sync - 6 ([`b029b1f`](https://github.com/camomillacms/camomilla-core/commit/b029b1fa2229fb7f6fedb1a73de2a4b96a9c1ef8))
+
+* feature: solve camomilla template sync - 5 ([`e12f4c7`](https://github.com/camomillacms/camomilla-core/commit/e12f4c709aff14848cd8962338ff8df3416c4acf))
+
+* feature: solve camomilla template sync - 4 ([`98f02f4`](https://github.com/camomillacms/camomilla-core/commit/98f02f442e0432c3fba1c2db0f7b881d8804bffb))
+
+* feature: solve camomilla template sync - 3 ([`e783830`](https://github.com/camomillacms/camomilla-core/commit/e783830640a440afdfff36e7e7fcb4bfda8ec0ec))
+
+* feature: solve camomilla template sync - 2 ([`c065b57`](https://github.com/camomillacms/camomilla-core/commit/c065b5753f29c73abd5b140e4696414f62e07cdf))
+
+* feature: solve camomilla template sync ([`d9f7ad2`](https://github.com/camomillacms/camomilla-core/commit/d9f7ad2bf2164e86f47c1ca94fdf889f0289c9a3))
+
+* doc: update how to contribute on docs ([`227215d`](https://github.com/camomillacms/camomilla-core/commit/227215db3087e0dce219ccdf3280bd0f9f72fd93))
+
+
 ## v6.0.0 (2025-06-04)
 
-Welcome to our brand new camomilla major release! This version introduces a host of new features, improvements, and bug fixes to enhance your experience.
+### Chore
 
-### 🌟 Release Highlights:
+* chore: prepare for 6.0.0 release 🚀 ([`859da0e`](https://github.com/camomillacms/camomilla-core/commit/859da0e0399877000c67e4c58d0a7f2f9c62d3c0))
 
-#### 🥨 Beaked page abstract model to let you manage everything you need as a page.
-With this new release we completely reworked the way you manage pages in camomilla.
-Every page that inherits from camomilla `AbstractPage` now is coupled with a single `UrlNode` that determines the url of the page.
-This allows to manage uniquenes of urls on a moltitude of page models and provides a more flexible and powerful way to handle page URLs while navigating.
-#### 🏞️ Optimized media management with autoresize
-Media management has been significantly improved with the introduction of autoresize functionality. This feature automatically resizes images and media files to optimize storage and performance, ensuring a smoother user experience. This kind of optimization works on any type of storage backend, including local and cloud storage solutions.
-#### 👯 Enable relations inside django JSONFields
-With the help of [`django-structured-field`](https://github.com/bnznamco/django-structured-field), you can now validate and serialize JSON contents in models. This feature relies on Django JSONFields increasing their potential with `pydantic` models schemas. You can find more on the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20StructuredJSONField/).
-#### 🚏 Enabled Autorouting
-With the new page model camomilla can hanle the routing of pages automatically. The only thing you need to do is to add camomilla urls to your `urls.py` file.
-Check the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20Pages/#%F0%9F%93%8E-the-page-model) for more details.
-#### 🧩 Settings revamped 
-The settings system has been completely revamped to provide a more options and flexibility. You can now easily configure various aspects of camomilla to suit your needs. Check the [documentation](https://camomillacms.github.io/camomilla-core/How%20to/Use%20Settings/) for more details.
+* chore: prepare for 6.0.0 release 🚀 ([`9b2d063`](https://github.com/camomillacms/camomilla-core/commit/9b2d0637b4fdc438256f78b91c90a4829e5f093a))
 
+* chore: fix reamde alignment ([`965a614`](https://github.com/camomillacms/camomilla-core/commit/965a614b29dda0af1e33118c4c9f53f669eb223d))
 
+* chore: fix readme logo ([`e6eafdc`](https://github.com/camomillacms/camomilla-core/commit/e6eafdc95756560f16976834d0917f21d9c3c318))
 
-**Detailed Changes**: (https://github.com/camomillacms/camomilla-core/compare/v5.8.6...v6.0.0)
+* chore: update camomilla logo ([`8b98c4d`](https://github.com/camomillacms/camomilla-core/commit/8b98c4dcb240c0e4c0a25ae94f704be47b43944c))
+
+* chore: added logos to vuepress ([`21dcb97`](https://github.com/camomillacms/camomilla-core/commit/21dcb97cc5e2946984b5d2bd01e9fccea5dba26e))
+
+* chore: update docs dependencies and use pnpm ([`c72b8e1`](https://github.com/camomillacms/camomilla-core/commit/c72b8e1ed6d2bb751b804e261ca1346c51378635))
+
+* chore: black . 💅 ([`f6924fc`](https://github.com/camomillacms/camomilla-core/commit/f6924fc704bf451a4ca1a171285139d1145642b3))
+
+* chore: upgraded black and added make format command ([`d5e6407`](https://github.com/camomillacms/camomilla-core/commit/d5e64076674b330bc42368aae0bb1488f0df93dc))
+
+* chore: add CODECOV_TOKEN secret to prevent codecov 429 errors ([`19c38bb`](https://github.com/camomillacms/camomilla-core/commit/19c38bb258450734821a8b26fb3589dc5848e577))
+
+* chore: upload coverage on codecov only once in Test and Coverage job ([`2d3985b`](https://github.com/camomillacms/camomilla-core/commit/2d3985b747e69a36cec8d7051f1531e097253109))
+
+### Unknown
+
+* Merge branch &#39;master&#39; into next ([`fae865d`](https://github.com/camomillacms/camomilla-core/commit/fae865d25828e8c87c23c4880a6cd85b9b1d7b98))
+
+* doc: update README.md and CHANGELOG ([`704491e`](https://github.com/camomillacms/camomilla-core/commit/704491e6a22cdb68032f7379de73378d01e7b964))
+
+* doc: fix README.md logo ([`6214efb`](https://github.com/camomillacms/camomilla-core/commit/6214efb9b84874162ae3aa83eb6c625d3fa76f6e))
+
+* doc: update README.md ([`dec6da6`](https://github.com/camomillacms/camomilla-core/commit/dec6da6928d152af77e18923e58a600218b36bca))
+
+* deps: added uv.lock ([`fd3e9d2`](https://github.com/camomillacms/camomilla-core/commit/fd3e9d225651854c61acd82983fd76f013bcb44a))
+
+* doc: added CONTRIBUTING.md 🤝 ([`19efde4`](https://github.com/camomillacms/camomilla-core/commit/19efde4dbcec63a6c67635b7510b191ae6c83ec4))
+
+* deps: update django-structured-json-field min version to 0.4.2 ([`fd51fa5`](https://github.com/camomillacms/camomilla-core/commit/fd51fa5f184cb0ed51c787408ee561a2afd9613b))
 
 
 ## v6.0.0-beta.18 (2025-05-20)
@@ -368,22 +442,6 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 
 ## v6.0.0-beta.6 (2023-09-30)
 
-### Chore
-
-* chore: always try to upload pypi ([`f92880c`](https://github.com/camomillacms/camomilla-core/commit/f92880c17c936af0793956b704f1511a37d66d30))
-
-* chore: update testing workflow ([`0b9e073`](https://github.com/camomillacms/camomilla-core/commit/0b9e073559fada746647ed089248ff43d4e0d567))
-
-* chore: better job step splitting ([`9d158d5`](https://github.com/camomillacms/camomilla-core/commit/9d158d5836431171fb1a6fd11f4f7dc90b22b10f))
-
-* chore: fix run build in cd.yml ([`2cf8a30`](https://github.com/camomillacms/camomilla-core/commit/2cf8a3086cd28c0b57679692645e45a3f6be025d))
-
-* chore: fix build run statement ([`d9d5f14`](https://github.com/camomillacms/camomilla-core/commit/d9d5f14567c24f4713b223a896ff6d11c26b5147))
-
-* chore: decouple package build from version tagging in cd.yml ([`4c96a8e`](https://github.com/camomillacms/camomilla-core/commit/4c96a8e4df9b9795ec06aff479f24f05ebeb599b))
-
-* chore: set force release options to release workflow ([`852f37f`](https://github.com/camomillacms/camomilla-core/commit/852f37f53c3e3e3eef2e80b1fe1cae07ed8f7a08))
-
 ### Documentation
 
 * docs: update templates_context docs ([`9ecbb4e`](https://github.com/camomillacms/camomilla-core/commit/9ecbb4ead9f63c731f463aabd97a7f758f2a537e))
@@ -403,6 +461,25 @@ Fixed template update issue. ([`3e12882`](https://github.com/camomillacms/camomi
 ### Refactor
 
 * refactor: move context engine to templates_context module ([`d6a86f6`](https://github.com/camomillacms/camomilla-core/commit/d6a86f614ce229952001612cfaaa692e31d59bdb))
+
+
+## v5.8.6 (2023-09-25)
+
+### Chore
+
+* chore: always try to upload pypi ([`f92880c`](https://github.com/camomillacms/camomilla-core/commit/f92880c17c936af0793956b704f1511a37d66d30))
+
+* chore: update testing workflow ([`0b9e073`](https://github.com/camomillacms/camomilla-core/commit/0b9e073559fada746647ed089248ff43d4e0d567))
+
+* chore: better job step splitting ([`9d158d5`](https://github.com/camomillacms/camomilla-core/commit/9d158d5836431171fb1a6fd11f4f7dc90b22b10f))
+
+* chore: fix run build in cd.yml ([`2cf8a30`](https://github.com/camomillacms/camomilla-core/commit/2cf8a3086cd28c0b57679692645e45a3f6be025d))
+
+* chore: fix build run statement ([`d9d5f14`](https://github.com/camomillacms/camomilla-core/commit/d9d5f14567c24f4713b223a896ff6d11c26b5147))
+
+* chore: decouple package build from version tagging in cd.yml ([`4c96a8e`](https://github.com/camomillacms/camomilla-core/commit/4c96a8e4df9b9795ec06aff479f24f05ebeb599b))
+
+* chore: set force release options to release workflow ([`852f37f`](https://github.com/camomillacms/camomilla-core/commit/852f37f53c3e3e3eef2e80b1fe1cae07ed8f7a08))
 
 ### Unknown
 
