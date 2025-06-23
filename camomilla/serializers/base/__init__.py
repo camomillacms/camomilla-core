@@ -9,18 +9,22 @@ from camomilla.serializers.mixins import (
     FieldsOverrideMixin,
     TranslationsMixin,
 )
+from camomilla.settings import ENABLE_TRANSLATIONS
 
-
-class BaseModelSerializer(
+bases = (
     SetupEagerLoadingMixin,
     NestMixin,
     FilterFieldsMixin,
     FieldsOverrideMixin,
     JSONFieldPatchMixin,
     OrderingMixin,
-    TranslationsMixin,
-    serializers.ModelSerializer,
-):
+)
+
+if ENABLE_TRANSLATIONS:
+    bases += (TranslationsMixin,)
+
+
+class BaseModelSerializer(*bases, serializers.ModelSerializer):
     """
     This is the base serializer for all the models.
     It adds support for:
