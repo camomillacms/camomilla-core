@@ -24,7 +24,7 @@ dependencies = [
   "Django>=3.2,<6",
   "django_jsonform>=2.23",
   "inflection>=0.5.1",
-  "uritemplate>=4.2.0"
+  "uritemplate>=4.1.0"
 ]
 description = "Django powered cms"
 dynamic = ["version"]
