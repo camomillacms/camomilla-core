@@ -29,6 +29,7 @@ from camomilla import settings
 from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
 from modeltranslation.utils import build_localized_fieldname
+from django.utils.module_loading import import_string
 
 
 class UrlRedirect(models.Model):
@@ -287,6 +288,18 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 context.update(new_ctx)
         return ctx_registry.get_context_for_page(self, request, super_ctx=context)
 
+    @classmethod
+    def get_serializer(cls):
+        from camomilla.serializers.mixins import AbstractPageMixin
+        standard_serializer = pointed_getter(cls, "_page_meta.standard_serializer") or settings.PAGES_DEFAULT_SERIALIZER
+        if isinstance(standard_serializer, str):
+            standard_serializer = import_string(standard_serializer)
+        if not issubclass(standard_serializer, AbstractPageMixin):
+            raise ValueError(
+                f"Standard serializer {standard_serializer} must be a subclass of AbstractPageMixin"
+            )
+        return standard_serializer
+
     @property
     def model_name(self) -> str:
         return self._meta.app_label + "." + self._meta.model_name
@@ -476,6 +489,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         parent_page_field = "parent_page"
         default_template = settings.PAGE_DEFAULT_TEMPLATE
         inject_context_func = settings.PAGE_INJECT_CONTEXT_FUNC
+        standard_serializer = settings.PAGES_DEFAULT_SERIALIZER
 
 
 class Page(AbstractPage):

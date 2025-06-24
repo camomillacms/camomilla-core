@@ -49,6 +49,12 @@ PAGE_INJECT_CONTEXT_FUNC = pointed_getter(
     django_settings, "CAMOMILLA.RENDER.PAGE.INJECT_CONTEXT", None
 )
 
+PAGES_DEFAULT_SERIALIZER = pointed_getter(
+    django_settings,
+    "CAMOMILLA.API.PAGES.DEFAULT_SERIALIZER",
+    "camomilla.serializers.mixins.AbstractPageMixin",
+)
+
 ENABLE_TRANSLATIONS = (
     ENABLE_REGISTRATIONS and "modeltranslation" in django_settings.INSTALLED_APPS
 )
@@ -127,6 +133,6 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #             "URL": "http://localhost:4321"
 #         }
 #     }
-#     "API": {"NESTING_DEPTH": 10, "TRANSLATION_ACCESSOR": "translations"},
+#     "API": {"NESTING_DEPTH": 10, "TRANSLATION_ACCESSOR": "translations", "PAGES": {"DEFAULT_SERIALIZER": "camomilla.serializers.page.RouteSerializer"}},
 #     "DEBUG": False
 # }

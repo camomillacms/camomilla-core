@@ -48,10 +48,11 @@ class RouteSerializer(UrlNodeSerializer):
         return instance.page.alternate_urls()
 
     def to_representation(self, instance: UrlNode):
+        standard_serializer = instance.page.get_serializer()
         model_serializer = build_standard_model_serializer(
             instance.page.__class__,
             depth=10,
-            bases=(AbstractPageMixin,) + get_standard_bases(),
+            bases=(standard_serializer,) + get_standard_bases(),
         )
         return {
             **super().to_representation(instance),
