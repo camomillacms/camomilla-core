@@ -356,7 +356,8 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def generate_permalink(self, safe: bool = True) -> str:
         permalink = f"/{slugify(self.title or '', allow_unicode=True)}"
         if self.parent:
-            permalink = f"/{self.parent.permalink}{permalink}"
+            parent_permalink = (self.parent.permalink or "").lstrip("/")
+            permalink = f"/{parent_permalink}{permalink}"
         set_nofallbacks(self, "permalink", permalink)
         qs = UrlNode.objects.exclude(pk=getattr(self.url_node or object, "pk", None))
         if safe and qs.filter(permalink=permalink).exists():
