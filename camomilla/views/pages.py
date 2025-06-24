@@ -2,7 +2,7 @@ from camomilla.models import Page
 from camomilla.models.page import UrlNode, UrlRedirect
 from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import PageSerializer
-from camomilla.serializers.page import UrlNodeSerializer
+from camomilla.serializers.page import RouteSerializer
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import active_lang
 from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
@@ -26,10 +26,10 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
         permissions.AllowAny,
     ]
 )
-def fetch_page(request, permalink=""):
+def pages_router(request, permalink=""):
     redirect = UrlRedirect.find_redirect_from_url(f"/{permalink}")
     if redirect:
         redirect = redirect.redirect()
         return Response({"redirect": redirect.url, "status": redirect.status_code})
-    node = get_object_or_404(UrlNode, permalink=f"/{permalink}")
-    return Response(UrlNodeSerializer(node, context={"request": request}).data)
+    node: UrlNode = get_object_or_404(UrlNode, permalink=f"/{permalink}")
+    return Response(RouteSerializer(node, context={"request": request}).data)

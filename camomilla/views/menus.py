@@ -9,7 +9,7 @@ from camomilla.models import AbstractPage, Menu
 from camomilla.models.page import UrlNode
 from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import ContentTypeSerializer, MenuSerializer
-from camomilla.serializers.page import BasicUrlNodeSerializer
+from camomilla.serializers.page import UrlNodeSerializer
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import active_lang
 
@@ -78,4 +78,4 @@ class MenuViewSet(BaseModelViewset):
     def search_urlnode(self, request, *args, **kwargs):
         url_node = request.GET.get("q", "")
         qs = UrlNode.objects.filter(permalink__icontains=url_node).order_by("permalink")
-        return Response(BasicUrlNodeSerializer(qs, many=True).data)
+        return Response(UrlNodeSerializer(qs, many=True).data)

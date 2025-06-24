@@ -22,7 +22,7 @@ class PageSerializer(AbstractPageMixin, BaseModelSerializer):
         fields = "__all__"
 
 
-class BasicUrlNodeSerializer(BaseModelSerializer):
+class UrlNodeSerializer(BaseModelSerializer):
     is_public = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     indexable = serializers.SerializerMethodField()
@@ -41,7 +41,7 @@ class BasicUrlNodeSerializer(BaseModelSerializer):
         return instance.page.indexable
 
 
-class UrlNodeSerializer(BasicUrlNodeSerializer):
+class RouteSerializer(UrlNodeSerializer):
     alternates = serializers.SerializerMethodField()
 
     def get_alternates(self, instance: UrlNode):

@@ -19,7 +19,7 @@ from camomilla.views import (
     UserViewSet,
     MenuViewSet,
 )
-from camomilla.views.pages import fetch_page
+from camomilla.views.pages import pages_router
 from camomilla.redirects import url_patterns as old_redirects
 
 router = routers.DefaultRouter()
@@ -37,8 +37,8 @@ router.register(r"menus", MenuViewSet, "camomilla-menus")
 urlpatterns = [
     *old_redirects,
     path("", include(router.urls)),
-    path("pages-router/", fetch_page),
-    path("pages-router/<path:permalink>", fetch_page),
+    path("pages-router/", pages_router),
+    path("pages-router/<path:permalink>", pages_router),
     path("token-auth/", CamomillaObtainAuthToken.as_view(), name="api_token"),
     path("auth/login/", CamomillaAuthLogin.as_view(), name="login"),
     path("auth/logout/", CamomillaAuthLogout.as_view(), name="logout"),
