@@ -456,7 +456,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         preview = request and getattr(request, "GET", {}).get("preview", False)
         permalinks = get_field_translations(self.url_node or object, "permalink", None)
         for lang in activate_languages():
-            if lang in permalinks:
+            if lang in permalinks and permalinks[lang]:
                 permalinks[lang] = (
                     UrlNode.reverse_url(permalinks[lang])
                     if preview or self.is_public
