@@ -1,6 +1,6 @@
 from typing import Optional, List
 from django.db import models
-from rest_framework import serializers
+from camomilla.models import AbstractPage, Media
 from structured.fields import StructuredJSONField
 from structured.pydantic.fields import QuerySet
 from structured.pydantic.models import BaseModel
@@ -76,3 +76,43 @@ class FilteredRegisterModel(models.Model):
 
     def __str__(self) -> str:
         return self.field_filtered
+    
+    
+
+def inject_context_func(request, super_ctx):
+    return {
+        "injected_from_meta": {
+            "title": "👻 I'm beeing injected!",
+            "media_gallery": Media.objects.all(),
+        }
+    }
+    
+
+@model_api.register()
+class CustomPageMetaModel(AbstractPage):
+    custom_field = models.CharField(max_length=255, blank=True, null=True)
+    custom_parent_page = models.ForeignKey(
+        "camomilla.Page",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="custom_children_pages",
+    )
+
+    def __str__(self) -> str:
+        return self.title
+
+    class Meta:
+        verbose_name = "Custom Page"
+        verbose_name_plural = "Custom Pages"
+        
+    class PageMeta:
+        parent_page_field = "custom_parent_page"
+        default_template = "website/page_custom_meta_template.html"
+        inject_context_func = inject_context_func
+        standard_serializer = "example.website.serializers.CustomPageSerializer"
+
+
+class InvalidPageMetaModel(CustomPageMetaModel):
+    class PageMeta:
+        standard_serializer = "example.website.serializers.InvalidSerializer"

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>I'm the custom template!</h1>
+  <p>{{ injected_from_meta.title }}</p>
+  {% if injected_from_meta.media_gallery|length %}
+  <ul>{% for media in injected_from_meta.media_gallery %}<li>{{media}}</li>{% endfor %}</ul>
+  {% endif %}
+</body>
+</html>
