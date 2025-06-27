@@ -66,7 +66,7 @@ class MenuViewSet(BaseModelViewset):
             raise Http404("No object matches the given query.")
         return Response(
             [
-                {"id": obj.pk, "name": str(obj), "url_node_id": obj.url_node.pk}
+                {"id": obj.pk, "name": str(obj), "url_node_id": obj.url_node.pk, "model": f"{content_type.app_label}.{content_type.model}"}
                 for obj in content_type.model_class().objects.exclude(
                     url_node__isnull=True
                 )
