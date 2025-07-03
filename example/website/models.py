@@ -5,7 +5,6 @@ from structured.fields import StructuredJSONField
 from structured.pydantic.fields import QuerySet
 from structured.pydantic.models import BaseModel
 from camomilla import model_api
-from .serializers import CustomBaseArgumentsRegisterModelSerializer
 from .views import CustomBaseArgumentsRegisterModelViewSet
 
 
@@ -50,7 +49,7 @@ class TestModel(models.Model):
 
 
 @model_api.register(
-    base_serializer=CustomBaseArgumentsRegisterModelSerializer,
+    base_serializer=CustomBaseArgumentsRegisterModelViewSet.CustomBaseArgumentsRegisterModelSerializer,
     base_viewset=CustomBaseArgumentsRegisterModelViewSet,
 )
 class CustomBaseArgumentsRegisterModel(models.Model):
@@ -76,8 +75,7 @@ class FilteredRegisterModel(models.Model):
 
     def __str__(self) -> str:
         return self.field_filtered
-    
-    
+
 
 def inject_context_func(request, super_ctx):
     return {
@@ -86,7 +84,7 @@ def inject_context_func(request, super_ctx):
             "media_gallery": Media.objects.all(),
         }
     }
-    
+
 
 @model_api.register()
 class CustomPageMetaModel(AbstractPage):
@@ -105,12 +103,52 @@ class CustomPageMetaModel(AbstractPage):
     class Meta:
         verbose_name = "Custom Page"
         verbose_name_plural = "Custom Pages"
-        
+
     class PageMeta:
         parent_page_field = "custom_parent_page"
         default_template = "website/page_custom_meta_template.html"
         inject_context_func = inject_context_func
         standard_serializer = "example.website.serializers.CustomPageSerializer"
+
+
+@model_api.register()
+class ExposedRelatedPageModel(AbstractPage):
+    class Meta:
+        verbose_name = "Exposed related Page"
+        verbose_name_plural = "Exposed related Pages"
+
+    class PageMeta:
+        standard_serializer = (
+            "example.website.serializers.ExposedRelatedPageModelSerializer"
+        )
+
+
+@model_api.register()
+class UnexposedRelatedPageModel(AbstractPage):
+    class Meta:
+        verbose_name = "Unexposed related Page"
+        verbose_name_plural = "Unexposed related Pages"
+
+
+@model_api.register()
+class RelatedPageModel(AbstractPage):
+    exposed_pages = models.ManyToManyField(
+        ExposedRelatedPageModel,
+        blank=True,
+        related_name="related_pages",
+    )
+    unexposed_pages = models.ManyToManyField(
+        UnexposedRelatedPageModel,
+        blank=True,
+        related_name="related_pages",
+    )
+
+    class Meta:
+        verbose_name = "Related Page"
+        verbose_name_plural = "Related Pages"
+
+    class PageMeta:
+        standard_serializer = "example.website.serializers.RelatedPageModelSerializer"
 
 
 class InvalidPageMetaModel(CustomPageMetaModel):

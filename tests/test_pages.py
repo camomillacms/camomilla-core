@@ -169,9 +169,7 @@ class PagesTestCase(TestCase):
         # IT parent page with automatic url creation
         response = self.client.get("/api/camomilla/pages/3/?language=it")
         assert response.json()["autopermalink"] == True
-        assert (
-            response.json()["permalink"] == "/permalink_manuale_it_2/titolo_pagina_3"
-        )
+        assert response.json()["permalink"] == "/permalink_manuale_it_2/titolo_pagina_3"
 
         # Check url uniqueness and consistency EN
         response = self.client.post(
