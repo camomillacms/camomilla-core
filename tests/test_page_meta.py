@@ -82,4 +82,7 @@ class PagaMetaTestCase(TestCase):
     def test_page_meta_custom_serializer_error(self):
         with pytest.raises(ValueError) as exc_info:
             InvalidPageMetaModel.get_serializer()
-            assert str(exc_info.value) == "Standard serializer <class 'example.website.serializers.InvalidSerializer'> must be a subclass of AbstractPageMixin"
+            assert (
+                str(exc_info.value)
+                == "Standard serializer <class 'example.website.serializers.InvalidSerializer'> must be a subclass of AbstractPageMixin"
+            )

@@ -291,7 +291,11 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     @classmethod
     def get_serializer(cls):
         from camomilla.serializers.mixins import AbstractPageMixin
-        standard_serializer = pointed_getter(cls, "_page_meta.standard_serializer") or settings.PAGES_DEFAULT_SERIALIZER
+
+        standard_serializer = (
+            pointed_getter(cls, "_page_meta.standard_serializer")
+            or settings.PAGES_DEFAULT_SERIALIZER
+        )
         if isinstance(standard_serializer, str):
             standard_serializer = import_string(standard_serializer)
         if not issubclass(standard_serializer, AbstractPageMixin):
