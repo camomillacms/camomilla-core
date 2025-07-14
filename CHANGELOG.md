@@ -2,6 +2,37 @@
 
 
 
+## v6.1.0 (2025-07-14)
+
+### Feature
+
+* feat: added standard_serializer option to PageMeta class and to camomilla settings ([`36fb1a8`](https://github.com/camomillacms/camomilla-core/commit/36fb1a8d0c93a584b8461be4354705921d500476))
+
+### Fix
+
+* fix: added model identifier in menu nodes serializer ([`a5e7e45`](https://github.com/camomillacms/camomilla-core/commit/a5e7e45eea07db5c1f35c7da127565e6e7a9e659))
+
+* fix: fix alternate urls generation for missing permalinks ([`29c5bba`](https://github.com/camomillacms/camomilla-core/commit/29c5bba0a0dff46866a6ffca277fc1119297c191))
+
+* fix: fix autopermalink generating double slash with parent page ([`7cd21ce`](https://github.com/camomillacms/camomilla-core/commit/7cd21ce273b54c09cb38f843c629ac59e6519177))
+
+### Refactor
+
+* refactor: renamed router views and router serializers class ([`94e4105`](https://github.com/camomillacms/camomilla-core/commit/94e4105d6af1c5d69b9d8c24e1d4e8300aaf0f0f))
+
+### Unknown
+
+* Merge pull request #31 from camomillacms/feature/test-page-relation
+
+feature: add test for page relation api ([`e970bcb`](https://github.com/camomillacms/camomilla-core/commit/e970bcbc6fcd6653b0522b1f39746548f4dcae31))
+
+* feature: add test for page relation api ([`6d0a749`](https://github.com/camomillacms/camomilla-core/commit/6d0a74954f23a63836812a11683e121d24fa21cb))
+
+* Merge branch &#39;master&#39; of github.com:camomillacms/camomilla-core ([`ff55136`](https://github.com/camomillacms/camomilla-core/commit/ff55136cb194ff63e19c40152696cde93b16f318))
+
+* tests: added tests for page meta ([`fba4ea8`](https://github.com/camomillacms/camomilla-core/commit/fba4ea8ca863d43e6cf62ac2770402afa6b14e6d))
+
+
 ## v6.0.1 (2025-06-23)
 
 ### Chore
