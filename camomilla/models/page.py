@@ -339,7 +339,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     def childs(self) -> models.Manager:
         if hasattr(self._page_meta, "child_page_field"):
             return getattr(self, self._page_meta.child_page_field)
-        return getattr(self, PAGE_CHILD_RELATED_NAME % self.model_info)
+        return getattr(self, PAGE_CHILD_RELATED_NAME % self.model_info, self.objects.none())
 
     @property
     def parent(self) -> models.Model:
