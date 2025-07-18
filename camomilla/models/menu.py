@@ -74,7 +74,7 @@ class MenuNode(BaseModel):
 
 
 class Menu(models.Model):
-    key = models.CharField(max_length=200, unique=True, editable=False)
+    key = models.CharField(max_length=200, unique=True, editable=True, default=uuid4)
     available_classes = models.JSONField(default=dict, editable=False)
     enabled = models.BooleanField(default=True)
     nodes = StructuredJSONField(default=list, schema=MenuNode)
