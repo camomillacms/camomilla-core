@@ -1,8 +1,14 @@
+from django.utils.module_loading import import_string
+
+
 class OptimViewMixin:
     def get_serializer_class(self):
         if hasattr(self, "action_serializers"):
             if self.action in self.action_serializers:
-                return self.action_serializers[self.action]
+                serializer = self.action_serializers[self.action]
+                if isinstance(serializer, str):
+                    serializer = import_string(serializer)
+                return serializer
         return super().get_serializer_class()
 
     def get_serializer_context(self):
