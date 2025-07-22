@@ -2,6 +2,23 @@
 
 
 
+## v6.1.1 (2025-07-18)
+
+### Fix
+
+* fix: return empty queryset manager as childs ([`3607de1`](https://github.com/camomillacms/camomilla-core/commit/3607de10f774e9d941a8036df2f56bc12beb52b6))
+
+* fix: return empty child list if parent model is different from child model, and child model is being edited ([`67aa7b0`](https://github.com/camomillacms/camomilla-core/commit/67aa7b0005805eedbee05bd96ca05a9adfc826df))
+
+* fix: menu key editable, default uuid4 ([`8c27d4d`](https://github.com/camomillacms/camomilla-core/commit/8c27d4dfd5003152b1a0d03ad163d0406ef77a31))
+
+### Unknown
+
+* Merge pull request #32 from lotrekagency/master
+
+fix: menu key editable, default uuid4 ([`b0e01a2`](https://github.com/camomillacms/camomilla-core/commit/b0e01a2a0f43b171414f05909c84e7904d7319b1))
+
+
 ## v6.1.0 (2025-07-14)
 
 ### Feature
