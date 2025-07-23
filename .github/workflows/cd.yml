@@ -3,11 +3,21 @@ name: 🚀 Release
 on:
   workflow_dispatch:
     inputs:
-      root_options:
-        description: "Options: semantic-release <options>, es: --noop"
-        default: "-v"
+      noop:
+        description: "Run in dry-run (noop) mode?"
         required: false
-        type: string
+        default: "false"
+        type: boolean
+      verbosity:
+        description: "Set verbosity level for semantic release"
+        required: false
+        default: 1
+        options:
+          - 0
+          - 1
+          - 2
+          - 3
+        type: choice
 
 jobs:
   release:
@@ -26,10 +36,11 @@ jobs:
 
       - name: 🗂️ Generate Version and Changelog with Semantic Release
         id: release
-        uses: python-semantic-release/python-semantic-release@v8.1.1
+        uses: python-semantic-release/python-semantic-release@v10
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          root_options: ${{ github.event.inputs.root_options }}
+          no_operation_mode: ${{ github.event.inputs.noop || 'false' }}
+          verbosity: ${{ github.event.inputs.verbosity || 1 }}
 
       - name: 🚧 Setup build environment
         uses: actions/setup-python@v4
