@@ -4,6 +4,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.postgres.search import SearchVector, SearchQuery, TrigramSimilarity
 from camomilla.utils.query_parser import ConditionParser
 from django.conf import settings
+from django.utils.module_loading import import_string
 
 
 class TrigramSearchMixin:
@@ -106,7 +107,10 @@ class PaginateStackMixin:
         )
 
     def format_output(self, paginator, elements, SerializerClass=None):
-        SerializerClass = SerializerClass or self.get_serializer_class()
+        if isinstance(SerializerClass, str):
+            SerializerClass = import_string(SerializerClass)
+        else:
+            SerializerClass = SerializerClass or self.get_serializer_class()
         return {
             "items": SerializerClass(
                 elements, many=True, context=self.get_serializer_context()
