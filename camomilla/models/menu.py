@@ -26,9 +26,10 @@ class AbstractPageMinimalSerializer(serializers.Serializer):
     def to_representation(self, instance):
         return {
             "id": instance.id,
-            "name": instance.name,
+            "name": instance.__str__(),
             "model": f"{instance._meta.app_label}.{instance._meta.model_name}",
         }
+
 
 class LinkTypes(str, Enum):
     relational = "RE"
@@ -41,7 +42,6 @@ class MenuNodeLink(BaseModel):
     content_type: ContentType = None
     page: Annotated[AbstractPage, FieldSerializer(AbstractPageMinimalSerializer)] = None
     url_node: UrlNode = None
-
 
     @model_serializer(mode="wrap", when_used="json")
     def update_relational(self, handler: Callable, info: SerializationInfo):
