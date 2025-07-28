@@ -122,7 +122,7 @@ requires-dist = [
     { name = "django-ckeditor", specifier = ">=5.7.1,<7.0.0" },
     { name = "django-jsonform", specifier = ">=2.23" },
     { name = "django-modeltranslation", specifier = ">=0.18.7,<=0.18.12" },
-    { name = "django-structured-json-field", specifier = ">=0.4.2" },
+    { name = "django-structured-json-field", specifier = ">=1.1.1" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
     { name = "djangorestframework", specifier = ">=3.10.0,<=3.14.0" },
     { name = "djsuperadmin", specifier = ">=0.9,<1.0.0" },

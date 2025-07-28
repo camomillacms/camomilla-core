@@ -10,7 +10,6 @@ from pydantic import (
     Field,
     SerializationInfo,
     computed_field,
-    field_serializer,
     model_serializer,
 )
 from structured.pydantic.models import BaseModel
@@ -18,8 +17,18 @@ from structured.fields import StructuredJSONField
 from camomilla.models.page import UrlNode, AbstractPage
 from typing import Optional, Union, Callable, List
 from django.db.models.base import Model as DjangoModel
-from structured.utils.serializer import minimal_serialization
+from typing_extensions import Annotated
+from structured.pydantic.fields.serializer import FieldSerializer
+from rest_framework import serializers
 
+
+class AbstractPageMinimalSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        return {
+            "id": instance.id,
+            "name": instance.name,
+            "model": f"{instance._meta.app_label}.{instance._meta.model_name}",
+        }
 
 class LinkTypes(str, Enum):
     relational = "RE"
@@ -30,12 +39,9 @@ class MenuNodeLink(BaseModel):
     link_type: LinkTypes = LinkTypes.static
     static: str = None
     content_type: ContentType = None
-    page: AbstractPage = None
+    page: Annotated[AbstractPage, FieldSerializer(AbstractPageMinimalSerializer)] = None
     url_node: UrlNode = None
 
-    @field_serializer('page')
-    def serialize_value(self, v):
-        return minimal_serialization(v)
 
     @model_serializer(mode="wrap", when_used="json")
     def update_relational(self, handler: Callable, info: SerializationInfo):
