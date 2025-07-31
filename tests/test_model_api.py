@@ -111,3 +111,10 @@ def test_test_model_api_endpoint():
     )
     assert response.status_code == 200
     assert response.json()["title"] == "updated"
+
+
+@pytest.mark.django_db
+def test_simple_relation_model_search():
+    response = client.get("/api/models/simple-relation-model/?search=test2")
+    assert response.status_code == 200
+    assert len(response.json()) == 1

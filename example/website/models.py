@@ -10,6 +10,7 @@ from .views import CustomBaseArgumentsRegisterModelViewSet
 
 @model_api.register()
 class SimpleRelationModel(models.Model):
+    search_fields = ["name"]
     name = models.CharField(max_length=255)
 
     def __str__(self) -> str:
