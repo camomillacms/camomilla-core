@@ -12,6 +12,10 @@ class TrigramSearchMixin:
         list_handler = list_handler if list_handler is not None else self.get_queryset()
         search_string = self.request.GET.get("search", None)
         search_fields = search_fields or getattr(self, "search_fields", [])
+        if not search_fields:
+            model = self.get_model()
+            if model and hasattr(model, 'search_fields'):
+                search_fields = getattr(model, 'search_fields', [])
         if search_string and len(search_fields) > 0:
             filters = Q()
             for field in search_fields:
@@ -83,6 +87,10 @@ class PaginateStackMixin:
         list_handler = list_handler if list_handler is not None else self.get_queryset()
         search_string = self.request.GET.get("search", None)
         search_fields = search_fields or getattr(self, "search_fields", [])
+        if not search_fields:
+            model = self.get_model()
+            if model and hasattr(model, 'search_fields'):
+                search_fields = getattr(model, 'search_fields', [])
         if search_string and len(search_fields) > 0:
             if "sqlite" in settings.DATABASES["default"]["ENGINE"]:
                 filter_statement = Q()
