@@ -2,12 +2,14 @@ from rest_framework import serializers
 from camomilla.models import UrlNode
 from camomilla.serializers.validators import UniquePermalinkValidator
 from typing import TYPE_CHECKING
+from structured.contrib.restframework import StructuredModelSerializer
+
 
 if TYPE_CHECKING:
     from camomilla.models.page import AbstractPage
 
 
-class AbstractPageMixin(serializers.ModelSerializer):
+class AbstractPageMixin(StructuredModelSerializer, serializers.ModelSerializer):
     """
     This mixin is needed to serialize AbstractPage models.
     It provides permalink validation and some extra fields serialization.
