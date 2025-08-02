@@ -29,7 +29,7 @@ class AbstractPageModelForm(
         super().__init__(*args, **kwargs)
         templates = [(t, t) for t in get_templates(request)]
         templates.insert(0, ("", "---------"))
-        self.fields["template"] = forms.ChoiceField(choices=templates)
+        self.fields["template"] = forms.ChoiceField(choices=templates, required=False)
 
     def get_initial_for_field(self, field, field_name):
         if field_name in UrlNode.LANG_PERMALINK_FIELDS:
