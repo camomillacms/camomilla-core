@@ -3,13 +3,12 @@ from typing import Any, Sequence, Iterator, Union, List
 
 from django.db.models import Model, Q
 from django.utils.translation.trans_real import activate, get_language
-from modeltranslation.settings import AVAILABLE_LANGUAGES, DEFAULT_LANGUAGE
 from modeltranslation.utils import build_localized_fieldname
-from camomilla.settings import BASE_URL
+from camomilla.settings import BASE_URL, DEFAULT_LANGUAGE, LANGUAGE_CODES
 from django.http import QueryDict
 
 
-def activate_languages(languages: Sequence[str] = AVAILABLE_LANGUAGES) -> Iterator[str]:
+def activate_languages(languages: Sequence[str] = LANGUAGE_CODES) -> Iterator[str]:
     old = get_language()
     for language in languages:
         activate(language)
@@ -37,7 +36,7 @@ def url_lang_decompose(url):
     if BASE_URL and url.startswith(BASE_URL):
         url = url[len(BASE_URL) :]
     data = {"url": url, "permalink": url, "language": DEFAULT_LANGUAGE}
-    result = re.match(rf"^/?({'|'.join(AVAILABLE_LANGUAGES)})?/(.*)", url)  # noqa: W605
+    result = re.match(rf"^/?({'|'.join(LANGUAGE_CODES)})?/(.*)", url)  # noqa: W605
     groups = result and result.groups()
     if groups and len(groups) == 2:
         data["language"] = groups[0]
@@ -48,14 +47,14 @@ def url_lang_decompose(url):
 def get_field_translations(instance: Model, field_name: str, *args, **kwargs):
     return {
         lang: get_nofallbacks(instance, field_name, language=lang, *args, **kwargs)
-        for lang in AVAILABLE_LANGUAGES
+        for lang in LANGUAGE_CODES
     }
 
 
 def lang_fallback_query(**kwargs):
     current_lang = get_language()
     query = Q()
-    for lang in AVAILABLE_LANGUAGES:
+    for lang in LANGUAGE_CODES:
         query |= Q(**{f"{key}_{lang}": value for key, value in kwargs.items()})
     if current_lang:
         query = query & Q(
@@ -77,7 +76,7 @@ def plain_to_nest(data, fields, accessor="translations"):
     into a dictionary with nested translations fields (es. {"translations": {"en": {"title": "Hello"}}}).
     """
     trans_data = {}
-    for lang in AVAILABLE_LANGUAGES:
+    for lang in LANGUAGE_CODES:
         lang_data = {}
         for field in fields:
             trans_field_name = build_localized_fieldname(field, lang)
@@ -101,7 +100,7 @@ def nest_to_plain(
     if isinstance(data, QueryDict):
         data = data.dict()
     translations = data.pop(accessor, {})
-    for lang in AVAILABLE_LANGUAGES:
+    for lang in LANGUAGE_CODES:
         nest_trans = translations.pop(lang, {})
         for k in fields:
             data.pop(k, None)  # this removes all trans field without lang

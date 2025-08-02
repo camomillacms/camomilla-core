@@ -99,7 +99,7 @@ class UrlNode(models.Model):
     LANG_PERMALINK_FIELDS = (
         [
             build_localized_fieldname("permalink", lang)
-            for lang in settings.AVAILABLE_LANGUAGES
+            for lang in settings.LANGUAGE_CODES
         ]
         if settings.ENABLE_TRANSLATIONS
         else ["permalink"]

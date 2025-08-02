@@ -1,6 +1,5 @@
 from functools import cached_property
 from typing import Iterable, List
-from modeltranslation import settings as mt_settings
 from modeltranslation.translator import NotRegistered, translator
 from modeltranslation.utils import build_localized_fieldname
 from rest_framework import serializers
@@ -8,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from camomilla.utils.getters import pointed_getter
 from camomilla.utils.translation import is_translatable
 from camomilla.utils.translation import nest_to_plain, plain_to_nest
-from camomilla.settings import API_TRANSLATION_ACCESSOR
+from camomilla.settings import API_TRANSLATION_ACCESSOR, LANGUAGE_CODES
 
 
 class TranslationsMixin(serializers.ModelSerializer):
@@ -94,7 +93,7 @@ class RemoveTranslationsMixin(serializers.ModelSerializer):
             included_translations = []
 
         field_names = super().get_default_field_names(declared_fields, model_info)
-        for lang in mt_settings.AVAILABLE_LANGUAGES:
+        for lang in LANGUAGE_CODES:
             if lang not in included_translations:
                 for field in self.translation_fields:
                     localized_fieldname = build_localized_fieldname(field, lang)
