@@ -481,6 +481,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 )
             if preview:
                 permalinks = {k: f"{v}?preview=true" for k, v in permalinks.items()}
+        permalinks.pop(get_language(), None)
         return permalinks
 
     class Meta:

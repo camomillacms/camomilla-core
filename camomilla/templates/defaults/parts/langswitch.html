@@ -36,6 +36,13 @@
         {% get_language_info_list for LANGUAGES as languages %}
         {% get_language_info for LANGUAGE_CODE as current_lang %}
 
+         <div class="language-switch--btn" data-lang="{{current_lang.code}}" 
+            {% if current_lang.code != LANGUAGE_CODE %} 
+                onclick="submitLanguageWithoutRedirect('{{current_lang.code}}');"
+            {% endif %}
+        >
+            <a>{{ current_lang.name_translated }} {% if current_lang.code == LANGUAGE_CODE %} 👾 {% endif %}</a>
+        </div>   
         {% for lang_code, redirect in page.alternate_urls.items %}
         <div class="language-switch--btn" data-lang="{{lang_code}}" 
             {% if current_lang.code != lang_code %} 
