@@ -319,7 +319,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     @property
     def breadcrumbs(self) -> Sequence[dict]:
         breadcrumb = {
-            "permalink": self.permalink,
+            "permalink": self.routerlink,
             "title": self.breadcrumbs_title or self.title or "",
         }
         if self.parent:
