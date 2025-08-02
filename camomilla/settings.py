@@ -105,6 +105,10 @@ INTEGRATIONS_ASTRO_URL = pointed_getter(
     django_settings, "CAMOMILLA.INTEGRATIONS.ASTRO.URL", ""
 )
 
+PAGE_ROUTER_CACHE = pointed_getter(
+    django_settings, "CAMOMILLA.API.PAGES.ROUTER_CACHE", 60 * 15
+)
+
 DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG)
 
 # camomilla settings example
@@ -133,6 +137,13 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #             "URL": "http://localhost:4321"
 #         }
 #     }
-#     "API": {"NESTING_DEPTH": 10, "TRANSLATION_ACCESSOR": "translations", "PAGES": {"DEFAULT_SERIALIZER": "camomilla.serializers.page.RouteSerializer"}},
+#     "API": {
+#         "NESTING_DEPTH": 10,
+#         "TRANSLATION_ACCESSOR": "translations",
+#         "PAGES": {
+#             "DEFAULT_SERIALIZER": "camomilla.serializers.page.RouteSerializer"
+#         },
+#         "ROUTER_CACHE": 60 * 15
+#     },
 #     "DEBUG": False
 # }

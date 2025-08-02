@@ -1,6 +1,7 @@
 import functools
 from django.utils.translation import activate
 from django.conf import settings
+from django.views.decorators.cache import cache_page
 
 
 def active_lang(*args, **kwargs):
@@ -20,6 +21,25 @@ def active_lang(*args, **kwargs):
                 activate(lang)
                 request.LANGUAGE_CODE = lang
             return func(*args, **kwargs)
+
+        return wrapped_func
+
+    return decorator
+
+
+def staff_excluded_cache(timing=None):
+    def decorator(func):
+        if timing is None:
+            return func  # No caching applied
+
+        @functools.wraps(func)
+        def wrapped_func(*args, **kwargs):
+            request = args[0] if len(args) else kwargs.get("request", None)
+            if request and hasattr(request, "user"):
+                user = request.user
+                if user.is_authenticated and user.is_staff:
+                    return func(*args, **kwargs)
+            return cache_page(timing)(func)(*args, **kwargs)
 
         return wrapped_func
 
