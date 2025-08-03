@@ -9,7 +9,7 @@ from camomilla.parsers import MultipartJsonParser
 @pytest.mark.django_db
 def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     # Prepare multipart data
-    json_data = json.dumps({"foo": "bar", "nested": {"baz": 1}})
+    json_data = json.dumps({"foo": "bar", "nested": {"baz": 1}, "nested_list": [{"qux": "quux"}, {"corge": "grault"}]})
     file_content = b"filecontent"
     upload = SimpleUploadedFile("test.txt", file_content, content_type="text/plain")
     
@@ -18,6 +18,7 @@ def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     data = {
         "data": json_data,
         "nested.file": upload,
+        "nested_list.1.file": upload,
     }
     request = factory.post("/", data)
     request.upload_handlers = []
@@ -27,7 +28,7 @@ def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     class DummyParser:
         def __init__(self, *a, **kw): pass
         def parse(self):
-            return ( {"data": json_data}, {"nested.file": upload} )
+            return ( {"data": json_data}, {"nested.file": upload, "nested_list.1.file": upload,},)
     monkeypatch.setattr("camomilla.parsers.DjangoMultiPartParser", DummyParser)
 
     parser = MultipartJsonParser()
@@ -35,8 +36,11 @@ def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     assert parsed["foo"] == "bar"
     assert parsed["nested"]["baz"] == 1
     assert isinstance(parsed["nested"]["file"], SimpleUploadedFile)
+    assert isinstance(parsed["nested_list"][1]["file"], SimpleUploadedFile)
     parsed["nested"]["file"].seek(0)
     assert parsed["nested"]["file"].read() == file_content
+    parsed["nested_list"][1]["file"].seek(0)
+    assert parsed["nested_list"][1]["file"].read() == file_content
 
 @pytest.mark.django_db
 def test_multipart_json_parser_handles_parse_error(monkeypatch):
