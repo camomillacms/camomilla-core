@@ -42,13 +42,44 @@ class PageQuerySet(QuerySet):
 
 
 class UrlNodeManager(models.Manager):
+
+    def get_reverse_pages_relations(self):
+        """
+        Get all reverse relations coming from AbstractPages models.
+        This is used to annotate the UrlNode with the related page fields.
+        """
+        from camomilla.models.page import AbstractPage
+
+        relations = []
+
+        for field in self.model._meta.get_fields():
+            if not (hasattr(field, "related_model") and field.one_to_one):
+                continue
+
+            if not issubclass(field.related_model, AbstractPage):
+                continue
+
+            if field.remote_field.name != "url_node":
+                continue
+
+            related_name = field.get_accessor_name()
+            relations.append(
+                {
+                    "name": related_name,
+                    "model": field.related_model,
+                    "field_name": field.remote_field.name,
+                    "field": field,
+                }
+            )
+        return relations
+
     @property
     def related_names(self):
-        self._related_names = getattr(
-            self,
-            "_related_names",
-            super().get_queryset().values_list("related_name", flat=True).distinct(),
-        )
+        self._related_names = getattr(self, "_related_names", None)
+        if self._related_names is None:
+            self._related_names = list(
+                set([rel["name"] for rel in self.get_reverse_pages_relations()])
+            )
         return self._related_names
 
     def _annotate_fields(
