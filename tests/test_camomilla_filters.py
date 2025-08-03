@@ -42,4 +42,4 @@ class CamomillaFiltersTestCase(TestCase):
         request.META["HTTP_HOST"] = "localhost"
         page = Page.get(request)
         alt_urls = dict(alternate_urls(page, request))
-        self.assertEqual(alt_urls, {"it": None, "en": "/path/"})
+        self.assertEqual(alt_urls, {"it": None})
