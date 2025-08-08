@@ -3,7 +3,6 @@ from rest_framework.response import Response
 
 from camomilla.models import Media, MediaFolder
 from camomilla.parsers import MultipartJsonParser
-from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import (
     MediaFolderSerializer,
     MediaListSerializer,
@@ -33,7 +32,6 @@ class MediaFolderViewSet(
 ):
     model = MediaFolder
     serializer_class = MediaFolderSerializer
-    permission_classes = (CamomillaBasePermissions,)
     items_per_page = 18
     search_fields = ["title", "alt_text", "file"]
 
@@ -85,6 +83,5 @@ class MediaViewSet(
 ):
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
-    permission_classes = (CamomillaBasePermissions,)
     model = Media
     parser_classes = [MultipartJsonParser, JSONParser]

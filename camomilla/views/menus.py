@@ -7,7 +7,6 @@ from rest_framework.response import Response
 
 from camomilla.models import AbstractPage, Menu
 from camomilla.models.page import UrlNode
-from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import ContentTypeSerializer, MenuSerializer
 from camomilla.serializers.page import UrlNodeSerializer
 from camomilla.views.base import BaseModelViewset
@@ -17,7 +16,6 @@ from camomilla.views.decorators import active_lang
 class MenuViewSet(BaseModelViewset):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
-    permission_classes = (CamomillaBasePermissions,)
     model = Menu
 
     lookup_field = "key"

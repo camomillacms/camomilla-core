@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from rest_framework.decorators import action
 
 from camomilla.models import Content
-from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import ContentSerializer
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
@@ -14,7 +13,6 @@ class ContentViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
     model = Content
-    permission_classes = (CamomillaBasePermissions,)
 
     @action(detail=True, methods=["get", "patch"])
     def djsuperadmin(self, request, pk):

@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from camomilla.permissions import CamomillaBasePermissions, CamomillaSuperUser, ReadOnly
+from camomilla.permissions import CamomillaSuperUser, ReadOnly
 from camomilla.serializers import (
     PermissionSerializer,
     UserProfileSerializer,
@@ -30,7 +30,6 @@ class UserViewSet(BaseModelViewset):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     model = get_user_model()
-    permission_classes = (CamomillaSuperUser | CamomillaBasePermissions,)
 
     @action(detail=False, methods=["get", "put"], permission_classes=(IsAuthenticated,))
     def current(self, request):

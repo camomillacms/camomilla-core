@@ -1,6 +1,5 @@
 from camomilla.models import Page
 from camomilla.models.page import UrlNode, UrlRedirect
-from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import PageSerializer
 from camomilla.serializers.page import RouteSerializer
 from camomilla.utils.translation import url_lang_decompose
@@ -18,7 +17,6 @@ from camomilla.settings import PAGE_ROUTER_CACHE
 class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
     queryset = Page.objects.all()
     serializer_class = PageSerializer
-    permission_classes = (CamomillaBasePermissions,)
     model = Page
 
 

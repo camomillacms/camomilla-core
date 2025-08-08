@@ -9,14 +9,20 @@ client = APIClient()
 def test_right_permissions():
     response = client.post("/api/models/test-model/", {"title": "test"}, format="json")
     assert response.status_code == 401
+    response = client.get("/api/models/test-model/")
+    assert response.status_code == 401
     token = login_user()
     client.credentials(HTTP_AUTHORIZATION="Token " + token)
     response = client.post("/api/models/test-model/", {"title": "test"}, format="json")
     assert response.status_code == 403
+    response = client.get("/api/models/test-model/")
+    assert response.status_code == 200
     token = login_staff()
     client.credentials(HTTP_AUTHORIZATION="Token " + token)
     response = client.post("/api/models/test-model/", {"title": "test"}, format="json")
     assert response.status_code == 403
+    response = client.get("/api/models/test-model/")
+    assert response.status_code == 200
     token = login_superuser()
     client.credentials(HTTP_AUTHORIZATION="Token " + token)
     response = client.post("/api/models/test-model/", {"title": "test"}, format="json")
