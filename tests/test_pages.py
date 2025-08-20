@@ -347,3 +347,21 @@ class PagesTestCase(TestCase):
         response = self.client.get("/it/permalink_6_it/")
         assert response.status_code == 301
         assert response.url == "/it/permalink_6_it_changed/"
+
+    @pytest.mark.django_db
+    def test_page_keywords(self):
+        # Create page with keywords field and check it's given back as expected
+        response = self.client.post(
+            "/api/camomilla/pages/",
+            {
+                "og_description_it" : "Keywords Test",
+                "keywords_it" : ['key1', 'key2']
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert len(Page.objects.all()) == 1
+        page = Page.objects.first()
+        assert page.og_description_it == "Keywords Test"
+        assert page.keywords_it == ['key1', 'key2']
