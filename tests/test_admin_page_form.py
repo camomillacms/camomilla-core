@@ -36,7 +36,7 @@ class AdminPageFormTestCase(TestCase):
 
         page_admin = PageAdmin(Page, AdminSite())
         form = page_admin.get_form(request)()
-        self.assertEqual(len(list(form.fields)), 33)
+        self.assertEqual(len(list(form.fields)), 35)
         self.assertTrue("template" in list(form.fields))
         self.assertListEqual(
             form.fields["template"].widget.choices,
@@ -54,7 +54,7 @@ class AdminPageFormTestCase(TestCase):
 
         page_admin = PageAdmin(Page, AdminSite())
         form = page_admin.get_form(request_with_cookies)()
-        self.assertEqual(len(list(form.fields)), 33)
+        self.assertEqual(len(list(form.fields)), 35)
         self.assertTrue("template" in list(form.fields))
         self.assertListEqual(
             form.fields["template"].widget.choices,

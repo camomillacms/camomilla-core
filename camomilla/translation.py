@@ -12,6 +12,7 @@ class SeoMixinTranslationOptions(TranslationOptions):
         "og_type",
         "og_url",
         "canonical",
+        "keywords",
     )
 
 
