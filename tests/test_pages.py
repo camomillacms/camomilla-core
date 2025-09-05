@@ -355,7 +355,7 @@ class PagesTestCase(TestCase):
             "/api/camomilla/pages/",
             {
                 "og_description_it" : "Keywords Test",
-                "keywords_it" : ['key1', 'key2']
+                "keywords_it" : 'key1, key2'
             },
             format="json",
         )
@@ -364,4 +364,4 @@ class PagesTestCase(TestCase):
         assert len(Page.objects.all()) == 1
         page = Page.objects.first()
         assert page.og_description_it == "Keywords Test"
-        assert page.keywords_it == ['key1', 'key2']
+        assert page.keywords_it == 'key1, key2'
