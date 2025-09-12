@@ -16,7 +16,7 @@ class SeoMixin(models.Model):
         on_delete=models.SET_NULL,
         related_name="%(app_label)s_%(class)s_og_images",
     )
-    keywords = models.JSONField(default=list)
+    keywords = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
         abstract = True
