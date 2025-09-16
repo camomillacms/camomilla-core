@@ -91,6 +91,10 @@ class UserSerializer(BaseModelSerializer):
             "user_permissions",
             "has_token",
             "is_superuser",
+            "is_staff",
+            "is_active",
+            "date_joined",
+            "last_login",
         )
 
     def validate_password(self, value):
