@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v6.2.1 (2025-10-12)
+
+### Bug Fixes
+
+- **keywords**: From json field to simple charfield
+  ([`08d42dc`](https://github.com/camomillacms/camomilla-core/commit/08d42dcbd2a2fa28dc892225d9f5846e19fa6860))
+
+- **structured**: Update to dsf 1.1.2 to fix missin qs bug in structured fields
+  ([`2ad80fc`](https://github.com/camomillacms/camomilla-core/commit/2ad80fcc524da74a4e56f5968846de764cbece36))
+
+- **UserSerializer**: Add missing fields from Django User Model
+  ([`3ae21ba`](https://github.com/camomillacms/camomilla-core/commit/3ae21ba8750c2532a49c3981f5bc82c88ec43176))
+
+### Chores
+
+- Update semantic release to generate changelog
+  ([`28d85f0`](https://github.com/camomillacms/camomilla-core/commit/28d85f0da9f40dd4972f23e97845762a1ff3951a))
+
+### Documentation
+
+- Update changelog
+  ([`11cba4a`](https://github.com/camomillacms/camomilla-core/commit/11cba4a69451f01038e3f6b25332bb87d8bb8857))
+
+
 ## v6.2.0 (2025-08-27)
 
 ### Fix
