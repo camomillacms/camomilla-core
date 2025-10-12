@@ -1,5 +1,68 @@
 # CHANGELOG
 
+<!-- version list -->
+
+## v6.2.0 (2025-08-27)
+
+### Fix
+
+ * Fix default template cosmetics ([`5feff32`](https://github.com/camomillacms/camomilla-core/commit/5feff32))
+
+ * Fix page breadcrumb using now routerlink ([`7682706`](https://github.com/camomillacms/camomilla-core/commit/7682706))
+
+ * Fix UrlNode manager related names calculation ([`34a469c`](https://github.com/camomillacms/camomilla-core/commit/34a469c))
+
+ * Get correct language page if asking page router with prefixed lang ([`82c85e2`](https://github.com/camomillacms/camomilla-core/commit/82c85e2))
+
+ * Make template_name not required in django admin ([`367e951`](https://github.com/camomillacms/camomilla-core/commit/367e951))
+
+ * Remove current language from alternates ([`c1b77ac`](https://github.com/camomillacms/camomilla-core/commit/c1b77ac))
+
+### Chores
+
+ * Added django_debug_toolbar for development purposes ([`3c48bfd`](https://github.com/camomillacms/camomilla-core/commit/3c48bfd))
+
+### Features
+
+ * Added cache to router endpoint ([`f14b9e3`](https://github.com/camomillacms/camomilla-core/commit/f14b9e3))
+
+### Refactoring
+
+ * Point to camomilla settings instead of modeltranslaor ones ([`f123917`](https://github.com/camomillacms/camomilla-core/commit/f123917))
+
+## v6.1.4 (2025-07-28)
+
+### Fix
+
+ * Add StructuredModelSerializer to abstract page serializer ([`151aa9e`](https://github.com/camomillacms/camomilla-core/commit/151aa9e))
+
+ * Fix AbstractPageMinimalSerializer name serialization ([`ea533a8`](https://github.com/camomillacms/camomilla-core/commit/ea533a8))
+
+### Chores
+
+ * Drop support for python 3.8 ([`2196531`](https://github.com/camomillacms/camomilla-core/commit/2196531))
+
+
+## v6.1.3 (2025-07-24)
+
+### Fix
+
+ * Fix menu nodes serializing entire pages ([`a71976b`](https://github.com/camomillacms/camomilla-core/commit/a71976b))
+
+ * Rollback childs property ([`d76f7f4`](https://github.com/camomillacms/camomilla-core/commit/d76f7f4))
+
+
+## v6.1.2 (2025-07-23)
+
+### Fix
+
+ * Add possibility to import action serializers from strings ([`1efc4d0`](https://github.com/camomillacms/camomilla-core/commit/1efc4d0))
+
+ * Serializer can be passed as a path to import ([`5bb6652`](https://github.com/camomillacms/camomilla-core/commit/5bb6652))
+
+### Chores
+
+ * Update semantic release to v10 ([`2120dcc`](https://github.com/camomillacms/camomilla-core/commit/2120dcc))
 
 
 ## v6.1.1 (2025-07-18)
