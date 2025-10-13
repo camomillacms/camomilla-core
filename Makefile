@@ -22,20 +22,7 @@ lint:
 
 test: clean
 	uv run flake8 camomilla
-	uv run pytest $(if $(DB_BACKEND),--db-backend=$(DB_BACKEND),) --cov=camomilla -s --cov-report=xml --cov-report=term-missing
-
-# Explicit DB targets (useful for CI and local clarity)
-test-sqlite: clean
-	uv run flake8 camomilla
-	uv run pytest --db-backend=sqlite --cov=camomilla -s --cov-report=xml --cov-report=term-missing
-
-test-postgres: clean
-	uv run flake8 camomilla
-	uv run pytest --db-backend=postgres --cov=camomilla -s --cov-report=xml --cov-report=term-missing
-
-test-mysql: clean
-	uv run flake8 camomilla
-	uv run pytest --db-backend=mysql --cov=camomilla -s --cov-report=xml --cov-report=term-missing
+	uv run pytest --cov=camomilla -s --cov-report=xml --cov-report=term-missing
 
 docs-dev: clean
 	@pnpm run docs:dev

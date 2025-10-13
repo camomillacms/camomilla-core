@@ -4,6 +4,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.postgres.search import SearchVector, SearchQuery, TrigramSimilarity
 from camomilla.utils.query_parser import ConditionParser
 from django.conf import settings
+from django.db import connection
 from django.utils.module_loading import import_string
 
 
@@ -84,7 +85,9 @@ class PaginateStackMixin:
         search_string = self.request.GET.get("search", None)
         search_fields = search_fields or getattr(self, "search_fields", [])
         if search_string and len(search_fields) > 0:
-            if "sqlite" in settings.DATABASES["default"]["ENGINE"]:
+            # Use the active connection vendor instead of relying only on settings.
+            # This is safer in test contexts where settings may have been mutated.
+            if connection.vendor != "postgresql":
                 filter_statement = Q()
                 for field in search_fields:
                     filter_statement |= Q(**{field + "__icontains": search_string})

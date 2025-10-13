@@ -101,6 +101,7 @@ jobs:
           uv sync --dev
       - name: 🔬 Test with pytest (Postgres)
         env:
+          CAMOMILLA_TEST_DB_BACKEND: postgres
           COVERAGE_FILE: .coverage.postgres-${{ matrix.python-version }}-${{ matrix.django-version }}
         run: make test-postgres
       - name: 📦 Minimize uv cache
@@ -135,7 +136,9 @@ jobs:
       - name: 🥒 Prepare Django version
         run: |
           case "${{ matrix.django-version }}" in
+            "4.2") echo "DJANGO_VERSION='Django>=4.2,<5.0'" >> $GITHUB_ENV ;;
             "5.1") echo "DJANGO_VERSION='Django>=5.1,<5.2'" >> $GITHUB_ENV ;;
+            "5.2") echo "DJANGO_VERSION='Django>=5.2,<5.3'" >> $GITHUB_ENV ;;
           esac
       - uses: actions/checkout@v5
       - name: 🐍 Set up Python ${{ matrix.python-version }}
@@ -159,6 +162,7 @@ jobs:
           uv add --dev mysqlclient>=2.2,<3.0
       - name: 🔬 Test with pytest (MySQL)
         env:
+          CAMOMILLA_TEST_DB_BACKEND: mysql
           COVERAGE_FILE: .coverage.mysql-${{ matrix.python-version }}-${{ matrix.django-version }}
         run: make test-mysql
       - name: 📦 Minimize uv cache
