@@ -45,7 +45,7 @@ jobs:
       - name: 🚧 Setup build environment
         uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.x"
+          python-version: "3.12"
   
       - name: 📦 Build package distributions
         run: uv build
