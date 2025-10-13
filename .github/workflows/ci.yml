@@ -41,7 +41,7 @@ jobs:
           uv-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
     - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
       run: |
-        uv add --dev "${{ env.DJANGO_VERSION }}"
+        uv add --dev ${{ env.DJANGO_VERSION }}
         uv sync --dev
     - name: 🔬 Test with pytest and calculate coverage 
       env:
