@@ -45,7 +45,7 @@ jobs:
           uv-${{ runner.os }}
     - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
       run: |
-        uv add --dev "Django==${{ matrix.django-version }}"
+        uv add --dev "Django~=${{ matrix.django-version }}"
         uv sync --dev
         uv remove Django || true
     - name: 🔬 Test with pytest and calculate coverage 
