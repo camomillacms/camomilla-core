@@ -72,13 +72,15 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12"]
-        django-version: ["5.1"]
+        django-version: ["4.2", "5.1", "5.2"]
     name: 🐘 Postgres tests (Py ${{ matrix.python-version }} / Dj ${{ matrix.django-version }})
     steps:
       - name: 🥒 Prepare Django version
         run: |
           case "${{ matrix.django-version }}" in
+            "4.2") echo "DJANGO_VERSION='Django>=4.2,<5.0'" >> $GITHUB_ENV ;;
             "5.1") echo "DJANGO_VERSION='Django>=5.1,<5.2'" >> $GITHUB_ENV ;;
+            "5.2") echo "DJANGO_VERSION='Django>=5.2,<5.3'" >> $GITHUB_ENV ;;
           esac
       - uses: actions/checkout@v5
       - name: 🐍 Set up Python ${{ matrix.python-version }}
@@ -95,9 +97,7 @@ jobs:
             uv-pg-${{ matrix.python-version }}-${{ matrix.django-version }}-
       - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
         run: |
-          # DJANGO_VERSION was exported to $GITHUB_ENV in previous step; source it.
-          echo "Using ${DJANGO_VERSION}"
-          uv add --dev ${DJANGO_VERSION}
+          uv add --dev ${{ env.DJANGO_VERSION }}
           uv sync --dev
       - name: 🔬 Test with pytest (Postgres)
         env:
@@ -129,7 +129,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12"]
-        django-version: ["5.1"]
+        django-version: ["4.2", "5.1", "5.2"]
     name: 🐬 MySQL tests (Py ${{ matrix.python-version }} / Dj ${{ matrix.django-version }})
     steps:
       - name: 🥒 Prepare Django version
@@ -152,8 +152,7 @@ jobs:
             uv-mysql-${{ matrix.python-version }}-${{ matrix.django-version }}-
       - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
         run: |
-          echo "Using ${DJANGO_VERSION}"
-          uv add --dev ${DJANGO_VERSION}
+          uv add --dev ${{ env.DJANGO_VERSION }}
           uv sync --dev
       - name: ➕ Install MySQL driver
         run: |
