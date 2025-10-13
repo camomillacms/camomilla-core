@@ -14,7 +14,7 @@ Install django-camomilla-cms and django from pip
 
 ```bash
 $ pip install django
-$ pip install django-camomilla-cms==6.0.0
+$ pip install django-camomilla-cms>=6.0.0
 ```
 
 Create a new django project
