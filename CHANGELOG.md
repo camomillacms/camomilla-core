@@ -2,6 +2,54 @@
 
 <!-- version list -->
 
+## v6.2.2 (2025-10-13)
+
+### Bug Fixes
+
+- **tags**: Fix to_pretty_dict template tag not rendering UUID on first try
+  ([`9809e52`](https://github.com/camomillacms/camomilla-core/commit/9809e5204b07ab50e47ce657454efd2b2f038c1b))
+
+### Chores
+
+- Drop support for python 3.9 and django 3.2
+  ([`dcd1c96`](https://github.com/camomillacms/camomilla-core/commit/dcd1c967d9e373b37fda7ce79918d8836cd48223))
+
+- Fix CI
+  ([`6906b0b`](https://github.com/camomillacms/camomilla-core/commit/6906b0ba65da09f46cb6c6d1e9210fe2357348e4))
+
+- Fix ci django uv add
+  ([`888be41`](https://github.com/camomillacms/camomilla-core/commit/888be41f44d1c2ad7b744f46e9f87a44dc7ca10d))
+
+- Fix coverage upload
+  ([`ef05aff`](https://github.com/camomillacms/camomilla-core/commit/ef05affa1a160777400e987ad1e3baa9a308f028))
+
+- Fix coverage upload and django selection
+  ([`1ff96db`](https://github.com/camomillacms/camomilla-core/commit/1ff96db6740ebffae28c4c7cca01378b27dee5e6))
+
+- Fix coverage upload and django selection
+  ([`e1a61a2`](https://github.com/camomillacms/camomilla-core/commit/e1a61a2e068ceafa3038b8d92d87f16da8eab169))
+
+- Fix python version window
+  ([`0ae368c`](https://github.com/camomillacms/camomilla-core/commit/0ae368c14e956790203ae05acbac856bddc56b04))
+
+- Fix upload of coverage.html report
+  ([`8040b39`](https://github.com/camomillacms/camomilla-core/commit/8040b39d9e5481ec8b85b3eb73085e546c4d0e03))
+
+- Move to uv package manager
+  ([`38050a9`](https://github.com/camomillacms/camomilla-core/commit/38050a92bd4c882604eec787272ca4355e21e540))
+
+- Remove django version from uv cache keys in CI pipeline
+  ([`c6f4181`](https://github.com/camomillacms/camomilla-core/commit/c6f4181e90aa5e9645a86a770bdf705ac6595f3e))
+
+- Update CI to merge coverages and upload all in one
+  ([`b6c72b4`](https://github.com/camomillacms/camomilla-core/commit/b6c72b4bb5ef960e5bf56f992ee1c40a762888d2))
+
+### Refactoring
+
+- Sobstitute print with logger
+  ([`722b217`](https://github.com/camomillacms/camomilla-core/commit/722b217c46d603506db93a420ab616d586752e29))
+
+
 ## v6.2.1 (2025-10-12)
 
 ### Bug Fixes
