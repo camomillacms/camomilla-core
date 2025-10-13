@@ -6,6 +6,7 @@ import json
 import re
 import html
 from datetime import datetime
+from uuid import UUID
 
 register = template.Library()
 
@@ -62,6 +63,8 @@ def to_pretty_dict(instance):
     for key, value in data.items():
         if isinstance(value, BaseModel):
             data[key] = value.model_dump()
+        elif isinstance(value, UUID):
+            data[key] = str(value)
 
     formatted_dict = "{\n" + pretty_dict(data, indent_level=1) + "\n}"
 
