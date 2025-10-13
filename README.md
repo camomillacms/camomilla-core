@@ -50,7 +50,7 @@ Install django-camomilla-cms and django from pip
 
 ```bash
 $ pip install django
-$ pip install django-camomilla-cms==6.0.0
+$ pip install django-camomilla-cms>=6.0.0
 ```
 
 Create a new django project
@@ -100,3 +100,35 @@ $ python manage.py runserver
 ## 🧑‍💻 How to Contribute
 
 We welcome contributions to Camomilla! If you want to contribute, please read our [contributing guide](./CONTRIBUTING.md) for more information on how to get started.
+
+### 🚀 Local Development (uv)
+
+We use [uv](https://github.com/astral-sh/uv) for fast dependency management and isolated environments.
+
+1. Install uv (one time):
+    macOS / Linux:
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+    Homebrew:
+    ```bash
+    brew install uv
+    ```
+2. Create a new venv inside the project (one time):
+    ```bash
+    uv venv
+    source .venv/bin/activate
+    ```
+2. Sync dependencies (runtime + dev):
+    ```bash
+    make sync
+    ```
+3. Run tests:
+    ```bash
+    make test
+    ```
+4. Format & lint:
+    ```bash
+    make format lint
+    ```
+

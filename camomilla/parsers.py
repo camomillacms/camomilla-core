@@ -1,5 +1,4 @@
 import json
-import six
 
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError
@@ -58,4 +57,4 @@ class MultipartJsonParser(parsers.BaseParser):
                 data = compile_payload(data, key.split("."), value)
             return data
         except MultiPartParserError as exc:
-            raise ParseError("Multipart form parse error - %s" % six.text_type(exc))
+            raise ParseError("Multipart form parse error - %s" % str(exc))
