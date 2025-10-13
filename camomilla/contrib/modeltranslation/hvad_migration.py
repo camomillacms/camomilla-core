@@ -1,5 +1,8 @@
 from django.conf import settings
 from django.db import migrations, connection
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class KeepTranslationsMixin:
@@ -111,7 +114,7 @@ class KeepTranslationsMixin:
             table = Model._meta.db_table + "_translation"
             for row in rows:
                 with connection.cursor() as cursor:
-                    print(row)
+                    logger.debug("Inserting row into %s: %s", table, row)
                     cursor.execute(
                         "INSERT INTO {0} ({1}) VALUES ({2});".format(
                             table,
