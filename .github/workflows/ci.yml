@@ -43,7 +43,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage-data-${{ github.job }}-${{ strategy.job-index }}
-        path: .coverage.*
+        path: .coverage
         include-hidden-files: true
 
   coverage:
@@ -87,6 +87,5 @@ jobs:
 
       - name: 🩺 Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        with:
-          flags: backend
-          token: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
