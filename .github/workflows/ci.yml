@@ -30,11 +30,9 @@ jobs:
         path: |
           ~/.cache/uv
           .venv
-        key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+        key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
         restore-keys: |
-          uv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.django-version }}-
-          uv-${{ runner.os }}-${{ matrix.python-version }}
-          uv-${{ runner.os }}
+          uv-${{ runner.os }}-
     - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
       run: |
         uv add --dev "${{ matrix.django-version }}"
