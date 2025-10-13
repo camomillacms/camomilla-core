@@ -11,19 +11,11 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        django-version: ["3.2", "4.2", "5.1"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        django-version: ["Django>=4.2,<5.0", "Django>=5.1,<5.2", "Django>=5.2,<5.3"]
         exclude:
-          - python-version: 3.9 
-            django-version: 5.1
-          - python-version: 3.11 
-            django-version: 3.2
-          - python-version: 3.12 
-            django-version: 3.2
           - python-version: 3.13
-            django-version: 3.2
-          - python-version: 3.13
-            django-version: 4.2
+            django-version: "Django>=4.2,<5.0"
     name: 🦠 Test on Python ${{ matrix.python-version }} with Django ${{ matrix.django-version }}
 
     steps:
@@ -45,7 +37,7 @@ jobs:
           uv-${{ runner.os }}
     - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
       run: |
-        uv add --dev "Django~=${{ matrix.django-version }}"
+        uv add --dev "${{ matrix.django-version }}"
         uv sync --dev
         uv remove Django || true
     - name: 🔬 Test with pytest and calculate coverage 
