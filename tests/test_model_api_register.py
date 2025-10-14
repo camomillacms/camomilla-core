@@ -1,23 +1,23 @@
 import pytest
-from django.test import TestCase
+from django.test import TransactionTestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
 from example.website.models import TestModel
 
 
-class ModelAPiRegisterTestCase(TestCase):
+class ModelAPiRegisterTestCase(TransactionTestCase):
+    reset_sequences = True
+    
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    @pytest.mark.django_db
     def test_model_api_register_access(self):
         client = APIClient()
         response = client.post("/api/models/test-model/")
         assert response.status_code == 401
 
-    @pytest.mark.django_db
     def test_model_api_register_crud(self):
         # Create test model 1
         response = self.client.post(
@@ -75,7 +75,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert test_model.id == 1
         assert test_model.title == "title_test_model_1"
 
-    @pytest.mark.django_db
     def test_model_api_register_listing(self):
         # Create test model 1
         response = self.client.post(
@@ -172,7 +171,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert response.json()[0]["id"] == 3
         assert response.json()[0]["title"] == "title_test_model_3"
 
-    @pytest.mark.django_db
     def test_model_api_register_listing_filtered_model(self):
         # Create filter argument register model 1
         response = self.client.post(
@@ -206,7 +204,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert response.json()[1]["id"] == 1
         assert response.json()[1]["field_filtered"] == "test 1"
 
-    @pytest.mark.django_db
     def test_model_api_register_base_view_search(self):
         # Verify search_fields = ["description"]
         # Create custom arguments register model 1
@@ -247,7 +244,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert response.json()[0]["id"] == 1
         assert response.json()[0]["description"] == "description_1"
 
-    @pytest.mark.django_db
     def test_model_api_register_base_serializer_search(self):
         # Verify description = BaseModelSerializer.CharField(min_length=3)
         # Create custom arguments register model 1
@@ -266,7 +262,6 @@ class ModelAPiRegisterTestCase(TestCase):
         )
         assert response.status_code == 201
 
-    @pytest.mark.django_db
     def test_model_api_register_view_search(self):
         # Verify {"search_fields": ["name"]}
         # Create custom arguments register model 1
@@ -306,7 +301,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert len(response.json()) == 1
         assert response.json()[0]["name"] == "name_1"
 
-    @pytest.mark.django_db
     def test_model_api_register_serializer_search(self):
         # Verify {"fields": ["name"]}
         # Create custom arguments register model
@@ -319,7 +313,6 @@ class ModelAPiRegisterTestCase(TestCase):
         assert "id" not in response.json()
         assert response.json()["name"] == "1234"
 
-    @pytest.mark.django_db
     def test_model_api_register_listing_filtered_model(self):
         # Verify filters={"field_filtered__icontains": "test"}
         # Create filter argument register model 1

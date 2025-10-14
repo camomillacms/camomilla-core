@@ -17,6 +17,9 @@ from PIL import Image
 from camomilla.fields import JSONField
 from camomilla.settings import THUMBNAIL_FOLDER, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH
 from camomilla.storages.optimize import OptimizedStorage
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractMediaFolder(models.Model):
@@ -141,7 +144,7 @@ class Media(models.Model):
                     "mode": image.mode,
                 }
         except Exception as ex:
-            print(ex)
+            logger.error("Error updating file info for %s: %s", self.file.name, ex)
             return False
 
     def _make_thumbnail(self, img_bytes=None):

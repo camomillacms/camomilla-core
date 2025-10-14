@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.apps import AppConfig
 from django.conf import settings
+from camomilla.utils.mysql import monkey_patch_mysql_datetime
 
 
 class CamomillaConfig(AppConfig):
@@ -14,3 +15,4 @@ class CamomillaConfig(AppConfig):
             migration_modules["camomilla"] = "camomilla_migrations"
         setattr(settings, "MIGRATION_MODULES", migration_modules)
         self.module.autodiscover()
+        monkey_patch_mysql_datetime()

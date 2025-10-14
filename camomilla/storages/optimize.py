@@ -6,6 +6,9 @@ from PIL import Image
 
 from camomilla import settings
 from camomilla.storages.default import get_default_storage_class
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OptimizedStorage(get_default_storage_class()):
@@ -67,5 +70,5 @@ class OptimizedStorage(get_default_storage_class()):
             return optimized_content, True
         except Exception as e:
             traceback.print_exc()
-            print(f"Error optimizing image {name}: {str(e)}")
+            logger.error("Error optimizing image %s: %s", name, str(e))
             return content, False

@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: 📌 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -43,18 +43,12 @@ jobs:
           verbosity: ${{ github.event.inputs.verbosity || 1 }}
 
       - name: 🚧 Setup build environment
-        uses: actions/setup-python@v4
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.x"
-          cache: "pip"
-  
-      - name: 🧩 Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
+          python-version: "3.12"
   
       - name: 📦 Build package distributions
-        run: python -m build
+        run: uv build
 
       - name: 📤 Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

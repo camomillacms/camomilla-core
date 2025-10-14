@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def autodiscover_context_files():
     """
     Auto-discover INSTALLED_APPS template_context.py modules and fail silently when
@@ -37,15 +42,15 @@ def autodiscover_context_files():
             if sys.argv[1] in ("runserver", "runserver_plus"):
                 if not ctx_registry.get_registered_info().items():
                     return
-                print("Camomilla context files:")
+                logger.debug("Camomilla context files:")
                 for k, v in ctx_registry.get_registered_info().items():
-                    print(f"{k}:")
+                    logger.debug("%s:", k)
                     models = v.get("models")
                     templates = v.get("templates")
                     if models:
-                        print(f"  models: {models}")
+                        logger.debug("  models: %s", models)
                     if templates:
-                        print(f"  templates: {templates}")
-                    print("\n")
+                        logger.debug("  templates: %s", templates)
+                    logger.debug("")
         except IndexError:
             pass

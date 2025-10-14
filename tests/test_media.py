@@ -1,6 +1,6 @@
 import pytest
 import json
-from django.test import TestCase
+from django.test import TransactionTestCase
 from camomilla.models import Media
 from .utils.api import login_superuser
 from .utils.media import load_asset_and_remove_media
@@ -9,13 +9,14 @@ from rest_framework.test import APIClient
 client = APIClient()
 
 
-class MediaTestCase(TestCase):
+class MediaTestCase(TransactionTestCase):
+    reset_sequences = True
+
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    @pytest.mark.django_db
     def test_media_api_crud(self):
         # Create media 1
         asset = load_asset_and_remove_media("10595073.png")
@@ -96,7 +97,6 @@ class MediaTestCase(TestCase):
         assert media.id == 1
         assert media.title == "Test 1"
 
-    @pytest.mark.django_db
     def test_media_compression(self):
         asset = load_asset_and_remove_media("Sample-jpg-image-10mb.jpg")
         asset_size = asset.size
@@ -124,7 +124,6 @@ class MediaTestCase(TestCase):
         assert media.file.size < asset_size
         assert media.file.size < 1000000  # 1MB
 
-    @pytest.mark.django_db
     def test_inflating_prevent(self):
         asset = load_asset_and_remove_media("optimized.jpg")
         asset_size = asset.size

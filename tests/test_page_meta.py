@@ -14,7 +14,7 @@ class PagaMetaTestCase(TestCase):
         token = login_superuser()
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_page_meta_rendering(self):
         asset = load_asset_and_remove_media("37059501.png")
         Media.objects.create(
@@ -38,7 +38,7 @@ class PagaMetaTestCase(TestCase):
         assert "<h1>I'm the custom template!</h1>" in content
         assert "<ul><li>Test Media</li></ul>" in content
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_page_meta_custom_parent_page(self):
         parent_page = Page.objects.create(
             title="Parent Page",
@@ -54,7 +54,7 @@ class PagaMetaTestCase(TestCase):
         )
         assert child_page.permalink == "/parent-page/child-page"
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_page_meta_custom_serializer(self):
 
         CustomPageMetaModel.objects.create(
@@ -78,7 +78,7 @@ class PagaMetaTestCase(TestCase):
             == "I'm coming from CustomPageSerializer! 🫡"
         )
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_page_meta_custom_serializer_error(self):
         with pytest.raises(ValueError) as exc_info:
             InvalidPageMetaModel.get_serializer()

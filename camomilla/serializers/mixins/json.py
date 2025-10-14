@@ -1,12 +1,7 @@
-import django
 from rest_framework.utils import model_meta
 
 from camomilla.utils import dict_merge
-
-if django.VERSION >= (4, 0):
-    from django.db.models import JSONField as DjangoJSONField
-else:
-    from django.contrib.postgres.fields import JSONField as DjangoJSONField
+from django.db.models import JSONField as DjangoJSONField
 
 
 class JSONFieldPatchMixin:
