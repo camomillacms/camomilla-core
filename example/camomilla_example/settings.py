@@ -14,6 +14,21 @@ from pathlib import Path
 from django.utils.translation import gettext_lazy as _
 import sys, os
 
+
+
+# Allow using PyMySQL as a drop-in for MySQLdb (mysqlclient) when the native
+# driver isn't installed. This keeps MySQL tests working without requiring
+# compiled dependencies locally. If mysqlclient is installed, this shim is
+# harmless because pymysql.install_as_MySQLdb simply provides the module name.
+#
+# UNCOMMENT THE FOLLOWING LINES IF YOU WANT TO USE PyMySQL
+# try: 
+#     import pymysql  # type: ignore
+
+#     pymysql.install_as_MySQLdb()
+# except Exception: 
+#     pass
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
