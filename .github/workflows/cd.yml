@@ -43,7 +43,6 @@ jobs:
           verbosity: ${{ github.event.inputs.verbosity || 1 }}
       
       - name: 🖨️ Update docs changelog
-        if: steps.release.outputs.new_version != ''
         run: |
           npm install
           npm run docs:publish
