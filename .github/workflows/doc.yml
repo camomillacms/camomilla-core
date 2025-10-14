@@ -49,10 +49,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build & Publish docs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run docs:publish
+      - name: Move CHANGELOG into docs
+        run: bash docs/.vuepress/moveCHANGELOG.sh
+
+      - name: Build docs
+        run: pnpm run docs:build
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/.vuepress/dist
+          publish_branch: "master:gh-pages"
+          commit_message: "docs: publish ${{ github.sha }}"
 
       - name: Summary
         if: always()
