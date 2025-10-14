@@ -41,13 +41,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           no_operation_mode: ${{ github.event.inputs.noop || 'false' }}
           verbosity: ${{ github.event.inputs.verbosity || 1 }}
-      
-      - name: 🖨️ Update docs changelog
-        run: |
-          npm install
-          npm run docs:publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🚧 Setup build environment
         uses: astral-sh/setup-uv@v6

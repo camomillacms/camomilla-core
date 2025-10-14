@@ -1,0 +1,61 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'docs/**'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["🚀 Release"]
+    types:
+      - completed
+
+permissions:
+  contents: write  # required to push to gh-pages
+  pages: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event_name != 'workflow_run' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.head_branch == 'master') }}
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build & Publish docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run docs:publish
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Docs workflow completed at $(date -u)" >> $GITHUB_STEP_SUMMARY
