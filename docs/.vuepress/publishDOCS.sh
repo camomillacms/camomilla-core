@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-# abort on errors
-set -euo pipefail
+set -e
 
 echo "==> Preparing to publish docs"
 
