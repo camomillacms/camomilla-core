@@ -5,7 +5,7 @@ from .utils.api import login_user, login_superuser, login_staff
 client = APIClient()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_right_permissions():
     response = client.post("/api/models/test-model/", {"title": "test"}, format="json")
     assert response.status_code == 401

@@ -17,7 +17,7 @@ def init_test():
     )
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_simple_relation_model_api_endpoint():
     response = client.get("/api/models/simple-relation-model/")
     assert response.status_code == 200
@@ -43,7 +43,7 @@ def test_simple_relation_model_api_endpoint():
     ]
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_test_model_api_endpoint():
     response = client.get("/api/models/test-model/")
     assert response.status_code == 200
