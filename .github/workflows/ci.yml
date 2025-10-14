@@ -46,7 +46,7 @@ jobs:
     - name: 🔬 Test with pytest and calculate coverage 
       env:
         COVERAGE_FILE: .coverage.${{ matrix.python-version }}-${{ matrix.django-version }}
-      run: make test-sqlite
+      run: make test
     - name: 📦 Minimize uv cache
       run: uv cache prune --ci
     - name: 📦 Upload coverage data
@@ -103,7 +103,7 @@ jobs:
         env:
           CAMOMILLA_TEST_DB_BACKEND: postgres
           COVERAGE_FILE: .coverage.postgres-${{ matrix.python-version }}-${{ matrix.django-version }}
-        run: make test-postgres
+        run: make test
       - name: 📦 Minimize uv cache
         run: uv cache prune --ci
       - name: 📦 Upload coverage data
@@ -164,7 +164,7 @@ jobs:
         env:
           CAMOMILLA_TEST_DB_BACKEND: mysql
           COVERAGE_FILE: .coverage.mysql-${{ matrix.python-version }}-${{ matrix.django-version }}
-        run: make test-mysql
+        run: make test
       - name: 📦 Minimize uv cache
         run: uv cache prune --ci
       - name: 📦 Upload coverage data
