@@ -1,6 +1,6 @@
 from django.db import models
 
-from .json import ArrayField, JSONField
+from .json import JSONField
 
 ORDERING_ACCEPTED_FIELDS = (
     models.BigIntegerField,
@@ -10,4 +10,4 @@ ORDERING_ACCEPTED_FIELDS = (
     models.SmallIntegerField,
 )
 
-__all__ = ["JSONField", "ArrayField", "ORDERING_ACCEPTED_FIELDS"]
+__all__ = ["JSONField", "ORDERING_ACCEPTED_FIELDS"]
