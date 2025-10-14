@@ -14,15 +14,16 @@ npm run docs:build
 cd docs/.vuepress/dist
 
 echo "==> Initializing temporary git repo"
-git init -q
-git checkout -b gh-pages >/dev/null 2>&1 || git checkout gh-pages
-git add -A
-commit_msg="docs: publish $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-git commit -m "$commit_msg" >/dev/null 2>&1 || echo "Nothing to commit"
 
 REPO_SLUG="camomillacms/camomilla-core"
 TARGET_BRANCH="master:gh-pages"
 SOURCE_REF="master"
+
+git init -q
+git add -A
+commit_msg="docs: publish $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+git commit -m "$commit_msg" >/dev/null 2>&1 || echo "Nothing to commit"
+
 
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
 	echo "==> Detected GitHub Actions environment"
@@ -35,10 +36,8 @@ else
 	REMOTE_URL="git@github.com:${REPO_SLUG}.git"
 fi
 
-git remote add origin "$REMOTE_URL" 2>/dev/null || git remote set-url origin "$REMOTE_URL"
-
 echo "==> Pushing to ${REPO_SLUG} ${SOURCE_REF}->${TARGET_BRANCH} (force)"
-git push -f origin HEAD:${TARGET_BRANCH}
+git push -f $REMOTE_URL $TARGET_BRANCH
 
 cd - >/dev/null 2>&1
 echo "==> Docs published"
