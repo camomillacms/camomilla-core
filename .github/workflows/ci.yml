@@ -1,9 +1,19 @@
 name: 🧪 Test and Coverage
 
+# Our test process is intended to run on the following environments:
+# - Python 3.10, 3.11, 3.12, 3.13
+# - Django 4.2, 5.1, 5.2
+# - SQLite (all Python/Django versions)
+# - Postgres (Python 3.12, all Django versions)
+# - MySQL (Python 3.12, all Django versions)
+# We use uv to manage dependencies and caching.
+# We use pytest for testing and coverage.py for coverage reporting.
+# We upload coverage reports to Codecov and generate an HTML report as an artifact.
+
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ master, next ]
+    branches: [ master ]
 
 jobs:
   test-sqlite:
@@ -15,10 +25,9 @@ jobs:
         exclude:
           - python-version: 3.13
             django-version: "Django>=4.2,<5.0"
-    name: 🦠 Test on Python ${{ matrix.python-version }} with ${{ matrix.django-version }}
-
+    name: 🪶 SQLite test (Py ${{ matrix.python-version }} / Dj ${{ matrix.django-version }})
     steps:
-    - name: 🥒 Prepare Django version
+    - name: ⏲️ Prepare Django version
       run: |
         case "${{ matrix.django-version }}" in
           "4.2") echo "DJANGO_VERSION='Django>=4.2,<5.0'" >> $GITHUB_ENV ;;
@@ -39,7 +48,7 @@ jobs:
           uv-${{ matrix.python-version }}-
           uv-${{ matrix.python-version }}-${{ matrix.django-version }}-
           uv-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
-    - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
+    - name: 🧬 Sync dependencies (Django ${{ matrix.django-version }})
       run: |
         uv add --dev ${{ env.DJANGO_VERSION }}
         uv sync --dev
@@ -47,9 +56,9 @@ jobs:
       env:
         COVERAGE_FILE: .coverage.${{ matrix.python-version }}-${{ matrix.django-version }}
       run: make test
-    - name: 📦 Minimize uv cache
+    - name: 🗜️ Minimize uv cache
       run: uv cache prune --ci
-    - name: 📦 Upload coverage data
+    - name: ☁️ Upload coverage data
       uses: actions/upload-artifact@v4
       with:
         name: coverage-data-${{ matrix.python-version }}-${{ matrix.django-version }}
@@ -75,7 +84,7 @@ jobs:
         django-version: ["4.2", "5.1", "5.2"]
     name: 🐘 Postgres tests (Py ${{ matrix.python-version }} / Dj ${{ matrix.django-version }})
     steps:
-      - name: 🥒 Prepare Django version
+      - name: ⏲️ Prepare Django version
         run: |
           case "${{ matrix.django-version }}" in
             "4.2") echo "DJANGO_VERSION='Django>=4.2,<5.0'" >> $GITHUB_ENV ;;
@@ -95,18 +104,25 @@ jobs:
           restore-keys: |
             uv-pg-${{ matrix.python-version }}-
             uv-pg-${{ matrix.python-version }}-${{ matrix.django-version }}-
-      - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
+      - name: 🧬 Sync dependencies (Django ${{ matrix.django-version }})
         run: |
           uv add --dev ${{ env.DJANGO_VERSION }}
           uv sync --dev
+      - name: 🐘 Install Postgres driver
+        run: |
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then
+            uv add --dev "psycopg2-binary<2.9"
+          else
+            uv add --dev "psycopg2-binary>=2.9"
+          fi
       - name: 🔬 Test with pytest (Postgres)
         env:
           CAMOMILLA_TEST_DB_BACKEND: postgres
           COVERAGE_FILE: .coverage.postgres-${{ matrix.python-version }}-${{ matrix.django-version }}
         run: make test
-      - name: 📦 Minimize uv cache
+      - name: 🗜️ Minimize uv cache
         run: uv cache prune --ci
-      - name: 📦 Upload coverage data
+      - name: ☁️ Upload coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data-postgres-${{ matrix.python-version }}-${{ matrix.django-version }}
@@ -133,7 +149,7 @@ jobs:
         django-version: ["4.2", "5.1", "5.2"]
     name: 🐬 MySQL tests (Py ${{ matrix.python-version }} / Dj ${{ matrix.django-version }})
     steps:
-      - name: 🥒 Prepare Django version
+      - name: ⏲️ Prepare Django version
         run: |
           case "${{ matrix.django-version }}" in
             "4.2") echo "DJANGO_VERSION='Django>=4.2,<5.0'" >> $GITHUB_ENV ;;
@@ -153,11 +169,11 @@ jobs:
           restore-keys: |
             uv-mysql-${{ matrix.python-version }}-
             uv-mysql-${{ matrix.python-version }}-${{ matrix.django-version }}-
-      - name: 📥 Sync dependencies (Django ${{ matrix.django-version }})
+      - name: 🧬 Sync dependencies (Django ${{ matrix.django-version }})
         run: |
           uv add --dev ${{ env.DJANGO_VERSION }}
           uv sync --dev
-      - name: ➕ Install MySQL driver
+      - name: 🐬 Install MySQL driver
         run: |
           uv add --dev "mysqlclient>=2.2,<3.0"
       - name: 🔬 Test with pytest (MySQL)
@@ -165,9 +181,9 @@ jobs:
           CAMOMILLA_TEST_DB_BACKEND: mysql
           COVERAGE_FILE: .coverage.mysql-${{ matrix.python-version }}-${{ matrix.django-version }}
         run: make test
-      - name: 📦 Minimize uv cache
+      - name: 🗜️ Minimize uv cache
         run: uv cache prune --ci
-      - name: 📦 Upload coverage data
+      - name: ☁️ Upload coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data-mysql-${{ matrix.python-version }}-${{ matrix.django-version }}
