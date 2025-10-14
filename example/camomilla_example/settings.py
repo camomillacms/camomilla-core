@@ -122,7 +122,11 @@ elif DB_BACKEND in ("mysql", "mariadb"):
             "PASSWORD": DB_PASSWORD,
             "HOST": DB_HOST,
             **({"PORT": DB_PORT} if DB_PORT else {}),
-            "OPTIONS": {"charset": "utf8mb4"},
+            "OPTIONS": {
+                "init_command": "SET time_zone='+00:00'",
+                "charset": "utf8mb4",
+                "use_unicode": True,
+            },
         }
     }
 else:  # sqlite fallback
