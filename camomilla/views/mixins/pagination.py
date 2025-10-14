@@ -3,7 +3,6 @@ from django.db.models import Q
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.postgres.search import SearchVector, SearchQuery, TrigramSimilarity
 from camomilla.utils.query_parser import ConditionParser
-from django.conf import settings
 from django.db import connection
 from django.utils.module_loading import import_string
 
