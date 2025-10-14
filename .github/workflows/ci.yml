@@ -159,7 +159,7 @@ jobs:
           uv sync --dev
       - name: ➕ Install MySQL driver
         run: |
-          uv add --dev mysqlclient>=2.2,<3.0
+          uv add --dev "mysqlclient>=2.2,<3.0"
       - name: 🔬 Test with pytest (MySQL)
         env:
           CAMOMILLA_TEST_DB_BACKEND: mysql
