@@ -4,7 +4,7 @@ from djsuperadmin.mixins import DjSuperAdminMixin
 
 
 class AbstractContent(DjSuperAdminMixin, models.Model):
-    identifier = models.TextField()
+    identifier = models.CharField(max_length=255)
     content = models.TextField(default="")
     page = models.ForeignKey(
         "camomilla.Page",

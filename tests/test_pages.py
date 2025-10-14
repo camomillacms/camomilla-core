@@ -1,5 +1,5 @@
 import pytest
-from django.test import TestCase
+from django.test import TransactionTestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
 from camomilla.models import Page
@@ -7,19 +7,19 @@ from camomilla.models.page import UrlRedirect
 from datetime import datetime, timedelta
 
 
-class PagesTestCase(TestCase):
+class PagesTestCase(TransactionTestCase):
+    reset_sequences = True
+    
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    @pytest.mark.django_db
     def test_pages_api_no_access(self):
         client = APIClient()
         response = client.post("/api/camomilla/pages/")
         assert response.status_code == 401
 
-    @pytest.mark.django_db
     def test_pages_api_crud(self):
         # Create page
         response = self.client.post(
@@ -99,7 +99,6 @@ class PagesTestCase(TestCase):
         assert page.id == 1
         assert page.title_it == "title_page_1"
 
-    @pytest.mark.django_db
     def test_pages_url_nodes(self):
         # Create page with automatic url creation
         response = self.client.post(
@@ -208,7 +207,6 @@ class PagesTestCase(TestCase):
             == "There is an other page with same permalink."
         )
 
-    @pytest.mark.django_db
     def test_pages_url_nodes_navigation(self):
         # Test the camomilla.dynamic_pages_url handler for navigating and rendering UrlNodes
         self.client.post(
@@ -266,7 +264,6 @@ class PagesTestCase(TestCase):
         response = self.client.get("/it/permalink_5_it/")
         assert response.status_code == 200
 
-    @pytest.mark.django_db
     def test_pages_url_nodes_navigation_redirects(self):
         # Test the camomilla.dynamic_pages_url handler for navigating and rendering UrlNodes
         self.client.post(
@@ -348,7 +345,6 @@ class PagesTestCase(TestCase):
         assert response.status_code == 301
         assert response.url == "/it/permalink_6_it_changed/"
 
-    @pytest.mark.django_db
     def test_page_keywords(self):
         # Create page with keywords field and check it's given back as expected
         response = self.client.post(

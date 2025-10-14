@@ -6,13 +6,13 @@ from camomilla.models import Tag
 client = APIClient()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_create_tag_no_access():
     response = client.post("/api/camomilla/tags/", {"name_en": "First tag"})
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_crud_tag():
     # Create
     token = login_superuser()

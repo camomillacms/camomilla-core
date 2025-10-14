@@ -1,13 +1,15 @@
 import pytest
 import html
-from django.test import TestCase
+from django.test import TransactionTestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
 from django.template import Template, Context
 from camomilla.models import Menu
 
 
-class MenuTestCase(TestCase):
+class MenuTestCase(TransactionTestCase):
+    reset_sequences = True
+    
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
@@ -16,7 +18,6 @@ class MenuTestCase(TestCase):
     def renderTemplate(self, template, context=None):
         return Template("{% load menus %}" + template).render(Context(context))
 
-    @pytest.mark.django_db
     def test_template_render_menu(self):
         assert self.renderTemplate('{% render_menu "key_1" %}') == "\n\n"
         assert len(Menu.objects.all()) == 1
@@ -30,7 +31,6 @@ class MenuTestCase(TestCase):
         assert menu.id == 2
         assert menu.key == "key_2"
 
-    @pytest.mark.django_db
     def test_template_get_menus(self):
         self.renderTemplate('{% render_menu "key_3" %}')
         self.renderTemplate('{% render_menu "key_4" %}')
@@ -50,7 +50,6 @@ class MenuTestCase(TestCase):
         )
         assert rendered == menus
 
-    @pytest.mark.django_db
     def test_template_get_menu_node_url(self):
         self.renderTemplate('{% render_menu "key_5" %}')
 
@@ -63,7 +62,6 @@ class MenuTestCase(TestCase):
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_5" %}'))
         assert {'<a href="key_5_url_static">key_5_node_title</a>' in rendered}
 
-    @pytest.mark.django_db
     def test_menu_custom_template(self):
         self.renderTemplate('{% render_menu "key_6_custom" %}')
 
@@ -80,7 +78,6 @@ class MenuTestCase(TestCase):
         )
         assert {"This is custom menu: key_6_node_title" in rendered}
 
-    @pytest.mark.django_db
     def test_menu_in_page_template(self):
         self.renderTemplate('{% render_menu "key_7" %}')
 

@@ -14,6 +14,21 @@ from pathlib import Path
 from django.utils.translation import gettext_lazy as _
 import sys, os
 
+
+
+# Allow using PyMySQL as a drop-in for MySQLdb (mysqlclient) when the native
+# driver isn't installed. This keeps MySQL tests working without requiring
+# compiled dependencies locally. If mysqlclient is installed, this shim is
+# harmless because pymysql.install_as_MySQLdb simply provides the module name.
+#
+# UNCOMMENT THE FOLLOWING LINES IF YOU WANT TO USE PyMySQL
+# try: 
+#     import pymysql  # type: ignore
+
+#     pymysql.install_as_MySQLdb()
+# except Exception: 
+#     pass
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -87,14 +102,55 @@ WSGI_APPLICATION = "example.camomilla_example.wsgi.application"
 
 
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+# ----------------------------------------------------------------------------------
+# Allow selecting a different database backend for tests / local dev via env vars.
+# Supported backends (DB_BACKEND): sqlite (default), postgres, mysql (or mariadb).
+# Other vars: DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT.
+# This MUST happen before Django loads apps (so here in settings module) – mutating
+# settings.DATABASES later (e.g. in pytest fixtures) won't swap the already created
+# connection wrapper.
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DB_BACKEND = os.environ.get("CAMOMILLA_TEST_DB_BACKEND", "sqlite").lower()
+DB_NAME = os.environ.get("CAMOMILLA_TEST_DB_NAME", "test_camomilla")
+DB_USER = os.environ.get("CAMOMILLA_TEST_DB_USER", "camomilla")
+DB_PASSWORD = os.environ.get("CAMOMILLA_TEST_DB_PASSWORD", "camomilla")
+DB_HOST = os.environ.get("CAMOMILLA_TEST_DB_HOST", "127.0.0.1")
+DB_PORT = os.environ.get("CAMOMILLA_TEST_DB_PORT")  # optional – driver default if missing
+
+if DB_BACKEND in ("postgres", "postgresql", "psql"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            **({"PORT": DB_PORT} if DB_PORT else {}),
+        }
     }
-}
+elif DB_BACKEND in ("mysql", "mariadb"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            **({"PORT": DB_PORT} if DB_PORT else {}),
+            "OPTIONS": {
+                "init_command": "SET time_zone='+00:00'",
+                "charset": "utf8mb4",
+                "use_unicode": True,
+            },
+        }
+    }
+else:  # sqlite fallback
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
 
 
 # Password validation

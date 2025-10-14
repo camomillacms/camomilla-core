@@ -6,7 +6,7 @@ from django.test import RequestFactory
 from django.core.files.uploadedfile import SimpleUploadedFile
 from camomilla.parsers import MultipartJsonParser
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     # Prepare multipart data
     json_data = json.dumps({"foo": "bar", "nested": {"baz": 1}, "nested_list": [{"qux": "quux"}, {"corge": "grault"}]})
@@ -42,7 +42,7 @@ def test_multipart_json_parser_parses_json_and_files(monkeypatch):
     parsed["nested_list"][1]["file"].seek(0)
     assert parsed["nested_list"][1]["file"].read() == file_content
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_multipart_json_parser_handles_parse_error(monkeypatch):
     factory = RequestFactory()
     request = factory.post("/", {})

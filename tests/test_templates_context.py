@@ -13,7 +13,7 @@ class TemoplateContextTestCase(TestCase):
         token = login_superuser()
         self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_page_context_template_based(self):
         # Create page with custom context template
         response = self.client.post(
@@ -58,7 +58,7 @@ class TemoplateContextTestCase(TestCase):
             == "<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontexttemplatebased</h1><p>Contentpageforpagecontexttemplatebased</p><ul><li>Testmedia</li></ul></body></html>"
         )
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_model_context_template_based(self):
         # Create page with custom context template
         response = self.client.post(
@@ -103,7 +103,7 @@ class TemoplateContextTestCase(TestCase):
             == "<!DOCTYPEhtml><html><body><h1>Titlepageforpagecontextmodelbased</h1><p>Contentpageforpagecontextmodelbased</p><ul><li>Testmedia</li></ul></body></html>"
         )
 
-    @pytest.mark.django_db
+    @pytest.mark.django_db(transaction=True, reset_sequences=True)
     def test_mixed_context_template(self):
         # Create page with custom context template
         response = self.client.post(

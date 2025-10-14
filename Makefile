@@ -2,6 +2,14 @@ clean:
 	@find . -name "*.pyc" | xargs rm -rf
 	@find . -name "*.pyo" | xargs rm -rf
 	@find . -name "__pycache__" -type d | xargs rm -rf
+	@rm -rf .pytest_cache
+	@rm -rf .ruff_cache
+	@rm -rf htmlcov
+	@rm -rf .coverage*
+	@rm -rf coverage.xml
+	@rm -rf dist
+	@rm -rf django_camomilla_cms.egg-info
+	@rm -rf test_db.sqlite3
 
 sync:
 	uv sync --dev
@@ -21,4 +29,4 @@ docs-dev: clean
 docs: clean
 	@pnpm run docs:publish
 
-.PHONY: clean sync format lint test docs docs-dev
+.PHONY: clean sync format lint test test-sqlite test-postgres test-mysql docs docs-dev
