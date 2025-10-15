@@ -8,7 +8,7 @@ mkdir -p $changelog_dir
 cp ./CHANGELOG.md $changelog_dir/README.md
 
 # Move CONTRIBUTING
-contributing_dir="$destination/Contributing/"
+contributing_dir="$destination/Contribute/"
 mkdir -p $contributing_dir
 cp ./CONTRIBUTING.md $contributing_dir/README.md
 
