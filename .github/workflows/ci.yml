@@ -215,6 +215,8 @@ jobs:
     runs-on: ubuntu-latest
     name: ⛱️ Combine coverage and upload codecov
     steps:
+      - name: 📌 Checkout
+        uses: actions/checkout@v5
       - name: 🐍 Python setup
         uses: actions/setup-python@v5
         with:
