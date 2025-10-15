@@ -62,4 +62,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/.vuepress/dist
           publish_branch: "gh-pages"
-          commit_message: "docs: publish ${{ github.sha }} @ ${{ github.event.head_commit.timestamp || github.event.workflow_run.created_at }}"
+          commit_message: "docs: publish ${{ github.sha }} @ ${{ github.event.workflow_run.created_at }}"
