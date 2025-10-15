@@ -1,3 +1,7 @@
+<!-- THIS FILE IS A PLACEHOLDER AND WILL BE REPLACED DURING THE PUBLISH PROCESS -->
+<!-- THE REAL CONTRIBUTING FILE IS IN THE ROOT DIRECTORY /CONTRIBUTING.md -->
+
+
 # How to contribute 🤝
 
 Any contribution is welcome! Whether you want to report a bug, suggest an enhancement, or write code, we are happy to help you. Please read the following guidelines before contributing.
