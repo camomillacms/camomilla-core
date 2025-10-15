@@ -6,6 +6,8 @@ on:
     paths:
       - 'docs/**'
       - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'LICENSE'
   workflow_dispatch:
   workflow_run:
     workflows: ["🚀 Release"]
@@ -54,6 +56,8 @@ jobs:
         run: bash docs/.vuepress/moveCHANGELOG.sh
 
       - name: 📚 Build docs
+        env:
+          NODE_OPTIONS: --max_old_space_size=8192
         run: pnpm run docs:build
 
       - name: 🌍 Deploy to gh-pages
