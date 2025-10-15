@@ -9,7 +9,7 @@ from camomilla.models import Menu
 
 class MenuTestCase(TransactionTestCase):
     reset_sequences = True
-    
+
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()

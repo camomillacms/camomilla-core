@@ -7,7 +7,7 @@ from example.website.models import TestModel
 
 class ModelAPiRegisterTestCase(TransactionTestCase):
     reset_sequences = True
-    
+
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
