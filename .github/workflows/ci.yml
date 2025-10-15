@@ -213,7 +213,7 @@ jobs:
       - test-postgres
       - test-mysql
     runs-on: ubuntu-latest
-    name: ⛱️ Combine coverage and upload codecov
+    name: 🏖️ Upload to codecov
     steps:
       - name: 📌 Checkout
         uses: actions/checkout@v5
