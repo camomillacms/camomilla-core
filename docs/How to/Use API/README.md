@@ -9,7 +9,7 @@ To use the endpoints you need to add the handler to the project urls.py
 urlpatterns += path('api/camomilla/', include('camomilla.urls'))
 ```
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 Remember that if you use camomilla pages `dynamic_pages_urls` handler should always be the last handler of your urlpatterns list.
 :::
 

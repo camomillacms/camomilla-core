@@ -23,7 +23,7 @@ urlpatterns += i18n_patterns(
 
 This resolver is made to check any permalink that does not match anything in the url pattern and look in the database for a page with that permalink.
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 The `dynamic_pages_urls` handler should always be the last handler of your urlpatterns list.
 :::
 
@@ -42,7 +42,7 @@ CAMOMILLA = {
 
 ### Add template data
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 [🧩 Use Page Context](../Use%20Pages%20Context/README.md) to inject context in a more safe way.
 :::
 
@@ -118,7 +118,7 @@ From PageMeta class you can define:
 - `default_template` ==> set a different default template.
 - `inject_context_func` ==> add more data inside template context
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 [🧩 Use Page Context](../Use%20Pages%20Context/README.md) to inject context in a more safe way.
 :::
 
@@ -187,7 +187,7 @@ Remember that items is a queryset of `UrlNode` objects and to access the page mo
 
 ## 🗂️ Pages router API endpoint
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 If you need to create an api endpoint for a model inheriting from the `AbstractPage` model remember to use inside the serializer the `AbstractPageMixin`.
 :::
 
