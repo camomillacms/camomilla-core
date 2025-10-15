@@ -29,41 +29,37 @@ jobs:
            github.event.workflow_run.head_branch == 'master') }}
     env:
       CI: true
+    name: 📇 Build and publish docs
     steps:
-      - name: Checkout
+      - name: 📌 Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-    
-      - name: Setup pnpm
+
+      - name: 🚚 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           run_install: false
 
-      - name: Setup Node.js
+      - name: 🪢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'pnpm'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies (vuepress)
         run: pnpm install --frozen-lockfile
 
-      - name: Move CHANGELOG into docs
+      - name: 🔖 Move CHANGELOG into docs
         run: bash docs/.vuepress/moveCHANGELOG.sh
 
-      - name: Build docs
+      - name: 📚 Build docs
         run: pnpm run docs:build
 
-      - name: Deploy to gh-pages
+      - name: 🌍 Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/.vuepress/dist
           publish_branch: "gh-pages"
-          commit_message: "docs: publish ${{ github.sha }}"
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "Docs workflow completed at $(date -u)" >> $GITHUB_STEP_SUMMARY
+          commit_message: "docs: publish ${{ github.sha }} @ ${{ github.event.head_commit.timestamp || github.event.workflow_run.created_at }}"

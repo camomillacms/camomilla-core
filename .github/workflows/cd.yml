@@ -6,17 +6,17 @@ on:
       noop:
         description: "Run in dry-run (noop) mode?"
         required: false
-        default: "false"
+        default: false
         type: boolean
       verbosity:
         description: "Set verbosity level for semantic release"
         required: false
-        default: 1
+        default: "1"
         options:
-          - 0
-          - 1
-          - 2
-          - 3
+          - "0"
+          - "1"
+          - "2"
+          - "3"
         type: choice
 
 jobs:
