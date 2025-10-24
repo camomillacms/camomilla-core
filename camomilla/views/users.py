@@ -4,7 +4,7 @@ from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -79,6 +79,8 @@ class CamomillaAuthLogin(ObtainAuthToken):
 
 
 class CamomillaAuthLogout(APIView):
+    permission_classes = (AllowAny,)
+
     def get(self, request, *args, **kwargs):
         if request.user:
             logout(request)
