@@ -8,7 +8,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("camomilla", "0003_alter_content_identifier"),
         ("website", "0007_alter_custompagemetamodel_keywords_and_more"),
     ]
 
