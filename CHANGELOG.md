@@ -2,6 +2,91 @@
 
 <!-- version list -->
 
+## v6.3.0 (2026-01-07)
+
+### Bug Fixes
+
+- **api**: Update permission classes to allow unauthenticated access for logout api
+  ([`095a868`](https://github.com/camomillacms/camomilla-core/commit/095a868f0c075e05ed802c1b4fdab98de4f2a53a))
+
+### Chores
+
+- Add checkout step to coverage job in CI workflow
+  ([`ddc42ab`](https://github.com/camomillacms/camomilla-core/commit/ddc42ab4c038fffb0fb792aeaf2ae695e0970b08))
+
+- Added docs build pipeline
+  ([`8cba907`](https://github.com/camomillacms/camomilla-core/commit/8cba907e503e1c2bc738c8eae37589afdaeddb5f))
+
+- Refactor doc publish script to streamline git operations
+  ([`0c6e2c7`](https://github.com/camomillacms/camomilla-core/commit/0c6e2c7aae01facc2751e55cad1d4232654c5167))
+
+- Simplify commit message for documentation deployment
+  ([`1858bad`](https://github.com/camomillacms/camomilla-core/commit/1858bad7c48bdd16ad299335b2c07a8c527f2caa))
+
+- Some beauty lifting 💅 to gh actions steps
+  ([`4a49d47`](https://github.com/camomillacms/camomilla-core/commit/4a49d4735b2776a06a0d5d64e8dd7a5ef26bc98e))
+
+- Update CI configuration for Python 3.14 and Django compatibility; add pydantic and psycopg2-binary
+  dependencies ([#41](https://github.com/camomillacms/camomilla-core/pull/41),
+  [`8230c4e`](https://github.com/camomillacms/camomilla-core/commit/8230c4e87a19b94601b18377e692eed482a6f05e))
+
+- Update coverage job name for clarity
+  ([`49022bd`](https://github.com/camomillacms/camomilla-core/commit/49022bda05938f4701597b3168d56a7c70d0ca88))
+
+- Update doc pipeline
+  ([`bf1ff8f`](https://github.com/camomillacms/camomilla-core/commit/bf1ff8fc0910b6beea6f70a4212da4201d632724))
+
+- Update doc pipeline pnpm version
+  ([`9cc42e3`](https://github.com/camomillacms/camomilla-core/commit/9cc42e3a132589e509961da54416f27dbe509eb5))
+
+- Update doc pipeline publish script
+  ([`a2bd422`](https://github.com/camomillacms/camomilla-core/commit/a2bd422e57267c43505a84d6584d9d0f65e4f445))
+
+- Update documentation publishing using dedicated github page action
+  ([`6af7284`](https://github.com/camomillacms/camomilla-core/commit/6af7284d853e58c319c5ceed94522a85541d171d))
+
+- Update Makefile with new commands and .PHONY
+  ([`d09c805`](https://github.com/camomillacms/camomilla-core/commit/d09c805e6b887a1247b30e115d0401cf76f92ba1))
+
+- Update publish branch to gh-pages for documentation deployment
+  ([`29c72a5`](https://github.com/camomillacms/camomilla-core/commit/29c72a54abf7cae14431199633af1383fcc3549b))
+
+- Update Python version support to include 3.14 and adjust requirements
+  ([#41](https://github.com/camomillacms/camomilla-core/pull/41),
+  [`8230c4e`](https://github.com/camomillacms/camomilla-core/commit/8230c4e87a19b94601b18377e692eed482a6f05e))
+
+### Documentation
+
+- Add comments to placeholder files in docs to instruct contributor where to find original files
+  ([`f1b0e18`](https://github.com/camomillacms/camomilla-core/commit/f1b0e18b275b0e01fa6d7603c913b213a2f5397a))
+
+- Fix moveCHANGELOG script wrong contribute destination
+  ([`28ee254`](https://github.com/camomillacms/camomilla-core/commit/28ee2547803ed29fb2aab6dcb356d7485a889ee3))
+
+- Remove emoji from warning banners
+  ([`f766cc5`](https://github.com/camomillacms/camomilla-core/commit/f766cc570d01325ea9078b35574a71a6a023af23))
+
+- Update docs engine to vuepress 2-rc24
+  ([`dde459a`](https://github.com/camomillacms/camomilla-core/commit/dde459a5c6048b2308c2f28cd07b13bb7e395dd4))
+
+### Features
+
+- **python**: Add compatibility with python 3.14
+  ([#41](https://github.com/camomillacms/camomilla-core/pull/41),
+  [`8230c4e`](https://github.com/camomillacms/camomilla-core/commit/8230c4e87a19b94601b18377e692eed482a6f05e))
+
+### Refactoring
+
+- Black . 💅
+  ([`04a97b7`](https://github.com/camomillacms/camomilla-core/commit/04a97b78aa5e5288cacd4e658ff042645881e94b))
+
+### Testing
+
+- **serializers**: Add test standard api serializer
+  ([#45](https://github.com/camomillacms/camomilla-core/pull/45),
+  [`0ea3ea4`](https://github.com/camomillacms/camomilla-core/commit/0ea3ea408ad82101423b21fde0680f0e420f0b7e))
+
+
 ## v6.2.3 (2025-10-14)
 
 ### Bug Fixes
