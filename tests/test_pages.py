@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 class PagesTestCase(TransactionTestCase):
     reset_sequences = True
-    
+
     def setUp(self):
         self.client = APIClient()
         token = login_superuser()
@@ -349,10 +349,7 @@ class PagesTestCase(TransactionTestCase):
         # Create page with keywords field and check it's given back as expected
         response = self.client.post(
             "/api/camomilla/pages/",
-            {
-                "og_description_it" : "Keywords Test",
-                "keywords_it" : 'key1, key2'
-            },
+            {"og_description_it": "Keywords Test", "keywords_it": "key1, key2"},
             format="json",
         )
 
@@ -360,4 +357,4 @@ class PagesTestCase(TransactionTestCase):
         assert len(Page.objects.all()) == 1
         page = Page.objects.first()
         assert page.og_description_it == "Keywords Test"
-        assert page.keywords_it == 'key1, key2'
+        assert page.keywords_it == "key1, key2"

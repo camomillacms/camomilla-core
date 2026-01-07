@@ -1,6 +1,6 @@
 # 🚀 Bootstrap your project
 
-Ready to start building amaing things with camomilla?
+Ready to start building amazing things with camomilla?
 
 This guide will help you to setup your project in a few steps!
 

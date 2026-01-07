@@ -2,6 +2,50 @@
 
 <!-- version list -->
 
+## v6.2.3 (2025-10-14)
+
+### Bug Fixes
+
+- Change identifier field type from TextField to CharField with max_length
+  ([`a130c4b`](https://github.com/camomillacms/camomilla-core/commit/a130c4b324df47bc00c33e1074355d9545244917))
+
+- **mysql**: Implement monkey patch for MySQL DATETIME handling
+  ([`eec96bd`](https://github.com/camomillacms/camomilla-core/commit/eec96bdcbe14052dbaa471078cd0c94021f5b347))
+
+### Chores
+
+- Add step to update docs changelog after release
+  ([`785752d`](https://github.com/camomillacms/camomilla-core/commit/785752d64f7fb55e3422045463d762b97974cb1e))
+
+- Fix quote mysqlclient version constraint in CI configuration
+  ([`097b7bd`](https://github.com/camomillacms/camomilla-core/commit/097b7bdbd171a787e6b45c1793575f868b24615f))
+
+- Fix release pipeline python version
+  ([`8942826`](https://github.com/camomillacms/camomilla-core/commit/89428266ab8e38c7d3f18016cee48031d53c7019))
+
+- Remove psycopg2-binary version constraints from dev dependencies
+  ([`2d90028`](https://github.com/camomillacms/camomilla-core/commit/2d900285ed27214398c7a9aa60ea6a4749577ec5))
+
+- Remove psycopg2-binary version constraints from dev dependencies
+  ([`35039be`](https://github.com/camomillacms/camomilla-core/commit/35039be1672965d60670bdcb864cb00bf3c6fe3f))
+
+### Continuous Integration
+
+- Unify test command across SQLite, Postgres, and MySQL jobs
+  ([`0e6e896`](https://github.com/camomillacms/camomilla-core/commit/0e6e896e8a2fa2101427a652e620dea0a9638fc9))
+
+### Refactoring
+
+- Ensure newline at end of file in __init__.py
+  ([`e06f55d`](https://github.com/camomillacms/camomilla-core/commit/e06f55d61a03e08698a055c56487b7fe99fede0e))
+
+- Remove unused import of settings in pagination mixin
+  ([`2dc9bd6`](https://github.com/camomillacms/camomilla-core/commit/2dc9bd6ceb361b26cbf72ba4aac5cf526b0b9e74))
+
+- Simplify JSONField imports and remove unused arrayfield
+  ([`f8bd453`](https://github.com/camomillacms/camomilla-core/commit/f8bd4533904a77c71b5c55400d236fe362ed501c))
+
+
 ## v6.2.2 (2025-10-13)
 
 ### Bug Fixes

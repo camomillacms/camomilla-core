@@ -154,3 +154,17 @@ class RelatedPageModel(AbstractPage):
 class InvalidPageMetaModel(CustomPageMetaModel):
     class PageMeta:
         standard_serializer = "example.website.serializers.InvalidSerializer"
+
+
+@model_api.register()
+class DefaultApiSerializerModel(AbstractPage):
+    description = models.TextField(null=True, blank=True)
+
+
+@model_api.register()
+class CustomApiSerializerModel(AbstractPage):
+    description = models.TextField(null=True, blank=True)
+
+    class PageMeta:
+        standard_serializer = "example.website.serializers.CustomApiSerializerModelSerializer"
+

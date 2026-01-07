@@ -43,7 +43,7 @@ CAMOMILLA = {
 
 The media model has its own api methods to upload file.
 
-::: warning ⚠️ Beware!
+::: warning Beware!
 Remember to add camomilla api url to your `urlpatterns`. You can find more info [here](../Use%20API/).
 :::
 
