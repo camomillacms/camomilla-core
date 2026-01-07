@@ -23,8 +23,19 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         django-version: ["4.2", "5.1", "5.2"]
         exclude:
-          - python-version: 3.13
-            django-version: "Django>=4.2,<5.0"
+          # Django 4.2 doesn't support Python 3.13+
+          - python-version: "3.13"
+            django-version: "4.2"
+          - python-version: "3.14"
+            django-version: "4.2"
+          # Django 5.0 doesn't support Python 3.13+
+          - python-version: "3.13"
+            django-version: "5.0"
+          - python-version: "3.14"
+            django-version: "5.0"
+          # Django 5.1 doesn't support Python 3.14
+          - python-version: "3.14"
+            django-version: "5.1"
     env:
       UV_CACHE_DIR: /tmp/.uv-cache
       DJANGO_VERSION: "Django==${{ matrix.django-version }}"
