@@ -329,6 +329,228 @@ def test_my_feature():
 
 ---
 
+## StructuredJSONField (Pydantic Integration)
+
+Camomilla integrates with `django-structured-field` for type-safe JSON fields with Pydantic validation.
+
+### Basic Schema Definition
+```python
+from structured.pydantic.models import BaseModel
+from structured.fields import StructuredJSONField
+from structured.pydantic.fields import QuerySet
+
+class ArticleSchema(BaseModel):
+    title: str
+    tags: list[str] = []
+    author: User = None  # FK stored as PK, resolved on access
+    related: QuerySet[Article]  # M2M-like, stores PKs, returns queryset
+
+class MyModel(models.Model):
+    data = StructuredJSONField(schema=ArticleSchema, default=dict)
+```
+
+### Key Features
+- **Type validation**: Pydantic validates on save
+- **FK in JSON**: Model types store PK, return instance on access
+- **QuerySet fields**: Store ordered list of PKs, return Django queryset
+- **Nested models**: Use string type hints for recursive structures: `child: "MySchema"`
+- **Built-in caching**: Minimizes DB queries for FK/QuerySet resolution
+
+### Settings
+```python
+CAMOMILLA = {
+    "STRUCTURED_FIELD": {"CACHE_ENABLED": True}  # Default
+}
+```
+
+---
+
+## Admin Customization
+
+### Translation-Aware Admin
+[camomilla/theme/admin/translations.py](camomilla/theme/admin/translations.py):
+```python
+from camomilla.theme.admin import TranslationAwareModelAdmin
+
+class MyModelAdmin(TranslationAwareModelAdmin):
+    # Automatically uses TabbedTranslationAdmin when modeltranslation enabled
+    pass
+```
+
+### Page Admin
+[camomilla/theme/admin/pages.py](camomilla/theme/admin/pages.py):
+```python
+from camomilla.theme.admin.pages import AbstractPageAdmin, AbstractPageModelForm
+
+class MyPageForm(AbstractPageModelForm):
+    class Meta:
+        model = MyPage
+        fields = "__all__"
+
+class MyPageAdmin(AbstractPageAdmin):
+    form = MyPageForm
+    # Includes permalink fields, template selector, change_form_template
+```
+
+### Registering Models
+```python
+from django.contrib import admin
+from camomilla.theme.admin import TranslationAwareModelAdmin, AbstractPageAdmin
+
+admin.site.register(MyModel, TranslationAwareModelAdmin)
+admin.site.register(MyPage, AbstractPageAdmin)
+```
+
+---
+
+## Sitemap Generation
+
+[camomilla/sitemap.py](camomilla/sitemap.py):
+```python
+# urls.py
+from django.contrib.sitemaps.views import sitemap
+from camomilla.sitemap import camomilla_sitemaps
+
+urlpatterns = [
+    path('sitemap.xml', sitemap, {'sitemaps': camomilla_sitemaps}),
+]
+```
+
+### Custom Page Sitemap Properties
+```python
+class MyPage(AbstractPage):
+    changefreq = "weekly"  # Override default "daily"
+    priority = 0.8         # Override default 0.5
+    
+    @property
+    def lastmod(self):
+        return self.date_updated_at
+```
+
+---
+
+## Custom Viewset Patterns
+
+### Action-Specific Serializers
+```python
+from camomilla.views.base import BaseModelViewset
+
+class MyViewset(BaseModelViewset):
+    queryset = MyModel.objects.all()
+    serializer_class = MyModelSerializer
+    
+    # Different serializers per action
+    action_serializers = {
+        "list": "myapp.serializers.MyModelListSerializer",
+        "retrieve": MyModelDetailSerializer,
+    }
+```
+
+### Custom Search and Filtering
+```python
+class MyViewset(BaseModelViewset):
+    queryset = MyModel.objects.all()
+    serializer_class = MyModelSerializer
+    search_fields = ["title", "description", "author__name"]
+    
+    # PostgreSQL trigram search threshold (0.0-1.0)
+    trigram_threshold = 0.3
+    
+    # Force pagination always on
+    force_active = True
+    items_per_page = 20
+```
+
+### Custom Queryset with Eager Loading
+```python
+class MyViewset(BaseModelViewset):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.select_related("author").prefetch_related("tags")
+```
+
+### Bulk Delete Mixin
+```python
+from camomilla.views.mixins import BulkDeleteMixin
+
+class MyViewset(BulkDeleteMixin, BaseModelViewset):
+    # Adds DELETE /api/endpoint/ with {"ids": [1,2,3]} body
+    pass
+```
+
+---
+
+## Page Serializer Pattern
+
+### AbstractPageMixin for Custom Pages
+```python
+from camomilla.serializers.mixins import AbstractPageMixin
+
+class MyPageSerializer(AbstractPageMixin):
+    extra_field = serializers.SerializerMethodField()
+    
+    def get_extra_field(self, obj):
+        return "computed value"
+    
+    class Meta:
+        model = MyPage
+        fields = "__all__"
+```
+
+### Exposing Page Serializer via PageMeta
+```python
+class MyPage(AbstractPage):
+    class PageMeta:
+        standard_serializer = "myapp.serializers.MyPageSerializer"
+```
+
+This serializer is used by:
+- `/api/camomilla/pages-router/<permalink>` - Returns page data with proper serializer
+- `page.get_serializer()` - Programmatic access
+
+---
+
+## Translation Registration
+
+[camomilla/translation.py](camomilla/translation.py):
+```python
+from modeltranslation.translator import TranslationOptions, register
+
+# Inherit for pages
+class MyPageTranslationOptions(AbstractPageTranslationOptions):
+    fields = ("custom_field",)  # Additional translatable fields
+
+@register(MyPage)
+class MyPageTranslation(MyPageTranslationOptions):
+    pass
+
+# Simple models
+@register(MyModel)
+class MyModelTranslation(TranslationOptions):
+    fields = ("title", "description")
+```
+
+---
+
+## View Decorators
+
+[camomilla/views/decorators.py](camomilla/views/decorators.py):
+```python
+from camomilla.views.decorators import active_lang, staff_excluded_cache
+
+# Activate language from ?lang= or ?language= param
+@active_lang()
+def my_view(request):
+    pass
+
+# Cache for non-staff users only
+@staff_excluded_cache(60 * 15)  # 15 minutes
+def public_api(request):
+    pass
+```
+
+---
+
 ## Code Conventions
 
 - **Commits**: Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`)
@@ -337,6 +559,8 @@ def test_my_feature():
 - **Inheritance**: Always use `BaseModelSerializer` and `BaseModelViewset` for new endpoints
 - **Permissions**: Apply `CamomillaBasePermissions` to all API viewsets
 - **Translations**: Register translatable fields in `translation.py` using `modeltranslation`
+- **Page Serializers**: Extend `AbstractPageMixin` for custom page serializers
+- **Admin**: Use `TranslationAwareModelAdmin` or `AbstractPageAdmin` for admin classes
 
 ---
 
@@ -346,13 +570,21 @@ def test_my_feature():
 |------|---------|
 | [camomilla/model_api.py](camomilla/model_api.py) | `@model_api.register()` decorator |
 | [camomilla/serializers/base/__init__.py](camomilla/serializers/base/__init__.py) | BaseModelSerializer with all mixins |
+| [camomilla/serializers/mixins/page.py](camomilla/serializers/mixins/page.py) | AbstractPageMixin for page serializers |
 | [camomilla/views/base/__init__.py](camomilla/views/base/__init__.py) | BaseModelViewset implementation |
+| [camomilla/views/mixins/](camomilla/views/mixins/) | Pagination, search, permissions mixins |
 | [camomilla/models/page.py](camomilla/models/page.py) | AbstractPage, UrlNode, UrlRedirect |
 | [camomilla/models/media.py](camomilla/models/media.py) | Media with auto-thumbnails |
+| [camomilla/models/mixins/__init__.py](camomilla/models/mixins/__init__.py) | SeoMixin, MetaMixin |
 | [camomilla/settings.py](camomilla/settings.py) | All CAMOMILLA.* settings |
 | [camomilla/permissions.py](camomilla/permissions.py) | Permission classes |
 | [camomilla/dynamic_pages_urls.py](camomilla/dynamic_pages_urls.py) | Page URL routing |
 | [camomilla/templates_context/rendering.py](camomilla/templates_context/rendering.py) | Context injection registry |
 | [camomilla/utils/query_parser.py](camomilla/utils/query_parser.py) | Filter query syntax parser |
+| [camomilla/translation.py](camomilla/translation.py) | Model translation registrations |
+| [camomilla/sitemap.py](camomilla/sitemap.py) | Sitemap configuration |
+| [camomilla/theme/admin/](camomilla/theme/admin/) | Admin classes and forms |
+| [camomilla/views/decorators.py](camomilla/views/decorators.py) | View decorators (caching, lang) |
 | [conftest.py](conftest.py) | Pytest fixtures and DB setup |
 | [example/website/models.py](example/website/models.py) | Example model implementations |
+| [example/website/serializers.py](example/website/serializers.py) | Example custom serializers |
