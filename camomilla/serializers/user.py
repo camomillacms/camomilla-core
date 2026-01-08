@@ -60,7 +60,7 @@ class UserProfileSerializer(BaseModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        user = super(UserSerializer, self).update(instance, validated_data)
+        user = super(UserProfileSerializer, self).update(instance, validated_data)
         if "password" in validated_data:
             user.set_password(validated_data["password"])
             user.save()
