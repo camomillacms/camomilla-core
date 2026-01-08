@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 
 class LanguageViewSet(views.APIView):
     permission_classes = [AllowAny]
-    
+
     def get(self, request, *args, **kwargs):
         languages = []
         for key, language in settings.LANGUAGES:
