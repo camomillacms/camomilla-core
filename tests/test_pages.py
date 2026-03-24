@@ -358,3 +358,30 @@ class PagesTestCase(TransactionTestCase):
         page = Page.objects.first()
         assert page.og_description_it == "Keywords Test"
         assert page.keywords_it == "key1, key2"
+
+    def test_update_order(self):
+        # Create multiple pages with different ordering
+        page1 = Page.objects.create(title_it="Page 1", ordering=0)
+        page2 = Page.objects.create(title_it="Page 2", ordering=1)
+        page3 = Page.objects.create(title_it="Page 3", ordering=2)
+        
+        # Move page3 to position of page1 (startId=page3.id, endId=page1.id)
+        response = self.client.post(
+            "/api/camomilla/pages/update_order/",
+            {"startId": page3.id, "endId": page1.id},
+            format="json",
+        )
+        assert response.status_code == 200
+        response_data = response.json()
+        assert "moved" in response_data
+        assert "reordered" in response_data
+        
+        # Refresh from db
+        page1.refresh_from_db()
+        page2.refresh_from_db()
+        page3.refresh_from_db()
+        
+        # Check new ordering
+        assert page3.ordering == 0
+        assert page1.ordering == 1
+        assert page2.ordering == 2

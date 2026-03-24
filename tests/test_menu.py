@@ -107,3 +107,34 @@ class MenuTestCase(TransactionTestCase):
 
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_7" %}'))
         assert {'href="permalink_page_menu_en_1"' in rendered}
+
+    def test_menu_api_actions(self):
+        # Test page_types action
+        response = self.client.get("/api/camomilla/menus/page_types/")
+        assert response.status_code == 200
+        page_types = response.json()
+        assert isinstance(page_types, list)
+        # Should include Page and Article at least
+        assert len(page_types) >= 2
+        
+        # Test page_type_instances action - need a content type id
+        if page_types:
+            content_type_id = page_types[0]["id"]
+            response = self.client.get(f"/api/camomilla/menus/page_types/{content_type_id}/")
+            assert response.status_code == 200
+            instances = response.json()
+            assert isinstance(instances, list)
+        
+        # Test search_urlnode action
+        response = self.client.get("/api/camomilla/menus/search_urlnode/?q=test")
+        assert response.status_code == 200
+        results = response.json()
+        assert isinstance(results, list)
+        
+        # Test accessing menu by key
+        content = self.renderTemplate('{% render_menu "api_test_menu" %}')
+        assert content != ""
+        response = self.client.get("/api/camomilla/menus/api_test_menu/")
+        assert response.status_code == 200
+        menu_data = response.json()
+        assert menu_data["key"] == "api_test_menu"

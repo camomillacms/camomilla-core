@@ -97,6 +97,54 @@ class MediaTestCase(TransactionTestCase):
         assert media.id == 1
         assert media.title == "Test 1"
 
+    def test_media_filtering(self):
+        # Create media with PNG
+        asset = load_asset_and_remove_media("10595073.png")
+        response = self.client.post(
+            "/api/camomilla/media/",
+            {
+                "file": asset,
+                "data": json.dumps(
+                    {
+                        "translations": {
+                            "en": {
+                                "alt_text": "PNG Test",
+                                "title": "PNG Test",
+                                "description": "PNG Test",
+                            }
+                        }
+                    }
+                ),
+            },
+            format="multipart",
+        )
+        assert response.status_code == 201
+        media_id = response.json()["id"]
+        
+        # Check that mime_type is set
+        response = self.client.get(f"/api/camomilla/media/{media_id}/")
+        assert response.status_code == 200
+        media_data = response.json()
+        print("Media data:", media_data)  # Debug print
+        assert "mime_type" in media_data
+        assert media_data["mime_type"] == "image/png"
+        
+        # Filter by title
+        response = self.client.get("/api/camomilla/media/?fltr=title='PNG Test'")
+        assert response.status_code == 200
+        assert len(response.json()) == 1
+        
+        # Filter by mime_type image/* (should use startswith)
+        response = self.client.get("/api/camomilla/media/?fltr=mime_type__startswith='image/'")
+        assert response.status_code == 200
+        assert len(response.json()) == 1
+        assert response.json()[0]["mime_type"] == "image/png"
+        
+        # Filter by mime_type that doesn't match
+        response = self.client.get("/api/camomilla/media/?fltr=mime_type='video/mp4'")
+        assert response.status_code == 200
+        assert len(response.json()) == 0
+
     def test_media_compression(self):
         asset = load_asset_and_remove_media("Sample-jpg-image-10mb.jpg")
         asset_size = asset.size
