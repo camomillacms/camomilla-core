@@ -125,7 +125,6 @@ class MediaTestCase(TransactionTestCase):
         response = self.client.get(f"/api/camomilla/media/{media_id}/")
         assert response.status_code == 200
         media_data = response.json()
-        print("Media data:", media_data)  # Debug print
         assert "mime_type" in media_data
         assert media_data["mime_type"] == "image/png"
         
