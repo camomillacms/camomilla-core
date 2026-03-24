@@ -2,6 +2,44 @@
 
 <!-- version list -->
 
+## v6.3.1 (2026-03-24)
+
+### Bug Fixes
+
+- **docs**: Update Django versions badge in README
+  ([`36cc0b5`](https://github.com/camomillacms/camomilla-core/commit/36cc0b5e2f474cb491eb299998c722055580d30b))
+
+- **serializers**: Correct superclass reference in UserProfileSerializer update method
+  ([`d919123`](https://github.com/camomillacms/camomilla-core/commit/d9191235e6a9730521179be88660e34cebe63299))
+
+- **views**: Add permission classes to LanguageViewSet for better access control
+  ([`f4ddd06`](https://github.com/camomillacms/camomilla-core/commit/f4ddd06f443e6139edf5c98131722145485f0141))
+
+### Chores
+
+- Add AI coding instructions for Camomilla CMS
+  ([`df7cbcd`](https://github.com/camomillacms/camomilla-core/commit/df7cbcd051a18243f1e527d7b9efb6430383bfe4))
+
+- Add structured JSON field integration and admin customization in Agent instructions
+  ([`59b722a`](https://github.com/camomillacms/camomilla-core/commit/59b722ac5ec71015a6bef6e14c8aeee21c1ca6df))
+
+### Refactoring
+
+- Remove ParseMimeMixin from MediaFolderViewSet and MediaViewSet
+  ([`08e9ca4`](https://github.com/camomillacms/camomilla-core/commit/08e9ca412766d9ada76efaf89593995fd084de1a))
+
+- Remove unnecessary whitespace in LanguageViewSet
+  ([`667e453`](https://github.com/camomillacms/camomilla-core/commit/667e453aafe8e236a6101b3f7890c11b5fb8ebcb))
+
+- **tests**: Remove debug print statement from media data test
+  ([`9fd8020`](https://github.com/camomillacms/camomilla-core/commit/9fd80201650523dc5e4f46b285d722bdd4429614))
+
+### Testing
+
+- Improve test coverage
+  ([`1c6bac9`](https://github.com/camomillacms/camomilla-core/commit/1c6bac95b22a5e3963440d6f1ba50b2055da89bc))
+
+
 ## v6.3.0 (2026-01-07)
 
 ### Bug Fixes
