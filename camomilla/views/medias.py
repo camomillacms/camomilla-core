@@ -16,19 +16,8 @@ from camomilla.views.mixins import (
 )
 
 
-class ParseMimeMixin(object):
-    def parse_filter(self, filter):
-        filter_name, value = filter.split("=")
-        if filter_name == "mime_type":
-            if value == "*/*":
-                return "mime_type__isnull", False
-            elif value.endswith("/*"):
-                return "mime_type__startswith", value.split("/")[0]
-        return filter_name, super().parse_qs_value(value)
-
-
 class MediaFolderViewSet(
-    GetUserLanguageMixin, ParseMimeMixin, TrigramSearchMixin, BaseModelViewset
+    GetUserLanguageMixin, TrigramSearchMixin, BaseModelViewset
 ):
     model = MediaFolder
     serializer_class = MediaFolderSerializer
@@ -77,7 +66,6 @@ class MediaFolderViewSet(
 class MediaViewSet(
     GetUserLanguageMixin,
     BulkDeleteMixin,
-    ParseMimeMixin,
     TrigramSearchMixin,
     BaseModelViewset,
 ):
