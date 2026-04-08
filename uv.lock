@@ -400,7 +400,7 @@ requires-dist = [
     { name = "django-ckeditor", specifier = ">=6.7,<7.0.0" },
     { name = "django-jsonform", specifier = ">=2.23" },
     { name = "django-modeltranslation", specifier = ">=0.19.17,<0.20.0" },
-    { name = "django-structured-json-field", specifier = ">=1.5.0" },
+    { name = "django-structured-json-field", specifier = ">=1.5.1" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
     { name = "djangorestframework", specifier = ">=3.10,<3.17" },
     { name = "djsuperadmin", specifier = ">=0.11,<1.0.0" },
@@ -509,7 +509,7 @@ wheels = [
 
 [[package]]
 name = "django-structured-json-field"
-version = "1.5.0"
+version = "1.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -517,9 +517,9 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/79/8d6c903a2397ea7366c968aaf1d22f77832375108c9711e2d3f46b7625d8/django_structured_json_field-1.5.0.tar.gz", hash = "sha256:e8d85b694576897ab9d64b81669f36eb0cda1aeb008d33effdf4387d07c62069", size = 41093 }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/6b/743d2cdd22dca959bf7bbbd7afa2b35c7a45c395250dc7899390ad964e87/django_structured_json_field-1.5.1.tar.gz", hash = "sha256:a4886db0fbf3f846d158e58f1da61b24824c578098dd666046f7724f8b665e06", size = 41620 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/2f/458405ca0402bf46de2599d49f39cc883d307837ea5eeff90c0dad67fdce/django_structured_json_field-1.5.0-py2.py3-none-any.whl", hash = "sha256:73fd3faf8018ae3005f9a4374defb656de65af9814779ae27876a9efd5ee6858", size = 57977 },
+    { url = "https://files.pythonhosted.org/packages/e2/3c/9ae93fe8ebc2c7ffa6d9cfcd01994a41d884209b82af2538b1381e45c1ad/django_structured_json_field-1.5.1-py2.py3-none-any.whl", hash = "sha256:ae45c943c626a62fe66db2c4cc01f6f5e1d7749d45f12142376483cf9bcf805c", size = 58443 },
 ]
 
 [[package]]
