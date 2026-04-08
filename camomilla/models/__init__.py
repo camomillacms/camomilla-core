@@ -3,3 +3,4 @@ from .content import *  # NOQA
 from .media import *  # NOQA
 from .page import *  # NOQA
 from .menu import *  # NOQA
+from .meta import *  # NOQA

@@ -12,8 +12,11 @@ from camomilla.models import (
     Page,
     Tag,
     Menu,
+    MetaType,
+    MetaInstance,
     UrlRedirect,
 )
+from .meta import MetaTypeAdmin, MetaInstanceAdmin
 
 
 class UserProfileAdmin(admin.ModelAdmin):
@@ -97,3 +100,5 @@ admin.site.register(Media, MediaAdmin)
 admin.site.register(Page, PageAdmin)
 admin.site.register(Menu, MenuAdmin)
 admin.site.register(UrlRedirect, UrlRedirectAdmin)
+admin.site.register(MetaType, MetaTypeAdmin)
+admin.site.register(MetaInstance, MetaInstanceAdmin)
