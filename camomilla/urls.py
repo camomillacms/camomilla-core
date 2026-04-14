@@ -18,9 +18,8 @@ from camomilla.views import (
     TagViewSet,
     UserViewSet,
     MenuViewSet,
-    MetaTypeViewSet,
-    MetaInstanceViewSet,
 )
+from structured_metaobjects.views import MetaInstanceViewSet, MetaTypeViewSet
 from camomilla.views.pages import pages_router
 from camomilla.redirects import url_patterns as old_redirects
 
@@ -35,8 +34,8 @@ router.register(r"pages", PageViewSet, "camomilla-pages")
 router.register(r"users", UserViewSet, "camomilla-users")
 router.register(r"permissions", PermissionViewSet, "camomilla-permissions")
 router.register(r"menus", MenuViewSet, "camomilla-menus")
-router.register(r"meta-types", MetaTypeViewSet, "camomilla-meta_types")
-router.register(r"meta-instances", MetaInstanceViewSet, "camomilla-meta_instances")
+router.register(r"meta-types", MetaTypeViewSet, "structured_metaobjects-meta_types")
+router.register(r"meta-instances", MetaInstanceViewSet, "structured_metaobjects-meta_instances")
 
 urlpatterns = [
     *old_redirects,

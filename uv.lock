@@ -367,6 +367,7 @@ dependencies = [
     { name = "django-jsonform" },
     { name = "django-modeltranslation" },
     { name = "django-structured-json-field" },
+    { name = "django-structured-metaobjects" },
     { name = "django-tinymce" },
     { name = "djangorestframework" },
     { name = "djsuperadmin" },
@@ -401,6 +402,7 @@ requires-dist = [
     { name = "django-jsonform", specifier = ">=2.23" },
     { name = "django-modeltranslation", specifier = ">=0.19.17,<0.20.0" },
     { name = "django-structured-json-field", specifier = ">=1.5.1" },
+    { name = "django-structured-metaobjects", editable = "../structured/django-structured-metaobjects" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
     { name = "djangorestframework", specifier = ">=3.10,<3.17" },
     { name = "djsuperadmin", specifier = ">=0.11,<1.0.0" },
@@ -520,6 +522,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9c/6b/743d2cdd22dca959bf7bbbd7afa2b35c7a45c395250dc7899390ad964e87/django_structured_json_field-1.5.1.tar.gz", hash = "sha256:a4886db0fbf3f846d158e58f1da61b24824c578098dd666046f7724f8b665e06", size = 41620 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/3c/9ae93fe8ebc2c7ffa6d9cfcd01994a41d884209b82af2538b1381e45c1ad/django_structured_json_field-1.5.1-py2.py3-none-any.whl", hash = "sha256:ae45c943c626a62fe66db2c4cc01f6f5e1d7749d45f12142376483cf9bcf805c", size = 58443 },
+]
+
+[[package]]
+name = "django-structured-metaobjects"
+source = { editable = "../structured/django-structured-metaobjects" }
+dependencies = [
+    { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-structured-json-field" },
+    { name = "djangorestframework" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "django", specifier = ">=4.2" },
+    { name = "django-structured-json-field", specifier = ">=1.5.1" },
+    { name = "djangorestframework", specifier = ">=3.14.0,<4.0.0" },
+    { name = "pydantic", specifier = ">=2.12" },
 ]
 
 [[package]]

@@ -6,4 +6,3 @@ from .pages import *
 from .tags import *
 from .users import *
 from .menus import *
-from .meta import *
