@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "camomilla",
     "camomilla.theme",
     "structured",
+    "structured_metaobjects",
     "example.website",
     "djsuperadmin",
     "modeltranslation",

@@ -10,6 +10,7 @@ It is divided into "How to .." sections, each one covering a specific topic.
 - [🖼️ Use Media](Use%20Media/)
 - [🍜 Use Menu](Use%20Menu/)
 - [🧬 Use StructuredJSONField](Use%20StructuredJSONField/)
+- [🗂️ Use Meta Models](Use%20Meta%20Models/)
 - [⚙️ Use Settings](Use%20Settings/)
 
 Feel free to suggest new topics by opening an issue on the [issue tracker](https://github.com/camomillacms/camomilla-core/issues).

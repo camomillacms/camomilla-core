@@ -53,6 +53,7 @@ class SchemaGenerator(DRFSchemaGenerator):
     def create_view(self, callback, method, request=None):
         view = super(SchemaGenerator, self).create_view(callback, method, request)
         view.schema = AutoSchema()
+        view.schema._view = view
         if (
             not hasattr(view, "get_queryset")
             and getattr(view, "queryset", None) is None
