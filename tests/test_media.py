@@ -1,12 +1,29 @@
 import pytest
 import json
+import os
+from unittest import mock
+from django.conf import settings as django_settings
+from django.template import Context, Template
 from django.test import TransactionTestCase
+from camomilla import settings as camomilla_settings
 from camomilla.models import Media
 from .utils.api import login_superuser
 from .utils.media import load_asset_and_remove_media
 from rest_framework.test import APIClient
 
 client = APIClient()
+
+
+def _clean_renditions_dir():
+    folder = os.path.join(
+        django_settings.MEDIA_ROOT, camomilla_settings.MEDIA_RENDITIONS_FOLDER
+    )
+    if os.path.isdir(folder):
+        for root, dirs, files in os.walk(folder, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
 
 
 class MediaTestCase(TransactionTestCase):
@@ -196,3 +213,132 @@ class MediaTestCase(TransactionTestCase):
         assert Media.objects.count() == 1
         media = Media.objects.first()
         assert media.file.size < asset_size
+
+
+class MediaRenditionsTestCase(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.client = APIClient()
+        token = login_superuser()
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + token)
+        _clean_renditions_dir()
+
+    def tearDown(self):
+        _clean_renditions_dir()
+
+    def _upload(self, filename="37059501.png"):
+        asset = load_asset_and_remove_media(filename)
+        response = self.client.post(
+            "/api/camomilla/media/",
+            {
+                "file": asset,
+                "data": json.dumps(
+                    {"translations": {"en": {"alt_text": "x", "title": "x"}}}
+                ),
+            },
+            format="multipart",
+        )
+        assert response.status_code == 201, response.content
+        return Media.objects.get(pk=response.json()["id"])
+
+    def test_renditions_generated_on_upload(self):
+        media = self._upload("37059501.png")
+        assert isinstance(media.renditions, dict)
+        assert "sm-webp" in media.renditions
+        assert "md-webp" in media.renditions
+        sm = media.renditions["sm-webp"]
+        assert sm["width"] == 400
+        assert sm["format"] == "webp"
+        assert sm["size"] > 0
+        assert "url" in sm and "path" in sm
+        full_path = os.path.join(django_settings.MEDIA_ROOT, sm["path"])
+        assert os.path.exists(full_path)
+
+    def test_renditions_skip_upscaling(self):
+        media = self._upload("10595073.png")
+        assert "sm-webp" in media.renditions
+        assert "md-webp" not in media.renditions
+        assert "lg-webp" not in media.renditions
+
+    def test_renditions_wiped_on_delete(self):
+        media = self._upload("37059501.png")
+        paths = [
+            os.path.join(django_settings.MEDIA_ROOT, e["path"])
+            for e in media.renditions.values()
+        ]
+        assert paths and all(os.path.exists(p) for p in paths)
+        pk = media.pk
+        self.client.delete(f"/api/camomilla/media/{pk}/")
+        assert not any(os.path.exists(p) for p in paths)
+
+    def test_regenerate_endpoint(self):
+        media = self._upload("37059501.png")
+        sm_path = os.path.join(
+            django_settings.MEDIA_ROOT, media.renditions["sm-webp"]["path"]
+        )
+        os.remove(sm_path)
+        assert not os.path.exists(sm_path)
+        response = self.client.post(
+            f"/api/camomilla/media/{media.pk}/regenerate-renditions/"
+        )
+        assert response.status_code == 200, response.content
+        assert os.path.exists(sm_path)
+        assert "sm-webp" in response.json()["renditions"]
+
+    def test_per_instance_config_override(self):
+        media = self._upload("37059501.png")
+        media.renditions_config = [
+            {"name": "tiny", "width": 100, "format": "webp"}
+        ]
+        media.save()
+        media.refresh_from_db()
+        media.regenerate_renditions()
+        media.refresh_from_db()
+        assert list(media.renditions.keys()) == ["tiny"]
+        assert media.renditions["tiny"]["width"] == 100
+
+    def test_srcset_field_shape(self):
+        media = self._upload("37059501.png")
+        response = self.client.get(f"/api/camomilla/media/{media.pk}/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "renditions" in data
+        assert "srcset" in data
+        assert isinstance(data["srcset"], dict)
+        assert "webp" in data["srcset"]
+        assert "400w" in data["srcset"]["webp"]
+
+    def test_renditions_disabled_via_setting(self):
+        with mock.patch.object(camomilla_settings, "MEDIA_RENDITIONS_ENABLE", False):
+            media = self._upload("37059501.png")
+            assert media.renditions == {}
+
+    def test_template_tag_srcset_filter(self):
+        media = self._upload("37059501.png")
+        tpl = Template("{% load media_extras %}{{ media|srcset:'webp' }}")
+        rendered = tpl.render(Context({"media": media}))
+        assert "400w" in rendered
+        assert "800w" in rendered
+
+    def test_template_tag_picture(self):
+        media = self._upload("37059501.png")
+        tpl = Template(
+            '{% load media_extras %}{% media_picture media alt="x" %}'
+        )
+        rendered = tpl.render(Context({"media": media}))
+        assert "<picture>" in rendered
+        assert 'type="image/webp"' in rendered
+        assert '<img ' in rendered
+        assert 'alt="x"' in rendered
+
+    def test_template_tag_picture_degrades(self):
+        media = self._upload("37059501.png")
+        Media.objects.filter(pk=media.pk).update(renditions={})
+        media.refresh_from_db()
+        tpl = Template(
+            '{% load media_extras %}{% media_picture media alt="x" %}'
+        )
+        rendered = tpl.render(Context({"media": media}))
+        assert "<picture>" not in rendered
+        assert "<img " in rendered
