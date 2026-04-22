@@ -402,7 +402,7 @@ requires-dist = [
     { name = "django-jsonform", specifier = ">=2.23" },
     { name = "django-modeltranslation", specifier = ">=0.19.17,<0.20.0" },
     { name = "django-structured-json-field", specifier = ">=1.5.1" },
-    { name = "django-structured-metaobjects", editable = "../structured/django-structured-metaobjects" },
+    { name = "django-structured-metaobjects", specifier = ">=1.0.0" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
     { name = "djangorestframework", specifier = ">=3.10,<3.17" },
     { name = "djsuperadmin", specifier = ">=0.11,<1.0.0" },
@@ -526,6 +526,7 @@ wheels = [
 
 [[package]]
 name = "django-structured-metaobjects"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -534,13 +535,9 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "pydantic" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "django", specifier = ">=4.2" },
-    { name = "django-structured-json-field", specifier = ">=1.5.1" },
-    { name = "djangorestframework", specifier = ">=3.14.0,<4.0.0" },
-    { name = "pydantic", specifier = ">=2.12" },
+sdist = { url = "https://files.pythonhosted.org/packages/19/1f/d5e4f1e27f3333461821ac60f2bda10aa509290b20247cb9641d0c376cb9/django_structured_metaobjects-1.0.0.tar.gz", hash = "sha256:01c5dfd38345610a52d71bac61b8a6a6d37919443c50f15e62c9e68b36dd982e", size = 18759 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/ae/013c106568f934c16d80ba29a4aff78bf1e89b1ab419c8e4ba0d0e262476/django_structured_metaobjects-1.0.0-py2.py3-none-any.whl", hash = "sha256:47961d945953039adfd4f94993e489fc9546e87d1824c01a5b136ed1c7baf17e", size = 27088 },
 ]
 
 [[package]]

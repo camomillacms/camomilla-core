@@ -30,7 +30,7 @@ dependencies = [
   "djsuperadmin>=0.11,<1.0.0",
   "djangorestframework>=3.10,<3.17",
   "django-structured-json-field>=1.5.1",
-  "django-structured-metaobjects>=0.1.0",
+  "django-structured-metaobjects>=1.0.0",
   "pydantic>=2.10.3",
   "pydantic-core>=2.27.0",
   "Pillow>=9.1.0,<12.0.0",
@@ -78,9 +78,6 @@ find = {namespaces = false}
 
 [tool.distutils.bdist_wheel]
 universal = true
-
-[tool.uv.sources]
-django-structured-metaobjects = {path = "../structured/django-structured-metaobjects", editable = true}
 
 [tool.semantic_release]
 version_variables = ["setup.py:__version__", "camomilla/__init__.py:__version__", "camomilla/theme/__init__.py:__version__"]
