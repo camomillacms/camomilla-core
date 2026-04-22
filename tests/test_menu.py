@@ -1,10 +1,12 @@
 import pytest
 import html
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, RequestFactory
+from django.template import Template, Context, RequestContext
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
-from django.template import Template, Context
 from camomilla.models import Menu
+from camomilla.models.menu import LinkTypes, MenuNodeLink
+from camomilla.models.page import Page, UrlNode
 
 
 class MenuTestCase(TransactionTestCase):
@@ -107,6 +109,57 @@ class MenuTestCase(TransactionTestCase):
 
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_7" %}'))
         assert {'href="permalink_page_menu_en_1"' in rendered}
+
+    def test_menu_node_link_relational_derives_page(self):
+        response = self.client.post(
+            "/api/camomilla/pages/",
+            {
+                "translations": {
+                    "en": {
+                        "title": "relational_page",
+                        "permalink": "relational_permalink_en",
+                        "autopermalink": False,
+                    }
+                }
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        page = Page.objects.get(pk=response.json()["id"])
+        url_node = page.url_node
+        assert isinstance(url_node, UrlNode)
+
+        link = MenuNodeLink(link_type=LinkTypes.relational, url_node=url_node.pk)
+        assert link.page is not None
+        assert link.page.pk == page.pk
+        assert link.content_type is not None
+        assert link.content_type.model_class() is Page
+
+        link_with_instance = MenuNodeLink(
+            link_type=LinkTypes.relational, url_node=url_node
+        )
+        assert link_with_instance.get_url() == url_node.routerlink
+        assert link_with_instance.url == url_node.routerlink
+
+    def test_menu_node_link_static_get_url(self):
+        link = MenuNodeLink(link_type=LinkTypes.static, static="/about")
+        assert link.get_url() == "/about"
+        assert link.url == "/about"
+
+    def test_menu_render_with_request_context(self):
+        menu, _ = Menu.objects.get_or_create(key="render_ctx_menu")
+        menu.nodes = [
+            {"title": "ctx_node", "link": {"static": "/ctx-url"}}
+        ]
+        menu.save()
+
+        request = RequestFactory().get("/?preview=true")
+        ctx = RequestContext(request, {"extra": "value"})
+        rendered = menu.render(
+            "defaults/parts/menu.html", request=request, context=ctx
+        )
+        assert "ctx_node" in rendered
+        assert "/ctx-url" in rendered
 
     def test_menu_api_actions(self):
         # Test page_types action

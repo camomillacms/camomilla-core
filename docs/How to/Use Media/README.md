@@ -38,6 +38,151 @@ CAMOMILLA = {
 }
 ```
 
+## 📐 Responsive Renditions (srcset)
+
+In addition to the single optimized original and the thumbnail, Camomilla can generate a configurable set of **responsive image renditions** — width-based, multi-format variants ready to be dropped into an `<img srcset>` or `<picture>` tag. Renditions are produced on upload (and on demand), stored next to the original, and exposed via the REST API in a shape a frontend can consume without any extra processing.
+
+### Default configuration
+
+Out of the box, every uploaded image produces **9 renditions** (3 widths × 3 formats):
+
+| Name | Width | Format |
+|---|---|---|
+| `sm-webp`, `md-webp`, `lg-webp` | 400 / 800 / 1600 | WebP |
+| `sm-avif`, `md-avif`, `lg-avif` | 400 / 800 / 1600 | AVIF |
+| `sm-original`, `md-original`, `lg-original` | 400 / 800 / 1600 | source format (JPEG/PNG) |
+
+Renditions that would upscale the original (target width ≥ source width) are skipped. Renditions whose encoded output is larger than the source are also skipped (inflate guard).
+
+> [!NOTE]
+> AVIF requires the optional `pillow-avif-plugin` dependency. Without it, AVIF renditions are silently omitted — all other formats still generate. Install with `pip install "django-camomilla-cms[avif]"`.
+
+### Settings
+
+All rendition settings live under `CAMOMILLA.MEDIA.RENDITIONS`:
+
+```python
+CAMOMILLA = {
+    "MEDIA": {
+        "RENDITIONS": {
+            "ENABLE": True,
+            "FOLDER": "renditions",
+            "VARIANTS": [
+                {"name": "sm-webp", "width": 400, "format": "webp"},
+                {"name": "md-webp", "width": 800, "format": "webp"},
+                {"name": "lg-webp", "width": 1600, "format": "webp"},
+                {"name": "sm-avif", "width": 400, "format": "avif"},
+                {"name": "md-avif", "width": 800, "format": "avif"},
+                {"name": "lg-avif", "width": 1600, "format": "avif"},
+                {"name": "sm-original", "width": 400, "format": "original"},
+                {"name": "md-original", "width": 800, "format": "original"},
+                {"name": "lg-original", "width": 1600, "format": "original"},
+            ],
+            "JPEG_QUALITY": 85,
+            "WEBP_QUALITY": 82,
+            "AVIF_QUALITY": 60,
+            "PREVENT_INFLATE": True,
+        },
+    },
+}
+```
+
+- **`ENABLE`** — master kill switch. When `False`, no renditions are generated and `media.renditions` stays `{}`.
+- **`VARIANTS`** — list of `{name, width, format}` dicts. `format` accepts `"webp"`, `"avif"`, `"jpeg"`, `"png"`, or `"original"` (keep the source format).
+- **`FOLDER`** — subfolder of `MEDIA_ROOT` where rendition files live. Each original gets its own directory: `renditions/<stem>/<name>.<ext>`.
+- **`PREVENT_INFLATE`** — when `True`, renditions larger than the original are discarded.
+
+### Per-instance override
+
+A single Media can opt into a custom rendition set via the `renditions_config` field (JSON list, same schema as the global `VARIANTS`). Set it to `null` or an empty list to fall back to the global config.
+
+```python
+media = Media.objects.get(pk=1)
+media.renditions_config = [
+    {"name": "tiny", "width": 100, "format": "webp"},
+    {"name": "square", "width": 600, "format": "webp"},
+]
+media.save()
+media.regenerate_renditions()
+```
+
+### API response shape
+
+`GET /api/camomilla/media/<id>/` now returns two extra fields, `renditions` and `srcset`:
+
+```json
+{
+    "id": 6,
+    "file": "http://mydomain.it/media/sample-image.jpg",
+    "thumbnail": "http://mydomain.it/media/thumbnails/sample-image_thumb.jpg",
+    "mime_type": "image/jpeg",
+    "image_props": {"mode": "RGB", "width": 1980, "format": "JPEG", "height": 1319},
+    "renditions": {
+        "sm-webp": {
+            "url": "http://mydomain.it/media/renditions/sample-image/sm-webp.webp",
+            "width": 400, "height": 267, "format": "webp", "size": 18432
+        },
+        "md-webp": {"url": "...", "width": 800, "height": 533, "format": "webp", "size": 52111},
+        "lg-webp": {"url": "...", "width": 1600, "height": 1066, "format": "webp", "size": 180032}
+    },
+    "srcset": {
+        "webp":     "http://.../sm-webp.webp 400w, http://.../md-webp.webp 800w, http://.../lg-webp.webp 1600w",
+        "avif":     "http://.../sm-avif.avif 400w, ...",
+        "original": "http://.../sm-original.jpg 400w, ..."
+    },
+    "renditions_config": null
+}
+```
+
+- **`renditions`** — map keyed by variant name. Each entry has a fully qualified `url`, plus `width`, `height`, `format`, and `size` in bytes. The internal storage `path` is omitted from API output.
+- **`srcset`** — convenience map keyed by format, with values already formatted as `"url WIDTHw, url WIDTHw, ..."`. Drop the string straight into a `<source srcset>` attribute.
+
+### Using renditions in a frontend
+
+Build a `<picture>` tag directly from the `srcset` payload:
+
+```html
+<picture>
+  <source type="image/avif" srcset="{media.srcset.avif}" sizes="(min-width: 1024px) 1600px, 100vw">
+  <source type="image/webp" srcset="{media.srcset.webp}" sizes="(min-width: 1024px) 1600px, 100vw">
+  <img src="{media.file}" srcset="{media.srcset.original}" alt="{media.alt_text}" loading="lazy">
+</picture>
+```
+
+If you use Astro, the [Astro Camomilla Integration](../Use%20Astro%20Integration/) ships a ready-made `<CamomillaPicture>` component that consumes this shape directly.
+
+### Regeneration endpoint
+
+Force-regenerate all renditions for a single Media (useful after changing `renditions_config` or after bulk-editing the global `VARIANTS`):
+
+__URL:__ `/api/camomilla/media/<media_id>/regenerate-renditions/` __METHOD:__ `POST`
+
+The response is the freshly re-serialized Media payload.
+
+### Template tags
+
+For server-rendered Django templates, `camomilla` ships a `media_extras` library:
+
+```django
+{% load media_extras %}
+
+{# Single srcset string #}
+<img src="{{ media.file.url }}"
+     srcset="{{ media|srcset:'webp' }}"
+     sizes="(min-width: 1024px) 1600px, 100vw"
+     alt="{{ media.alt_text }}">
+
+{# Full <picture> element #}
+{% media_picture media alt="Hero image" sizes="(min-width: 1024px) 1600px, 100vw" class="hero-img" loading="lazy" %}
+
+{# Single rendition URL #}
+<img src="{% media_srcset_url media 'md-webp' %}">
+```
+
+- **`|srcset:'<format>'`** — filter returning a comma-joined `srcset` string for the given format. Empty string on non-images.
+- **`{% media_picture %}`** — renders a full `<picture>` with AVIF/WebP sources + fallback `<img>`. Extra kwargs (`class`, `loading`, `decoding`, `width`, `height`, …) pass through to the `<img>`. Degrades to a bare `<img>` when no renditions exist.
+- **`{% media_srcset_url %}`** — returns a single rendition's URL by name.
+
 
 ## 🗂️ Media API
 
@@ -98,9 +243,18 @@ __Response:__
         "format": "JPEG",
         "height": 1319
     },
+    "renditions": {
+        "sm-webp": {"url": "...", "width": 400, "height": 267, "format": "webp", "size": 18432}
+    },
+    "srcset": {
+        "webp": "http://.../sm-webp.webp 400w, http://.../md-webp.webp 800w, http://.../lg-webp.webp 1600w"
+    },
+    "renditions_config": null,
     "folder": null
 }
 ```
+
+See [Responsive Renditions](#-responsive-renditions-srcset) above for the full schema and configuration.
 
 ### Navigate media folders
 

@@ -56,6 +56,7 @@ class MediaAdmin(TranslationAwareModelAdmin):
         "thumbnail",
         "size",
         "image_props",
+        "renditions",
     )
     readonly_fields = ("image_preview", "image_thumb_preview", "mime_type")
     list_display = (

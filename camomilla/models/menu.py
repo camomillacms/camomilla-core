@@ -7,16 +7,16 @@ from django.template.loader import render_to_string
 from django.template import RequestContext
 from django.utils.safestring import mark_safe
 from pydantic import (
+    ConfigDict,
     Field,
-    SerializationInfo,
     computed_field,
-    model_serializer,
+    model_validator,
 )
 from structured.pydantic.models import BaseModel
+from structured.pydantic.conditionals import When, conditional_schema
 from structured.fields import StructuredJSONField
 from camomilla.models.page import UrlNode, AbstractPage
-from typing import Optional, Union, Callable, List
-from django.db.models.base import Model as DjangoModel
+from typing import Optional, Union, List
 from typing_extensions import Annotated
 from structured.pydantic.fields.serializer import FieldSerializer
 from rest_framework import serializers
@@ -38,32 +38,38 @@ class LinkTypes(str, Enum):
 
 class MenuNodeLink(BaseModel):
     link_type: LinkTypes = LinkTypes.static
-    static: str = None
-    content_type: ContentType = None
-    page: Annotated[AbstractPage, FieldSerializer(AbstractPageMinimalSerializer)] = None
-    url_node: UrlNode = None
+    static: Optional[str] = None
+    content_type: Optional[ContentType] = None
+    page: Annotated[Optional[AbstractPage], FieldSerializer(AbstractPageMinimalSerializer)] = None
+    url_node: Optional[UrlNode] = None
 
-    @model_serializer(mode="wrap", when_used="json")
-    def update_relational(self, handler: Callable, info: SerializationInfo):
-        if self.link_type == LinkTypes.relational:
-            if self.content_type and self.page:
-                if isinstance(self.page, DjangoModel) and not self.page._meta.abstract:
-                    self.content_type = ContentType.objects.get_for_model(
-                        self.page.__class__
-                    )
-                ctype_id = getattr(self.content_type, "pk", self.content_type)
-                page_id = getattr(self.page, "pk", self.page)
-                c_type = ContentType.objects.filter(pk=ctype_id).first()
-                model = c_type and c_type.model_class()
-                page = model and model.objects.filter(pk=page_id).first()
-                self.url_node = page and page.url_node
-            elif self.url_node:
-                url_node_id = getattr(self.url_node, "pk", self.url_node)
-                self.page = UrlNode.objects.filter(pk=url_node_id).first().page
-                self.content_type = ContentType.objects.get_for_model(
-                    self.page.__class__
-                )
-        return handler(self)
+    model_config = ConfigDict(
+        json_schema_extra=conditional_schema(
+            When(
+                "link_type",
+                equals=LinkTypes.static.value,
+                controls=["static"],
+                then={"required": ["static"]},
+            ),
+            When(
+                "link_type",
+                equals=LinkTypes.relational.value,
+                controls=["url_node"],
+            ),
+            # content_type and page are auto-derived; hide them from the editor
+            When("link_type", equals="__auto__", controls=["content_type", "page"]),
+        )
+    )
+
+    @model_validator(mode="after")
+    def derive_page_and_content_type(self):
+        if self.link_type == LinkTypes.relational and self.url_node:
+            url_node_id = getattr(self.url_node, "pk", self.url_node)
+            url_node = UrlNode.objects.filter(pk=url_node_id).first()
+            if url_node and url_node.page:
+                self.page = url_node.page
+                self.content_type = ContentType.objects.get_for_model(self.page.__class__)
+        return self
 
     def get_url(self, request=None):
         if self.link_type == LinkTypes.relational:
