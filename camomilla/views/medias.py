@@ -1,3 +1,4 @@
+from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
@@ -73,3 +74,10 @@ class MediaViewSet(
     serializer_class = MediaSerializer
     model = Media
     parser_classes = [MultipartJsonParser, JSONParser]
+
+    @action(detail=True, methods=["post"], url_path="regenerate-renditions")
+    def regenerate_renditions(self, request, pk=None):
+        instance = self.get_object()
+        instance.regenerate_renditions()
+        instance.refresh_from_db()
+        return Response(self.get_serializer(instance).data)

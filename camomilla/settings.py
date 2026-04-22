@@ -79,6 +79,46 @@ ENABLE_MEDIA_OPTIMIZATION = pointed_getter(
     django_settings, "CAMOMILLA.MEDIA.OPTIMIZE.ENABLE", True
 )
 
+MEDIA_RENDITIONS_ENABLE = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.ENABLE", True
+)
+
+MEDIA_RENDITIONS_CONFIG = pointed_getter(
+    django_settings,
+    "CAMOMILLA.MEDIA.RENDITIONS.VARIANTS",
+    [
+        {"name": "sm-webp", "width": 400, "format": "webp"},
+        {"name": "md-webp", "width": 800, "format": "webp"},
+        {"name": "lg-webp", "width": 1600, "format": "webp"},
+        {"name": "sm-avif", "width": 400, "format": "avif"},
+        {"name": "md-avif", "width": 800, "format": "avif"},
+        {"name": "lg-avif", "width": 1600, "format": "avif"},
+        {"name": "sm-original", "width": 400, "format": "original"},
+        {"name": "md-original", "width": 800, "format": "original"},
+        {"name": "lg-original", "width": 1600, "format": "original"},
+    ],
+)
+
+MEDIA_RENDITIONS_FOLDER = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.FOLDER", "renditions"
+)
+
+MEDIA_RENDITIONS_JPEG_QUALITY = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.JPEG_QUALITY", 85
+)
+
+MEDIA_RENDITIONS_WEBP_QUALITY = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.WEBP_QUALITY", 82
+)
+
+MEDIA_RENDITIONS_AVIF_QUALITY = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.AVIF_QUALITY", 60
+)
+
+MEDIA_RENDITIONS_PREVENT_INFLATE = pointed_getter(
+    django_settings, "CAMOMILLA.MEDIA.RENDITIONS.PREVENT_INFLATE", True
+)
+
 API_NESTING_DEPTH = pointed_getter(django_settings, "CAMOMILLA.API.NESTING_DEPTH", 10)
 
 AUTO_CREATE_HOMEPAGE = pointed_getter(
@@ -119,7 +159,26 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #     },
 #     "MEDIA": {
 #         "OPTIMIZE": {"MAX_WIDTH": 1980, "MAX_HEIGHT": 1400, "DPI": 30, "JPEG_QUALITY": 85, "ENABLE": True},
-#         "THUMBNAIL": {"FOLDER": "", "WIDTH": 50, "HEIGHT": 50}
+#         "THUMBNAIL": {"FOLDER": "", "WIDTH": 50, "HEIGHT": 50},
+#         "RENDITIONS": {
+#             "ENABLE": True,
+#             "FOLDER": "renditions",
+#             "VARIANTS": [
+#                 {"name": "sm-webp", "width": 400, "format": "webp"},
+#                 {"name": "md-webp", "width": 800, "format": "webp"},
+#                 {"name": "lg-webp", "width": 1600, "format": "webp"},
+#                 {"name": "sm-avif", "width": 400, "format": "avif"},
+#                 {"name": "md-avif", "width": 800, "format": "avif"},
+#                 {"name": "lg-avif", "width": 1600, "format": "avif"},
+#                 {"name": "sm-original", "width": 400, "format": "original"},
+#                 {"name": "md-original", "width": 800, "format": "original"},
+#                 {"name": "lg-original", "width": 1600, "format": "original"},
+#             ],
+#             "JPEG_QUALITY": 85,
+#             "WEBP_QUALITY": 82,
+#             "AVIF_QUALITY": 60,
+#             "PREVENT_INFLATE": True,
+#         },
 #     },
 #     "RENDER": {
 #         "TEMPLATE_CONTEXT_FILES": [],

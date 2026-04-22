@@ -47,6 +47,10 @@ keywords = ["cms", "django", "api cms"]
 license = {text = "MIT"}
 name = "django-camomilla-cms"
 requires-python = ">= 3.10, <3.15"
+
+[project.optional-dependencies]
+avif = ["pillow-avif-plugin>=1.4"]
+
 [dependency-groups]
 dev = [
   "coverage>=7.10",
