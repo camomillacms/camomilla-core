@@ -526,7 +526,7 @@ wheels = [
 
 [[package]]
 name = "django-structured-metaobjects"
-source = { editable = "../structured/django-structured-metaobjects" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
