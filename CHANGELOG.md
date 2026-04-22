@@ -2,6 +2,44 @@
 
 <!-- version list -->
 
+## v6.4.0 (2026-04-22)
+
+### Bug Fixes
+
+- Update source for django-structured-metaobjects to use PyPI registry
+  ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+### Features
+
+- Add media sourceset renditions improving the performances of media rendering
+  ([#47](https://github.com/camomillacms/camomilla-core/pull/47),
+  [`e58fb50`](https://github.com/camomillacms/camomilla-core/commit/e58fb50360ebfd8064792a9a2c726ba77b325cf1))
+
+- Implement meta models for dynamic content types with validation and API support
+  ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+- Implement meta models for dynamic content types with validation…
+  ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+### Refactoring
+
+- Install metaobject from ext deps ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+- **menu**: Update MenuNodeLink model to enhance validation and derive fields dynamically
+  ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+### Testing
+
+- Add tests for MenuNodeLink relational and static URL handling
+  ([#46](https://github.com/camomillacms/camomilla-core/pull/46),
+  [`1128960`](https://github.com/camomillacms/camomilla-core/commit/1128960bc22dac687b2fe28b35f259e84d21e4e3))
+
+
 ## v6.3.1 (2026-03-24)
 
 ### Bug Fixes
