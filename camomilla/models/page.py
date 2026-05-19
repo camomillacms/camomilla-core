@@ -2,6 +2,7 @@ import logging
 from typing import Sequence, Tuple, Optional
 from uuid import uuid4
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import models, transaction
@@ -22,7 +23,6 @@ from camomilla.utils import (
     get_field_translations,
     get_nofallbacks,
     lang_fallback_query,
-    localized_fieldname,
     set_nofallbacks,
     url_lang_decompose,
 )
@@ -169,8 +169,10 @@ class UrlNode(models.Model):
 PAGE_CHILD_RELATED_NAME = "%(app_label)s_%(class)s_child_pages"
 URL_NODE_RELATED_NAME = "%(app_label)s_%(class)s"
 
-# Legacy status labels — computed at read time from the timestamp triple
-# (published_at, publish_at, deleted_at). Kept as constants so callers and
+# Lifecycle labels — computed at read time from the visibility pair
+# (published_at, deleted_at). Drafts (scheduled or not) don't affect the
+# label; they're surfaced via the separate ``has_draft`` /
+# ``has_scheduled_draft`` properties. Kept as constants so callers and
 # templates that want a human-readable lifecycle string have a stable name.
 PAGE_STATUS_PUBLISHED = "PUB"
 PAGE_STATUS_DRAFT = "DRF"
@@ -261,14 +263,13 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         null=True,
         editable=False,
     )
-    # Timestamp-driven lifecycle.
+    # Visibility — derived lifecycle (PUB / PLA / DRF / TRS) reads from
+    # these two timestamps alone. Drafts and scheduled publishes live on
+    # the ``camomilla.Draft`` table (see :mod:`camomilla.models.draft`).
     published_at = models.DateTimeField(null=True, blank=True)
-    publish_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
     indexable = models.BooleanField(default=True)
     autopermalink = models.BooleanField(default=True)
-    draft_data = models.JSONField(default=dict, blank=True, editable=False)
-    has_draft = models.BooleanField(default=False, editable=False)
 
     objects = PageQuerySet.as_manager()
 
@@ -342,170 +343,177 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             return self.parent.breadcrumbs + [breadcrumb]
         return [breadcrumb]
 
+    # ------------------------------------------------------------------
+    # Lifecycle status — visibility-only derivation
+    # ------------------------------------------------------------------
+    #
+    # ``status`` / ``is_public`` are functions of two things and two things
+    # only: ``deleted_at`` (global, "is the row hidden?") and the per-
+    # language ``published_at`` ("when did this language go live?"). Drafts
+    # do NOT affect status — they're a separate concept observable via the
+    # ``Draft`` table (``has_draft`` / ``has_scheduled_draft`` properties).
+
     def _lifecycle_label(self) -> str:
         """In-memory Python computation of the lifecycle label.
 
-        Source of truth for the Python-side ``status`` / ``is_public`` /
-        ``overlay_due`` properties. Mirrors — line for line — the ``Case``
-        expression in
-        :meth:`camomilla.managers.pages.PageQuerySet.with_lifecycle` so a
-        reviewer can read both side-by-side and spot any divergence. The
-        invariant is enforced by
-        ``test_lifecycle_property_matches_annotation`` in
-        ``tests/test_page_preview.py``.
-
-        DB-side and Python-side share the timestamp triple (``deleted_at``,
-        ``published_at``, ``publish_at``); only the runtime differs.
+        Mirrors the SQL ``Case`` expression in
+        :meth:`camomilla.managers.pages.PageQuerySet.with_lifecycle`. The
+        invariant is enforced by ``test_lifecycle_property_matches_db_layer``.
         """
-        # 1. deleted? → TRS
         if get_nofallbacks(self, "deleted_at") is not None:
             return PAGE_STATUS_TRASHED
         now = timezone.now()
         published_at = get_nofallbacks(self, "published_at")
-        publish_at = get_nofallbacks(self, "publish_at")
-        # 2. published_at in the past? → PUB
         if published_at is not None and published_at <= now:
             return PAGE_STATUS_PUBLISHED
-        # 3. has a queued publish or a future first-publish? → PLA. Rule 2
-        #    already short-circuited for ``published_at <= now``, so reaching
-        #    this branch with ``published_at is not None`` means it's in the
-        #    future — no explicit ``> now`` check needed.
-        if publish_at is not None or published_at is not None:
+        if published_at is not None:
+            # Future stamp — legacy "scheduled first publish".
             return PAGE_STATUS_SCHEDULED
-        # 4. nothing scheduled, never been public → DRF
         return PAGE_STATUS_DRAFT
 
     @property
     def status(self) -> str:
-        """Derived lifecycle label (PUB/DRF/PLA/TRS) for display."""
         return self._lifecycle_label()
 
     @property
     def is_public(self) -> bool:
-        """Live content is reachable to the public right now."""
         return self._lifecycle_label() == PAGE_STATUS_PUBLISHED
+
+    # ------------------------------------------------------------------
+    # Draft accessors — per-active-language helpers around the Draft table
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _draft_language() -> str:
+        """Active language code to use for draft lookups.
+
+        For monolingual installs we use the empty string (``NO_LANGUAGE``)
+        so the same ``UNIQUE(content_type, object_id, language)`` constraint
+        works without NULL-vs-NULL backend quirks. Translated installs use
+        the active Django language.
+        """
+        from camomilla.models.draft import NO_LANGUAGE
+        from django.utils.translation import get_language
+
+        return get_language() or NO_LANGUAGE
+
+    def _drafts(self, language=None):
+        """Queryset of Drafts for this page (filtered by language if given)."""
+        from camomilla.models.draft import Draft
+
+        return Draft.objects.for_(self, language=language)
+
+    @property
+    def has_draft(self) -> bool:
+        """True when a pending draft exists for the active language."""
+        return self._drafts(language=self._draft_language()).exists()
+
+    @property
+    def has_scheduled_draft(self) -> bool:
+        return self._drafts(language=self._draft_language()).scheduled().exists()
 
     @property
     def overlay_due(self) -> bool:
-        """A pending draft is due to be applied (read-time + cron trigger).
+        """The active language's draft is due (scheduled_for ≤ now)."""
+        return self._drafts(language=self._draft_language()).due_now().exists()
 
-        Mirrors :func:`camomilla.managers.pages._overlay_due_q`.
+    @property
+    def draft_data(self) -> dict:
+        """The active language's pending draft payload (or ``{}``).
 
-        Reads via :func:`get_nofallbacks` so the per-language ``has_draft`` /
-        ``publish_at`` columns are consulted literally — without that the
-        modeltranslation fallback chain could surface another language's
-        draft as "due here", and a publish run against the active language
-        would clobber its empty draft over the language that actually has
-        one.
+        Kept as a property — not a column — so callers that just want to
+        inspect the staged state still have an ergonomic accessor. Compare
+        :meth:`save_draft` for writes.
         """
-        publish_at = get_nofallbacks(self, "publish_at")
-        return (
-            bool(get_nofallbacks(self, "has_draft"))
-            and publish_at is not None
-            and publish_at <= timezone.now()
+        draft = self._drafts(language=self._draft_language()).first()
+        return dict(draft.serialized) if draft else {}
+
+    # ------------------------------------------------------------------
+    # Draft write surface — every mutation goes through the Draft model
+    # ------------------------------------------------------------------
+
+    def save_draft(self, data: dict, merge: bool = True, *, scheduled_for=None) -> None:
+        """Persist ``data`` as the pending draft for the active language.
+
+        ``merge=True`` (default) merges into the existing draft body so a
+        partial PATCH only updates the named keys; ``merge=False`` replaces
+        wholesale. ``scheduled_for`` lets callers stage and schedule in one
+        call; pass ``None`` to keep the existing schedule (or no schedule).
+        """
+        from camomilla.models.draft import Draft
+
+        lang = self._draft_language()
+        ct = ContentType.objects.get_for_model(type(self))
+        draft, created = Draft.objects.get_or_create(
+            content_type=ct,
+            object_id=self.pk,
+            language=lang,
+            defaults={
+                "serialized": dict(data),
+                "scheduled_for": scheduled_for,
+            },
         )
-
-    def _draft_update_fields(self) -> list:
-        """``update_fields`` covering the per-language draft columns.
-
-        ``setattr(self, "draft_data", …)`` goes through the modeltranslation
-        descriptor and updates *both* the base column and the active-language
-        column on the Python instance. With ``update_fields`` specified,
-        ``save()`` only persists the columns named — so we have to include
-        ``draft_data_<lang>`` and ``has_draft_<lang>`` for the active
-        language, or the per-language draft never lands in the DB.
-        """
-        cls = type(self)
-        return [
-            localized_fieldname("draft_data", target=cls),
-            "draft_data",
-            localized_fieldname("has_draft", target=cls),
-            "has_draft",
-            "date_updated_at",
-        ]
-
-    def save_draft(self, data: dict, merge: bool = True) -> None:
-        """Store a pending edit as an overlay without touching live fields.
-
-        ``data`` is an arbitrary dict — typically the body a client would send
-        to a normal PATCH. It is validated at publish time, not at draft time,
-        so half-filled states are tolerated.
-
-        Per-language: ``draft_data`` / ``has_draft`` are translatable, so the
-        merge reads the *active language's* current overlay (via
-        :func:`get_nofallbacks`) and writes back to that same column. A
-        draft saved on the EN page does not leak into the IT page.
-        """
-        current = dict(get_nofallbacks(self, "draft_data") or {})
-        new_draft = {**current, **data} if merge else dict(data)
-        self.draft_data = new_draft
-        self.has_draft = bool(new_draft)
-        self.save(update_fields=self._draft_update_fields())
+        if not created:
+            current = dict(draft.serialized or {})
+            draft.serialized = {**current, **data} if merge else dict(data)
+            if scheduled_for is not None:
+                draft.scheduled_for = scheduled_for
+            draft.save(
+                update_fields=["serialized", "scheduled_for", "updated_at"]
+                if scheduled_for is not None
+                else ["serialized", "updated_at"]
+            )
 
     def discard_draft(self) -> None:
-        self.draft_data = {}
-        self.has_draft = False
-        self.save(update_fields=self._draft_update_fields())
+        self._drafts(language=self._draft_language()).delete()
 
-    def _apply_draft_via_serializer(self, serializer_cls=None) -> None:
-        draft = get_nofallbacks(self, "draft_data")
-        if not draft:
-            return
-        if serializer_cls is None:
-            serializer_cls = self._resolve_edit_serializer()
-        instance = self.__class__.objects.get(pk=self.pk)
-        serializer = serializer_cls(instance, data=draft, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        self.refresh_from_db()
+    def _apply_draft_via_serializer(self, draft_data: dict) -> None:
+        """Apply ``draft_data`` through the model's edit serializer.
 
-    def _resolve_edit_serializer(self):
-        """Pick a serializer class capable of writing this model via PATCH.
-
-        Delegates to :func:`camomilla.serializers.utils.build_standard_model_serializer`
-        with the write-shaped base chain (``get_editable_bases``) so nested
-        translation payloads round-trip correctly. Subclasses can override
-        ``get_serializer()`` to plug a project-specific mixin.
+        Validates the payload as if it had arrived through the API's PATCH
+        path. Keeps nested ``translations`` round-tripping correctly via the
+        write-shaped base chain (``get_editable_bases``).
         """
+        if not draft_data:
+            return
         from camomilla.serializers.utils import (
             build_standard_model_serializer,
             get_editable_bases,
         )
 
-        return build_standard_model_serializer(
+        serializer_cls = build_standard_model_serializer(
             self.__class__,
             bases=get_editable_bases(self.__class__.get_serializer()),
             name_suffix="Draft",
         )
+        instance = self.__class__.objects.get(pk=self.pk)
+        serializer = serializer_cls(instance, data=draft_data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        self.refresh_from_db()
 
     def publish(self, *, create_revision: bool = True, comment: str = "") -> None:
-        """Apply any pending draft, make the live row authoritative.
+        """Apply the active-language draft (if any) and mark the row public.
 
-        - Applies the draft (validated through the serializer chain).
-        - Sets ``published_at`` to ``now()`` if it was unset or in the future
-          (covers first publish and "publish-early" of a scheduled page).
-        - Clears the pending ``publish_at`` and the draft overlay.
+        - Loads the active language's Draft, applies its ``serialized``
+          payload through the publish serializer, then deletes the Draft.
+        - Stamps ``published_at = now()`` (only if unset or in the future,
+          to keep repeated ``publish()`` idempotent against an already-live
+          page).
         - Snapshots a reversion revision for revert.
-
-        Translatable fields are read via :func:`get_nofallbacks` so the
-        per-language stamp logic doesn't accidentally see a fallback value
-        from another language (which would skip stamping the active
-        language). Writes still go through the descriptor — that keeps the
-        base column and the active-language column in sync.
         """
         from camomilla.preview import reversion_available
 
-        had_draft = bool(get_nofallbacks(self, "draft_data"))
+        draft = self._drafts(language=self._draft_language()).first()
+        had_draft = draft is not None
         if had_draft:
-            self._apply_draft_via_serializer()
+            self._apply_draft_via_serializer(draft.serialized)
+            draft.delete()
 
         now = timezone.now()
         current_published_at = get_nofallbacks(self, "published_at")
         if current_published_at is None or current_published_at > now:
             self.published_at = now
-        self.publish_at = None
-        self.draft_data = {}
-        self.has_draft = False
 
         if create_revision and reversion_available():
             import reversion
@@ -520,90 +528,118 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             self.save()
 
     def publish_if_due(self) -> bool:
-        """Lazy-publish the pending draft on first read after ``publish_at``.
+        """Lazy-publish the active language's due Draft, if there is one.
 
-        Returns ``True`` when this call actually applied the draft (and
-        therefore mutated the row), ``False`` otherwise. The intent is to let
-        the first public visitor after the scheduled moment turn the pending
-        draft into a real publish — so cron becomes a safety net for pages no
-        one looks at, rather than the only path that flips the row.
+        Concurrency: the locked SELECT is on the Draft row, not the page.
+        Two concurrent reads contend for the Draft; the loser observes the
+        row has been consumed and returns ``False``.
 
-        Safe under concurrent requests:
-
-        * ``select_for_update`` claims the row for the duration of the
-          publish (no-op on SQLite; serialises on Postgres/MySQL).
-        * The ``overlay_due`` flag is re-checked under the lock — a second
-          racing request sees it cleared and does nothing.
-        * Expected runtime failures (a bad draft that fails serializer
-          validation, a transient DB error) are caught and logged so the
-          public read can serve the un-published row; cron retries later.
-          Programmer errors (``TypeError`` / ``AttributeError`` / …) are NOT
-          caught — those surface so bugs don't hide behind a silent
-          "no-op-on-first-read".
+        Expected runtime failures (validation, transient DB) are caught
+        and logged; the request proceeds with whatever lives in the DB
+        now. Programmer errors propagate.
         """
-        if not self.overlay_due:
-            return False
         from django.db.utils import DatabaseError, NotSupportedError, OperationalError
         from rest_framework.exceptions import ValidationError
 
-        cls = type(self)
+        from camomilla.models.draft import Draft
+
+        lang = self._draft_language()
+        if not Draft.objects.for_(self, language=lang).due_now().exists():
+            return False
         try:
             with transaction.atomic():
                 try:
-                    locked = cls.objects.select_for_update().get(pk=self.pk)
+                    locked = (
+                        Draft.objects.select_for_update()
+                        .for_(self, language=lang)
+                        .due_now()
+                        .first()
+                    )
                 except (NotSupportedError, OperationalError):
-                    locked = cls.objects.get(pk=self.pk)
-                if not locked.overlay_due:
-                    # Another concurrent request beat us to it.
+                    locked = (
+                        Draft.objects.for_(self, language=lang).due_now().first()
+                    )
+                if locked is None:
                     return False
-                locked.publish(comment="Auto-published on first read")
+                # Re-fetch page under the lock to read fresh published_at.
+                page = self.__class__.objects.get(pk=self.pk)
+                page._apply_draft_via_serializer(locked.serialized)
+                now = timezone.now()
+                current = get_nofallbacks(page, "published_at")
+                if current is None or current > now:
+                    page.published_at = now
+                from camomilla.preview import reversion_available
+
+                if reversion_available():
+                    import reversion
+
+                    with reversion.create_revision():
+                        page.save()
+                        reversion.set_comment("Auto-published on first read")
+                else:
+                    page.save()
+                locked.delete()
         except (ValidationError, DatabaseError) as exc:
             logger.warning(
                 "publish_if_due skipped for %s pk=%s: %s",
-                cls.__name__,
+                type(self).__name__,
                 self.pk,
                 exc,
             )
             self.refresh_from_db()
             return False
-        # Reflect the freshly-applied row onto self so the caller can render
-        # immediately without an extra round-trip.
         self.refresh_from_db()
         return True
 
     def schedule(self, when, *, create_revision: bool = False) -> None:
-        """Schedule the next publish action for ``when``.
+        """Schedule the next publish moment for the active language.
 
-        One verb, one behaviour: the pending draft (if any) will be applied
-        at ``when`` — by the cron command, or, in the meantime, materialised
-        at read time by the public router.
+        Two paths, depending on whether the active language has ever been
+        public:
 
-        If the active language has *never* been public
-        (``get_nofallbacks(self, "published_at") is None``), the scheduled
-        moment also becomes the moment at which this language first appears
-        publicly. Otherwise the page stays publicly accessible with its
-        current live content until ``when``.
+        * **Never public** (``published_at IS NULL``) — set ``published_at
+          = when`` so the page enters the "scheduled first publish" bucket.
+          No Draft is required: the live row IS the content that will
+          appear at ``when``.
+        * **Already public** — attach ``scheduled_for=when`` to the
+          existing Draft (must be saved first via :meth:`save_draft`). The
+          public live content stays visible until ``when``; the Draft's
+          payload swaps in at that moment.
 
-        Read via :func:`get_nofallbacks` so the "first appearance" check
-        sees a literal NULL per-language column, not a fallback value from
-        another language.
+        Calling :meth:`schedule` against an already-public page with no
+        Draft is a no-op + warning — there's nothing to schedule.
         """
         from camomilla.preview import reversion_available
 
-        self.publish_at = when
-        if get_nofallbacks(self, "published_at") is None:
-            # No prior public content in this language → the schedule defines
-            # its first appearance.
+        lang = self._draft_language()
+        current_published_at = get_nofallbacks(self, "published_at")
+        if current_published_at is None:
+            # First-appearance schedule: the live row becomes the future
+            # content.
             self.published_at = when
+            if create_revision and reversion_available():
+                import reversion
 
-        if create_revision and reversion_available():
-            import reversion
-
-            with reversion.create_revision():
+                with reversion.create_revision():
+                    self.save()
+                    reversion.set_comment(f"Scheduled for {when.isoformat()}")
+            else:
                 self.save()
-                reversion.set_comment(f"Scheduled for {when.isoformat()}")
-        else:
-            self.save()
+            return
+
+        # Already public: schedule the existing draft.
+        draft = self._drafts(language=lang).first()
+        if draft is None:
+            logger.warning(
+                "schedule() called on a live %s pk=%s with no pending draft "
+                "in language %r — nothing to schedule.",
+                type(self).__name__,
+                self.pk,
+                lang,
+            )
+            return
+        draft.scheduled_for = when
+        draft.save(update_fields=["scheduled_for", "updated_at"])
 
     def trash(self) -> None:
         """Soft-delete the page. Reversible via :meth:`restore`."""

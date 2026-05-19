@@ -6,7 +6,7 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from camomilla.models import Page
+from camomilla.models import Draft, Page
 from .utils.api import login_superuser
 
 
@@ -22,10 +22,9 @@ class PagePreviewTestCase(TransactionTestCase):
     def _create_published_page(self, title="live title"):
         """Create a page and force-publish it so it's unambiguously live.
 
-        ``status`` is a computed property now, so we mark a page public by
-        stamping ``published_at`` in the past via a direct DB update — the
-        same effect that ``publish()`` would have, without going through the
-        serializer machinery.
+        We stamp ``published_at`` in the past via a direct DB update — the
+        same effect that ``publish()`` would have, without going through
+        the serializer machinery.
         """
         resp = self.client.post(
             "/api/camomilla/pages/",
@@ -37,6 +36,10 @@ class PagePreviewTestCase(TransactionTestCase):
         Page.objects.filter(pk=page_id).update(published_at=timezone.now())
         return page_id
 
+    # ------------------------------------------------------------------
+    # Draft creation and isolation from the live row
+    # ------------------------------------------------------------------
+
     def test_draft_does_not_touch_live(self):
         page_id = self._create_published_page("live title")
         resp = self.client.patch(
@@ -46,9 +49,9 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         assert resp.status_code == 200
         page = Page.objects.get(pk=page_id)
-        assert page.has_draft is True
-        assert page.draft_data != {}
-        # live field untouched
+        # Draft row exists in EN
+        assert Draft.objects.for_(page, language="en").exists()
+        # Live row untouched
         assert page.title_en == "live title"
 
     def test_preview_endpoint_overlays_draft(self):
@@ -66,15 +69,12 @@ class PagePreviewTestCase(TransactionTestCase):
     def test_preview_overlay_preserves_other_language_translations(self):
         """The EN preview must NOT erase IT live content from the response.
 
-        ``draft_data`` is per-language and the view trims the body to the
-        active language at save time, so the stored draft only carries
-        ``translations[<active>]``. A naive ``overlay.update(draft)`` would
-        replace the response's full ``{en, it}`` translations map with the
-        draft's one-language map, dropping IT's live title from the preview.
-        Pin the merge-by-language behaviour.
+        Each language's Draft only carries its own ``translations[<lang>]``
+        slice. A naive ``overlay.update(draft)`` would replace the response's
+        full ``{en, it}`` translations map with the draft's one-language map.
+        Merge-by-language is the contract pinned here.
         """
         page_id = self._create_published_page("live en")
-        # Stamp IT live too so the response carries both translations.
         Page.objects.filter(pk=page_id).update(
             title_it="live it",
             published_at_it=timezone.now(),
@@ -88,9 +88,7 @@ class PagePreviewTestCase(TransactionTestCase):
         assert resp.status_code == 200
         data = resp.json()
         assert data["has_draft"] is True
-        # EN slot reflects the draft overlay…
         assert data["translations"]["en"]["title"] == "draft en"
-        # …IT slot still shows the un-touched live content.
         assert data["translations"]["it"]["title"] == "live it"
 
     def test_publish_applies_draft_and_clears_it(self):
@@ -105,10 +103,9 @@ class PagePreviewTestCase(TransactionTestCase):
         page = Page.objects.get(pk=page_id)
         assert page.status == "PUB"
         assert page.is_public is True
-        assert page.has_draft is False
-        assert page.draft_data == {}
+        # Draft row deleted by publish()
+        assert not Draft.objects.for_(page).exists()
         assert page.title_en == "draft title"
-        assert page.publish_at is None
 
     def test_discard_draft(self):
         page_id = self._create_published_page()
@@ -120,11 +117,18 @@ class PagePreviewTestCase(TransactionTestCase):
         resp = self.client.post(f"/api/camomilla/pages/{page_id}/discard-draft/")
         assert resp.status_code == 200
         page = Page.objects.get(pk=page_id)
-        assert page.has_draft is False
-        assert page.draft_data == {}
+        assert not Draft.objects.for_(page, language="en").exists()
+
+    # ------------------------------------------------------------------
+    # Scheduling
+    # ------------------------------------------------------------------
 
     def test_schedule_first_publish_makes_published_at_future(self):
-        # Page has never been public → schedule defines first-appearance too.
+        """Never-public + ``schedule(when)`` → ``published_at = when``.
+
+        No Draft is required for the first-appearance schedule: the live
+        row IS the content that will go public at ``when``.
+        """
         resp = self.client.post(
             "/api/camomilla/pages/",
             {"translations": {"en": {"title": "unpublished"}}},
@@ -140,17 +144,17 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         assert resp.status_code == 200
         page = Page.objects.get(pk=page_id)
-        # published_at and publish_at coincide for a first-publish schedule
-        assert page.publish_at is not None
         assert page.published_at is not None
         assert page.published_at > timezone.now()
-        # Not yet public — published_at is in the future
         assert page.is_public is False
         assert page.status == "PLA"
 
     def test_schedule_swap_keeps_page_public_until_date(self):
+        """Already-public + draft + ``schedule(when)`` → Draft.scheduled_for.
+
+        Public content stays visible; the Draft will swap in at ``when``.
+        """
         page_id = self._create_published_page("live title")
-        # set a draft + schedule a swap in the future
         self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/",
             {"translations": {"en": {"title": "swap title"}}},
@@ -164,16 +168,17 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         assert resp.status_code == 200
         page = Page.objects.get(pk=page_id)
-        # The page was already public → published_at is preserved in the past
         assert page.is_public is True
         assert page.published_at <= timezone.now()
-        assert page.publish_at is not None
-        assert page.publish_at > timezone.now()
-        # And status reads as PUB despite the queued swap
         assert page.status == "PUB"
         assert page.title_en == "live title"
 
-        # Public route still serves OLD content
+        draft = Draft.objects.for_(page, language="en").first()
+        assert draft is not None
+        assert draft.scheduled_for is not None
+        assert draft.scheduled_for > timezone.now()
+
+        # Public route still serves OLD content.
         anon = APIClient()
         resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
         assert resp.status_code == 200
@@ -190,39 +195,37 @@ class PagePreviewTestCase(TransactionTestCase):
             format="json",
         )
         page = Page.objects.get(pk=page_id)
-        page.publish_at = timezone.now() - timedelta(minutes=1)
-        page.save(update_fields=["publish_at"])
-        assert page.overlay_due is True
+        # Push the Draft's scheduled_for into the past so it's due.
+        Draft.objects.for_(page, language="en").update(
+            scheduled_for=timezone.now() - timedelta(minutes=1)
+        )
         anon = APIClient()
         resp = anon.get(f"/api/camomilla/pages-router{page.permalink}?cache_bust=1")
         assert resp.status_code == 200
-        # The first public read wins the publish — DB row is flipped, the
-        # draft is gone, the live title is the formerly-drafted one. Mirrors
-        # the HTML route's lazy-materialisation behaviour.
         page.refresh_from_db()
         assert page.title_en == "swap title"
-        assert page.has_draft is False
-        assert page.publish_at is None
+        assert not Draft.objects.for_(page).exists()
         assert page.is_public is True
 
     def test_scheduled_publish_command_promotes_first_publish(self):
+        """Cron applies a Draft whose ``scheduled_for`` has passed and
+        promotes a never-public page into the public state.
+
+        The page itself was never publicly visible; the Draft carries both
+        the content snapshot and the scheduled_for stamp. After cron runs,
+        the page becomes public with the Draft's content applied.
+        """
         resp = self.client.post(
             "/api/camomilla/pages/",
             {"translations": {"en": {"title": "first publish"}}},
             format="json",
         )
         page_id = resp.json()["id"]
-        # Stage a pending publish in the past (no draft → page just becomes
-        # public when the cron runs publish()).
-        past = timezone.now() - timedelta(minutes=1)
         page = Page.objects.get(pk=page_id)
-        page.publish_at = past
-        page.published_at = past
-        # Need a non-empty draft to enter the cron's worklist
-        page.draft_data = {"breadcrumbs_title": "first"}
-        page.has_draft = True
-        page.save(
-            update_fields=["publish_at", "published_at", "draft_data", "has_draft"]
+        # Stage a draft with a scheduled_for in the past.
+        page.save_draft(
+            {"translations": {"en": {"title": "first publish"}}},
+            scheduled_for=timezone.now() - timedelta(minutes=1),
         )
 
         call_command("camomilla_publish_scheduled")
@@ -230,7 +233,7 @@ class PagePreviewTestCase(TransactionTestCase):
         page.refresh_from_db()
         assert page.status == "PUB"
         assert page.is_public is True
-        assert page.publish_at is None
+        assert not Draft.objects.for_(page).exists()
 
     def test_scheduled_publish_command_materialises_swap(self):
         page_id = self._create_published_page("live title")
@@ -240,22 +243,24 @@ class PagePreviewTestCase(TransactionTestCase):
             format="json",
         )
         page = Page.objects.get(pk=page_id)
-        page.publish_at = timezone.now() - timedelta(minutes=1)
-        page.save(update_fields=["publish_at"])
+        Draft.objects.for_(page, language="en").update(
+            scheduled_for=timezone.now() - timedelta(minutes=1)
+        )
 
         call_command("camomilla_publish_scheduled")
 
         page.refresh_from_db()
         assert page.title_en == "swap title"
-        assert page.has_draft is False
-        assert page.publish_at is None
+        assert not Draft.objects.for_(page).exists()
         assert page.status == "PUB"
+
+    # ------------------------------------------------------------------
+    # Revisions / revert
+    # ------------------------------------------------------------------
 
     def test_revisions_and_revert_roundtrip(self):
         page_id = self._create_published_page("v1")
-        # publish v1 to create a revision
         self.client.post(f"/api/camomilla/pages/{page_id}/publish/")
-        # then edit + publish v2
         self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/",
             {"translations": {"en": {"title": "v2"}}},
@@ -267,13 +272,16 @@ class PagePreviewTestCase(TransactionTestCase):
         assert resp.status_code == 200
         revs = resp.json()
         assert len(revs) >= 2
-        # Oldest revision is v1 (list is newest first)
         v1_id = revs[-1]["id"]
 
         resp = self.client.post(f"/api/camomilla/pages/{page_id}/revert/{v1_id}/")
         assert resp.status_code == 200, resp.content
         page = Page.objects.get(pk=page_id)
         assert page.title_en == "v1"
+
+    # ------------------------------------------------------------------
+    # Public-route safety
+    # ------------------------------------------------------------------
 
     def test_public_router_never_exposes_draft(self):
         page_id = self._create_published_page("router-leak-page")
@@ -288,19 +296,7 @@ class PagePreviewTestCase(TransactionTestCase):
         assert resp.status_code == 200
         data = resp.json()
         assert "draft_data" not in data
-        assert "has_draft" not in data
-
-    def test_patch_cannot_write_draft_fields_directly(self):
-        page_id = self._create_published_page("live title")
-        resp = self.client.patch(
-            f"/api/camomilla/pages/{page_id}/",
-            {"draft_data": {"hacked": True}, "has_draft": True},
-            format="json",
-        )
-        assert resp.status_code == 200
-        page = Page.objects.get(pk=page_id)
-        assert page.draft_data == {}
-        assert page.has_draft is False
+        assert "has_draft" not in data or data["has_draft"] is False
 
     def test_preview_endpoint_requires_authentication(self):
         page_id = self._create_published_page("auth-gate-page")
@@ -323,42 +319,38 @@ class PagePreviewTestCase(TransactionTestCase):
         assert "draft_data" not in data
 
     def test_lazy_materialisation_on_first_html_visit(self):
-        """A scheduled swap whose moment has passed is materialised by the
-        first HTML render — no cron needed for visited pages."""
+        """First HTML visitor after the Draft's ``scheduled_for`` triggers
+        publish — no cron round-trip required for visited pages."""
         page_id = self._create_published_page("live title")
-        # stage a draft + schedule a swap in the past
         self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/",
             {"translations": {"en": {"title": "new live title"}}},
             format="json",
         )
         page = Page.objects.get(pk=page_id)
-        page.publish_at = timezone.now() - timedelta(minutes=1)
-        page.save(update_fields=["publish_at"])
-        assert page.overlay_due is True
+        Draft.objects.for_(page, language="en").update(
+            scheduled_for=timezone.now() - timedelta(minutes=1)
+        )
 
-        # First public HTML hit should trigger materialisation.
         anon = APIClient()
         resp = anon.get(page.permalink + "/?cb=1", follow=True)
-        # Render result doesn't matter for this test (template specifics);
-        # the materialisation side-effect on the row is what we verify below.
         assert resp.status_code == 200, resp.content
 
         page.refresh_from_db()
-        # Draft has been applied to live fields; the swap is no longer pending.
         assert page.title_en == "new live title"
-        assert page.has_draft is False
-        assert page.draft_data == {}
-        assert page.publish_at is None
+        assert not Draft.objects.for_(page).exists()
         assert page.is_public is True
 
     def test_publish_if_due_is_noop_when_not_due(self):
-        # No draft pending → no mutation, no error.
         page_id = self._create_published_page("stable")
         page = Page.objects.get(pk=page_id)
         assert page.publish_if_due() is False
         page.refresh_from_db()
         assert page.title_en == "stable"
+
+    # ------------------------------------------------------------------
+    # Soft-delete
+    # ------------------------------------------------------------------
 
     def test_trash_and_restore(self):
         page_id = self._create_published_page("trashable")
@@ -374,18 +366,19 @@ class PagePreviewTestCase(TransactionTestCase):
         assert page.deleted_at is None
         assert page.is_public is True
 
-    def test_lifecycle_property_matches_db_layer(self):
-        """Contract test: the Python-side properties (``status`` /
-        ``is_public`` / ``overlay_due``) must agree with the DB layer
-        (``with_lifecycle().computed_status`` and the filter helpers
-        ``.public()`` / ``.due_for_publish()``) for every lifecycle state.
+    # ------------------------------------------------------------------
+    # Lifecycle contract: Python property ↔ SQL annotation
+    # ------------------------------------------------------------------
 
-        Why: there are two implementations of the same rule — one in
-        Python (``AbstractPage._lifecycle_label``), one in SQL (the
-        Case/When in ``with_lifecycle`` plus the Q-builders in the filter
-        helpers). The duplication is structural (Python and SQL are
-        different runtimes for the same rule) but pinned here so any
-        future drift breaks CI.
+    def test_lifecycle_property_matches_db_layer(self):
+        """The Python-side ``status`` / ``is_public`` / ``overlay_due``
+        properties must agree with the DB layer (``with_lifecycle()``
+        annotation, ``.public()`` / ``.due_for_publish()`` filter helpers)
+        across every lifecycle state.
+
+        Two implementations of the same rule (Python + SQL) coexist
+        because they run on different substrates; this test pins the
+        equivalence so future drift breaks CI.
         """
         from django.utils.translation.trans_real import activate
 
@@ -394,52 +387,47 @@ class PagePreviewTestCase(TransactionTestCase):
         future = now + timedelta(hours=1)
 
         scenarios = [
-            ("never_published_no_draft", {}),
-            ("never_published_with_draft", {"has_draft": True, "draft_data": {"x": 1}}),
-            ("published_long_ago", {"published_at": past}),
+            ("never_published_no_draft", {}, None),
+            ("never_published_with_draft", {}, {"draft": True, "scheduled_for": None}),
+            ("published_long_ago", {"published_at": past}, None),
+            ("scheduled_first_publish", {"published_at": future}, None),
             (
-                "scheduled_first_publish",
-                {"published_at": future, "publish_at": future},
+                "live_with_pending_draft",
+                {"published_at": past},
+                {"draft": True, "scheduled_for": None},
             ),
             (
                 "live_with_scheduled_swap",
-                {
-                    "published_at": past,
-                    "publish_at": future,
-                    "has_draft": True,
-                    "draft_data": {"x": 1},
-                },
+                {"published_at": past},
+                {"draft": True, "scheduled_for": future},
             ),
             (
                 "live_with_overlay_due",
-                {
-                    "published_at": past,
-                    "publish_at": past,
-                    "has_draft": True,
-                    "draft_data": {"x": 1},
-                },
+                {"published_at": past},
+                {"draft": True, "scheduled_for": past},
             ),
             (
                 "trashed_after_being_published",
                 {"published_at": past, "deleted_at": now},
+                None,
             ),
-            ("trashed_never_published", {"deleted_at": now}),
+            ("trashed_never_published", {"deleted_at": now}, None),
         ]
 
-        # Each language has its own ``published_at`` / ``publish_at``
-        # column; exercise both to cover the per-language SQL path.
         for lang in ("en", "it"):
             activate(lang)
-            for label, fields in scenarios:
+            for label, fields, draft_spec in scenarios:
                 page = Page.objects.create()
                 for f, v in fields.items():
                     setattr(page, f, v)
                 page.save()
                 pk = page.pk
+                if draft_spec:
+                    page.save_draft(
+                        {"x": 1}, scheduled_for=draft_spec.get("scheduled_for")
+                    )
 
-                # status: property vs. computed_status annotation (via
-                # .values() so the annotation doesn't try to hydrate onto
-                # the instance and collide with the property descriptor).
+                # status: property vs computed_status annotation.
                 row = (
                     Page.objects.with_lifecycle()
                     .values("computed_status")
@@ -451,14 +439,14 @@ class PagePreviewTestCase(TransactionTestCase):
                     f"property={page.status!r}"
                 )
 
-                # is_public: property vs. .public() filter helper
+                # is_public: property vs .public() filter helper
                 sql_public = Page.objects.public().filter(pk=pk).exists()
                 assert sql_public == page.is_public, (
                     f"[{lang}/{label}] is_public mismatch: "
                     f".public()={sql_public!r} property={page.is_public!r}"
                 )
 
-                # overlay_due: property vs. .due_for_publish() filter helper
+                # overlay_due: property vs .due_for_publish() filter helper
                 sql_due = Page.objects.due_for_publish().filter(pk=pk).exists()
                 assert sql_due == page.overlay_due, (
                     f"[{lang}/{label}] overlay_due mismatch: "
@@ -468,83 +456,60 @@ class PagePreviewTestCase(TransactionTestCase):
 
                 page.delete()
 
-    def test_full_bundle_draft_keeps_only_active_language(self):
-        """Backoffice forms commonly PATCH the full ``translations`` bundle
-        on every save. With per-language drafts, the server must trim the
-        body to the active language so publishing EN doesn't drag IT's
-        translations along for the ride.
-        """
-        from camomilla.utils import get_nofallbacks
+    # ------------------------------------------------------------------
+    # Per-language draft isolation (Draft row per language)
+    # ------------------------------------------------------------------
 
+    def test_full_bundle_draft_stays_in_active_language(self):
+        """Backoffice forms commonly PATCH the full ``translations`` bundle.
+
+        The Draft row's ``language`` column is the canonical scoping: an
+        EN draft holds the whole bundle but publishing EN only applies
+        EN's slice (the serializer chain handles the rest by ignoring
+        irrelevant translation entries).
+        """
         page_id = self._create_published_page("live en title")
         Page.objects.filter(pk=page_id).update(
             title_it="live it title",
             published_at_it=timezone.now(),
         )
 
-        # Backoffice sends both EN + IT translations to the EN draft endpoint
-        # (typical "send the whole edit-form back" pattern).
         resp = self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/?language=en",
-            {"translations": {
-                "en": {"title": "draft en"},
-                "it": {"title": "draft it (not intended yet)"},
-            }},
+            {
+                "translations": {
+                    "en": {"title": "draft en"},
+                    "it": {"title": "draft it"},
+                }
+            },
             format="json",
         )
         assert resp.status_code == 200, resp.content
-
         page = Page.objects.get(pk=page_id)
-        en_draft = get_nofallbacks(page, "draft_data", language="en")
-        # IT's content was dropped — only the active language's entry survives.
-        assert "en" in en_draft["translations"]
-        assert "it" not in en_draft["translations"]
-        # IT's own draft column stays untouched.
-        assert get_nofallbacks(page, "has_draft", language="it") is False
-
-        # Publishing EN now must not touch the IT live title.
-        from django.utils.translation import override
-        with override("en"):
-            page.publish()
-        page.refresh_from_db()
-        assert page.title_en == "draft en"
-        assert page.title_it == "live it title"  # untouched, no leak
+        # The EN Draft exists; the IT Draft does not.
+        assert Draft.objects.for_(page, language="en").exists()
+        assert not Draft.objects.for_(page, language="it").exists()
 
     def test_drafts_are_isolated_per_language(self):
-        """Saving a draft in EN must not surface as a draft in IT.
-
-        ``draft_data`` and ``has_draft`` are translatable, so each language
-        carries its own pending overlay. A regression here would mean
-        publishing EN clobbers IT's queued edits, or that viewing IT
-        accidentally shows EN's draft. Pin both directions.
+        """A draft saved in EN must not surface as a draft in IT, and
+        publishing EN must not consume IT's pending draft.
         """
-        from camomilla.utils import get_nofallbacks
-
         page_id = self._create_published_page("live en title")
-        # Stamp IT live too so we have a true bilingual baseline.
         Page.objects.filter(pk=page_id).update(
             title_it="live it title",
             published_at_it=timezone.now(),
         )
 
-        # Save a draft against EN only.
         resp = self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/?language=en",
             {"translations": {"en": {"title": "draft en title"}}},
             format="json",
         )
         assert resp.status_code == 200, resp.content
-
         page = Page.objects.get(pk=page_id)
-        # EN sees the draft, IT does not — read raw per-language columns to
-        # bypass modeltranslation's fallback chain (which could otherwise
-        # smear EN's value onto IT or vice versa).
-        assert get_nofallbacks(page, "has_draft", language="en") is True
-        assert get_nofallbacks(page, "draft_data", language="en") != {}
-        assert get_nofallbacks(page, "has_draft", language="it") is False
-        assert get_nofallbacks(page, "draft_data", language="it") in (None, {})
+        assert Draft.objects.for_(page, language="en").exists()
+        assert not Draft.objects.for_(page, language="it").exists()
 
-        # Now save a different draft in IT, EN's draft must persist.
         resp = self.client.patch(
             f"/api/camomilla/pages/{page_id}/draft/?language=it",
             {"translations": {"it": {"title": "draft it title"}}},
@@ -552,41 +517,28 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         assert resp.status_code == 200, resp.content
         page = Page.objects.get(pk=page_id)
-        assert get_nofallbacks(page, "has_draft", language="en") is True
-        assert get_nofallbacks(page, "has_draft", language="it") is True
-        en_draft = get_nofallbacks(page, "draft_data", language="en")
-        it_draft = get_nofallbacks(page, "draft_data", language="it")
-        assert en_draft["translations"]["en"]["title"] == "draft en title"
-        assert it_draft["translations"]["it"]["title"] == "draft it title"
+        assert Draft.objects.for_(page, language="en").exists()
+        assert Draft.objects.for_(page, language="it").exists()
 
-        # Publish EN — clears EN's draft only, IT's draft still queued.
         from django.utils.translation import override
 
         with override("en"):
             page.publish()
         page.refresh_from_db()
-        assert get_nofallbacks(page, "has_draft", language="en") is False
-        assert get_nofallbacks(page, "draft_data", language="en") in (None, {})
+        # EN Draft consumed, IT Draft preserved.
+        assert not Draft.objects.for_(page, language="en").exists()
+        assert Draft.objects.for_(page, language="it").exists()
         assert page.title_en == "draft en title"
-        assert get_nofallbacks(page, "has_draft", language="it") is True
-        it_draft_after = get_nofallbacks(page, "draft_data", language="it")
-        assert it_draft_after["translations"]["it"]["title"] == "draft it title"
+
+    # ------------------------------------------------------------------
+    # Misc
+    # ------------------------------------------------------------------
 
     def test_auto_created_homepage_is_publicly_published(self):
-        """Auto-created homepages must land in PUB lifecycle state.
-
-        Otherwise ``fetch()`` renders the row to anonymous visitors while
-        ``Page.objects.public()`` / sitemap / admin all classify it as
-        DRAFT — a confusing split where the public sees content the
-        lifecycle layer thinks isn't published.
-        """
-        from camomilla.utils import get_nofallbacks
-
         page, created = Page.get_or_create_homepage()
         assert created is True
-        # Every language's published_at column is stamped, not just the
-        # active one — otherwise reading the homepage under another
-        # language activation would still report DRAFT.
+        from camomilla.utils import get_nofallbacks
+
         for lang in ("en", "it"):
             stamp = get_nofallbacks(page, "published_at", language=lang)
             assert stamp is not None, f"published_at_{lang} not stamped"
@@ -594,12 +546,9 @@ class PagePreviewTestCase(TransactionTestCase):
         assert Page.objects.public().filter(pk=page.pk).exists()
 
     def test_queryset_filter_helpers(self):
-        # Build three pages in distinct lifecycle states and verify the
-        # PageQuerySet shortcuts return the right buckets.
         live_id = self._create_published_page("live one")
         Page.objects.create()  # never-published draft
         scheduled = Page.objects.create(
-            publish_at=timezone.now() + timedelta(hours=1),
             published_at=timezone.now() + timedelta(hours=1),
         )
 
@@ -607,9 +556,98 @@ class PagePreviewTestCase(TransactionTestCase):
         assert not Page.objects.public().filter(pk=scheduled.pk).exists()
         assert Page.objects.scheduled().filter(pk=scheduled.pk).exists()
         assert Page.objects.first_publish_pending().filter(pk=scheduled.pk).exists()
-        # All three alive
         assert Page.objects.alive().count() == 3
 
         Page.objects.filter(pk=live_id).update(deleted_at=timezone.now())
         assert Page.objects.alive().count() == 2
         assert Page.objects.trashed().filter(pk=live_id).exists()
+
+    # ------------------------------------------------------------------
+    # Public route lifecycle gating — nothing non-public must leak
+    # ------------------------------------------------------------------
+    #
+    # The two public surfaces (HTML render in ``dynamic_pages_urls.fetch``
+    # and JSON router in ``pages_router``) must both 404 trashed, draft,
+    # and future-scheduled rows. Lazy materialisation of a due Draft is
+    # the only path that's allowed to flip a non-public row to public on
+    # the way in.
+
+    def test_pages_router_404s_trashed_page(self):
+        page_id = self._create_published_page("about-to-trash")
+        Page.objects.filter(pk=page_id).update(deleted_at=timezone.now())
+        page = Page.objects.get(pk=page_id)
+        anon = APIClient()
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        assert resp.status_code == 404
+
+    def test_pages_router_404s_never_published_page(self):
+        resp = self.client.post(
+            "/api/camomilla/pages/",
+            {"translations": {"en": {"title": "never-public"}}},
+            format="json",
+        )
+        page = Page.objects.get(pk=resp.json()["id"])
+        anon = APIClient()
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        assert resp.status_code == 404
+
+    def test_pages_router_404s_scheduled_first_publish(self):
+        resp = self.client.post(
+            "/api/camomilla/pages/",
+            {"translations": {"en": {"title": "scheduled-page"}}},
+            format="json",
+        )
+        page_id = resp.json()["id"]
+        Page.objects.filter(pk=page_id).update(
+            published_at=timezone.now() + timedelta(hours=1),
+        )
+        page = Page.objects.get(pk=page_id)
+        anon = APIClient()
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        assert resp.status_code == 404
+
+    def test_pages_router_promotes_never_public_with_due_draft(self):
+        """Lazy first-publish: page never publicly visible, Draft with a
+        past ``scheduled_for``. The first public read must apply the
+        Draft, flip the page to public, and serve it 200."""
+        resp = self.client.post(
+            "/api/camomilla/pages/",
+            {"translations": {"en": {"title": "lazy-publish"}}},
+            format="json",
+        )
+        page_id = resp.json()["id"]
+        page = Page.objects.get(pk=page_id)
+        page.save_draft(
+            {"translations": {"en": {"title": "lazy-publish"}}},
+            scheduled_for=timezone.now() - timedelta(minutes=1),
+        )
+        anon = APIClient()
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        assert resp.status_code == 200
+        page.refresh_from_db()
+        assert page.is_public is True
+        assert not Draft.objects.for_(page).exists()
+
+    def test_fetch_404s_trashed_page_via_html_route(self):
+        page_id = self._create_published_page("html-trashable")
+        Page.objects.filter(pk=page_id).update(deleted_at=timezone.now())
+        page = Page.objects.get(pk=page_id)
+        from django.test import Client
+
+        anon = Client()
+        # ``follow=True`` resolves the APPEND_SLASH 302 so the assertion
+        # sees the final status from the ``fetch`` view, not the redirect.
+        resp = anon.get(page.permalink, follow=True)
+        assert resp.status_code == 404
+
+    def test_fetch_404s_trashed_homepage(self):
+        """An existing homepage that was later trashed must not be
+        re-served via ``/``. The auto-create branch only kicks in when
+        the homepage doesn't exist at all."""
+        homepage, _ = Page.get_or_create_homepage()
+        Page.objects.filter(pk=homepage.pk).update(deleted_at=timezone.now())
+        from django.test import Client
+
+        anon = Client()
+        resp = anon.get("/")
+        assert resp.status_code == 404

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 from django.utils.dateparse import parse_datetime
 from django.utils.translation.trans_real import activate as activate_language
@@ -7,82 +8,42 @@ from rest_framework import permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
-from django.utils.translation import get_language
-
 from camomilla.models import Page
 from camomilla.models.page import UrlNode, UrlRedirect
 from camomilla.preview import reversion_available
 from camomilla.serializers import PageSerializer
 from camomilla.serializers.page import RouteSerializer
 from camomilla.settings import API_TRANSLATION_ACCESSOR, PAGE_ROUTER_CACHE
-from camomilla.utils import get_nofallbacks
 from camomilla.utils.translation import url_lang_decompose
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import staff_excluded_cache
 from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
 
 
-def _scope_draft_to_active_language(data):
-    """Trim a ``/draft/`` body to the active language's content only.
-
-    Backoffice edit-forms typically PATCH the full page object back to the
-    server — including BOTH languages under ``translations``. With per-
-    language ``draft_data``, the whole body would land in the active
-    language's column and a later publish would carry the OTHER language's
-    translations along for the ride (cross-language leak).
-
-    This helper keeps only ``translations[<active_lang>]`` (dropping any
-    other language entries) and leaves non-translatable top-level fields
-    (``ordering``, ``parent_page``, ``template``, …) untouched. Those are
-    globally-shared columns — whichever publish runs next carries forward
-    whatever shared state was drafted alongside it (last-write-wins).
-
-    Non-dict bodies and bodies without a ``translations`` accessor pass
-    through unchanged.
-    """
-    if not isinstance(data, dict):
-        return data
-    if API_TRANSLATION_ACCESSOR not in data:
-        return data
-    translations = data.get(API_TRANSLATION_ACCESSOR) or {}
-    if not isinstance(translations, dict):
-        return data
-    active = get_language()
-    scoped = dict(data)
-    scoped[API_TRANSLATION_ACCESSOR] = (
-        {active: translations[active]} if active in translations else {}
-    )
-    return scoped
-
-
 def _draft_overlay(page, serialized: dict) -> dict:
-    """Merge the active-language ``draft_data`` on top of ``serialized``.
+    """Merge the active-language Draft on top of ``serialized``.
 
-    Two reads of ``draft_data`` are language-scoped:
+    Looks up the Draft row for ``(page, active_language)``. When found,
+    merges its ``serialized`` payload into the response — translatable
+    fields by language key, non-translatable top-level fields directly.
 
-    * Source — :func:`get_nofallbacks` picks the active language's column,
-      so EN's preview never surfaces an IT-only draft.
-    * Shape — the stored draft carries ``translations[<active>]`` plus
-      non-translatable top-level fields (the view trims it that way at
-      write time, see :func:`_scope_draft_to_active_language`).
-
-    The overlay therefore has to *merge* the ``translations`` bundle by
-    language key rather than replacing it: a flat ``overlay.update(draft)``
-    would clobber the response's full ``{en, it, …}`` map with the draft's
-    one-language map, dropping every other language's live content from
-    the preview response.
+    The merge is language-aware: a flat ``overlay.update(draft)`` would
+    clobber the response's full ``translations: {en, it, …}`` map with
+    the draft's one-language map, dropping every other language's live
+    content from the preview response. We merge by language instead so
+    the preview reflects "live IT + drafted EN" correctly.
     """
-    draft = get_nofallbacks(page, "draft_data")
-    if not draft:
+    draft_payload = page.draft_data
+    if not draft_payload:
         return serialized
     overlay = dict(serialized)
-    draft_translations = draft.get(API_TRANSLATION_ACCESSOR) or {}
+    draft_translations = draft_payload.get(API_TRANSLATION_ACCESSOR) or {}
     if draft_translations:
         merged = dict(overlay.get(API_TRANSLATION_ACCESSOR) or {})
         for lang, lang_payload in draft_translations.items():
             merged[lang] = {**(merged.get(lang) or {}), **(lang_payload or {})}
         overlay[API_TRANSLATION_ACCESSOR] = merged
-    for key, value in draft.items():
+    for key, value in draft_payload.items():
         if key != API_TRANSLATION_ACCESSOR:
             overlay[key] = value
     overlay["has_draft"] = True
@@ -96,9 +57,19 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
 
     @action(detail=True, methods=["patch", "put"], url_path="draft")
     def draft(self, request, pk=None):
+        """Save the request body as the active language's pending Draft.
+
+        The body shape mirrors a regular PATCH on the page — the publish
+        serializer will replay it later. Cross-language scoping is no
+        longer required at the view layer: the Draft model writes to the
+        active language by construction, so a payload that includes both
+        ``translations[en]`` and ``translations[it]`` lands wholesale in
+        the active language's Draft row, and an EN publish only applies
+        what that row carries.
+        """
         page = self.get_object()
         merge = request.method.lower() == "patch"
-        page.save_draft(_scope_draft_to_active_language(request.data), merge=merge)
+        page.save_draft(request.data, merge=merge)
         return Response(self.get_serializer(page).data)
 
     @action(detail=True, methods=["post"], url_path="discard-draft")
@@ -118,9 +89,15 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
 
     @action(detail=True, methods=["post"], url_path="schedule")
     def schedule(self, request, pk=None):
-        """Schedule the next publish action at ``publish_at``.
+        """Schedule the next publish moment.
 
         Body: ``{"publish_at": "<ISO 8601 datetime>"}``.
+
+        Semantics depend on the page's current state (see
+        :meth:`AbstractPage.schedule`): for a never-public language the
+        moment becomes the first-appearance ``published_at``; for a
+        currently-public language the moment is attached to the pending
+        Draft (must be saved first via ``/draft/``).
         """
         page = self.get_object()
         body = request.data if isinstance(request.data, dict) else {}
@@ -153,12 +130,12 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
     @action(detail=True, methods=["get"], url_path="render")
     def render_preview(self, request, pk=None):
         """Author/admin-only HTML preview: render the page template with
-        the draft overlay applied to the template context."""
+        the draft payload exposed in the template context."""
         page = self.get_object()
         context = page.get_context(request)
-        draft = get_nofallbacks(page, "draft_data")
-        if draft:
-            context["draft_data"] = draft
+        draft_payload = page.draft_data
+        if draft_payload:
+            context["draft_data"] = draft_payload
         return render(request, page.get_template_path(request), context)
 
     @action(detail=True, methods=["get"], url_path="revisions")
@@ -204,12 +181,12 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
 def pages_router(request, permalink=""):
     """Public route resolver. Always serves *public* state.
 
-    Lazy materialisation: if a scheduled content swap is due, the first
-    visitor — through *any* public channel, API or HTML — wins the publish.
-    The cron command is the safety net for pages that nobody ever visits.
-    Mirrors the HTML route in :mod:`camomilla.dynamic_pages_urls` so an
-    API-only frontend and a server-rendered template stay in lockstep on
-    lifecycle transitions.
+    Lazy materialisation: if a Draft is due, the first visitor — through
+    *any* public channel, API or HTML — wins the publish. The cron
+    command is the safety net for pages that nobody ever visits. Mirrors
+    the HTML route in :mod:`camomilla.dynamic_pages_urls` so an API-only
+    frontend and a server-rendered template stay in lockstep on lifecycle
+    transitions.
 
     Editor previews are served exclusively by ``PageViewSet.preview`` and
     ``PageViewSet.render_preview``, both of which require authentication.
@@ -225,11 +202,23 @@ def pages_router(request, permalink=""):
     node: UrlNode = get_object_or_404(UrlNode, permalink=url_decomposition["permalink"])
     page = node.page
 
-    # First public read after publish_at wins the publish; re-fetch the
-    # node so the response reflects the freshly-applied state (the node's
-    # annotated fields — is_public, has_draft, status — were computed
-    # before the row was flipped).
+    # First public read after the Draft becomes due wins the publish;
+    # re-fetch the node so the response reflects the freshly-applied
+    # state (the node's annotated fields — is_public, status — were
+    # computed before the row was flipped).
     if page.publish_if_due():
         node = UrlNode.objects.get(pk=node.pk)
+
+    # Only public-visible pages are served here. Trashed (``deleted_at``
+    # set), draft (``published_at IS NULL``), and scheduled-first-publish
+    # (``published_at`` in the future) rows must 404 just like the HTML
+    # render route. The check runs *after* ``publish_if_due()`` so a
+    # never-public page with a due Draft (the "first-publish via Draft"
+    # path) is allowed to flip to public on the way in. ``publish_if_due``
+    # refreshes the page in-memory, so ``page.is_public`` reflects the
+    # post-materialisation state.
+    if not page.is_public:
+        raise Http404("Page is not public")
+
     data = RouteSerializer(node, context={"request": request}).data
     return Response(data)

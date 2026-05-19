@@ -23,9 +23,6 @@ class AbstractPageTranslationOptions(SeoMixinTranslationOptions):
         "indexable",
         "template_data",
         "published_at",
-        "publish_at",
-        "draft_data",
-        "has_draft",
     )
 
 

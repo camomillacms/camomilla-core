@@ -1,10 +1,105 @@
 {% extends "admin/change_form.html" %}
 {% load i18n %}
+
+{# --- Draft Inspector --------------------------------------------------- #}
+{# Read-only panel showing what is currently staged per language. Inspired #}
+{# by django-reversion's history sidebar: the admin only OBSERVES the      #}
+{# staged state and acts on it (Publish / Discard from object-tools).      #}
+{# Authoring drafts happens through the /draft/ API endpoint, not here.    #}
+{% block field_sets %}
+  {% if lifecycle_draft_diff %}
+    <fieldset class="module aligned"
+              style="border-left: 4px solid #fd7e14; margin-bottom: 16px;">
+      <h2 style="background:#fd7e14;color:#fff;">
+        {% translate "Pending draft" %}
+      </h2>
+      {% for lang, rows in lifecycle_draft_diff %}
+        <div style="padding: 8px 16px;">
+          <h3 style="margin: 4px 0 8px 0; font-size: 12px; text-transform: uppercase; color: #555;">
+            [{{ lang }}]
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #ddd; color: #888;">
+                <th style="text-align: left; padding: 4px 8px;">{% translate "Field" %}</th>
+                <th style="text-align: left; padding: 4px 8px;">{% translate "Live" %}</th>
+                <th style="text-align: left; padding: 4px 8px; width: 1em;"></th>
+                <th style="text-align: left; padding: 4px 8px;">{% translate "Draft" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for field, live, draft_val in rows %}
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                  <td style="padding: 4px 8px; font-family: monospace;">{{ field }}</td>
+                  <td style="padding: 4px 8px; color: #888;">{{ live|default_if_none:"—"|truncatechars:80 }}</td>
+                  <td style="padding: 4px 8px; color: #fd7e14;">→</td>
+                  <td style="padding: 4px 8px; font-weight: 600;">{{ draft_val|default_if_none:"—"|truncatechars:80 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endfor %}
+    </fieldset>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
+
 {% block object-tools-items %}
-{{block.super}}
-<li>
-  <a href="{{original.routerlink}}?preview=true" target="_blank" class="previewlink">
-    {% translate "Preview" %}
-  </a>
-</li>
+  {% if original.pk %}
+    {# Lifecycle badge — same colour palette as the changelist column. #}
+    <li>
+      <span style="display:inline-block;padding:4px 12px;border-radius:12px;
+                   background:{{ lifecycle_status_color }};color:#fff;
+                   font-size:11px;font-weight:600;vertical-align:middle;">
+        {{ lifecycle_status_label }}
+      </span>
+    </li>
+
+    {# Author preview — only Page (not other AbstractPage subclasses) has the #}
+    {# render endpoint registered. Hidden otherwise so editors don't see a #}
+    {# 404'ing link. #}
+    {% if lifecycle_render_url %}
+      <li>
+        <a href="{{ lifecycle_render_url }}" target="_blank" class="previewlink">
+          {% translate "Preview" %}
+        </a>
+      </li>
+    {% endif %}
+
+    {# Lifecycle transitions. The form itself still edits the live row; #}
+    {# these are the explicit verbs (publish / discard draft / trash etc.) #}
+    {# that the model layer exposes. #}
+    <li>
+      <a href="{{ lifecycle_publish_url }}"
+         onclick="return confirm('{% translate "Publish this page now? Pending draft will be applied." %}');">
+        {% translate "Publish now" %}
+      </a>
+    </li>
+
+    {% if lifecycle_has_draft %}
+      <li>
+        <a href="{{ lifecycle_discard_draft_url }}"
+           onclick="return confirm('{% translate "Discard the pending draft? This cannot be undone." %}');">
+          {% translate "Discard draft" %}
+        </a>
+      </li>
+    {% endif %}
+
+    {% if lifecycle_is_trashed %}
+      <li>
+        <a href="{{ lifecycle_restore_url }}">
+          {% translate "Restore from trash" %}
+        </a>
+      </li>
+    {% else %}
+      <li>
+        <a href="{{ lifecycle_trash_url }}"
+           onclick="return confirm('{% translate "Move this page to trash? It can be restored later." %}');">
+          {% translate "Trash" %}
+        </a>
+      </li>
+    {% endif %}
+  {% endif %}
+  {{ block.super }}
 {% endblock %}

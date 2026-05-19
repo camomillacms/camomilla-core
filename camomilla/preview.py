@@ -1,15 +1,17 @@
 """
-Page drafting, scheduling and revision helpers.
+Page drafting, scheduling, and revision helpers.
 
-Drafts are stored as a JSON overlay (``draft_data``) on each page instance.
-The live row is always the published content; the overlay accumulates pending
-edits until an editor decides to publish, schedule or discard them.
+Drafts live in :class:`camomilla.models.draft.Draft` — one row per
+``(page, language)`` carries the staged payload and (optional)
+``scheduled_for`` moment. The live page row is always the published
+state; pending edits accumulate as Draft rows until an editor publishes,
+schedules, or discards them.
 
 Preview is **author/admin only** and exposed through the dedicated
 ``/pages/{id}/preview/`` and ``/pages/{id}/render/`` viewset actions, which
 inherit DRF model permissions. There is no public preview path: the public
 router serves only published content (with the read-time scheduled-swap
-overlay applied automatically when due).
+materialisation applied automatically when a Draft is due).
 
 Revision history is backed by ``django-reversion``: each publish creates a
 revision so editors can revert to any previous published state.
@@ -78,69 +80,27 @@ def _all_subclasses(cls):
     return seen
 
 
-def _has_translated_lifecycle(model_cls) -> bool:
-    """``True`` when the page model has per-language ``publish_at`` columns."""
-    from camomilla import settings as camomilla_settings
-    from django.core.exceptions import FieldDoesNotExist
+def resolve_scheduled_pages():
+    """Yield ``(page, language_code)`` pairs whose draft is due to publish.
 
-    if not camomilla_settings.ENABLE_TRANSLATIONS:
-        return False
-    try:
-        first_lang = camomilla_settings.LANGUAGE_CODES[0]
-    except (IndexError, TypeError):
-        return False
-    try:
-        model_cls._meta.get_field(f"publish_at_{first_lang}")
-        return True
-    except FieldDoesNotExist:
-        return False
+    The cron worklist is :meth:`Draft.objects.due_now`. Iterating Drafts
+    directly (instead of cycling pages × languages) is both faster and
+    correct by construction — ``Draft.language`` carries the language code
+    explicitly, so there's no need to probe per-language columns.
 
-
-def resolve_scheduled_pages(model_cls=None):
-    """Yield ``(page, language_code)`` pairs whose ``publish_at`` is due.
-
-    Both ``publish_at`` and ``has_draft`` are per-language, so the cron has
-    to ask "is any *language* of any page due for publish, and does *that
-    language* still carry a pending draft?". For each match we yield the
-    language too, so the caller can activate it before running ``publish()``
-    — that way the ``published_at_<lang>`` stamp lands in the right column
-    and ``_apply_draft_via_serializer`` reads the right ``draft_data_<lang>``.
-
-    The per-language scan uses :func:`activate_languages` and relies on
-    ``modeltranslation`` rewriting ``publish_at__lte`` and ``has_draft=True``
-    into their ``_<active_lang>`` siblings under the hood, so the filter
-    expression itself stays language-agnostic.
-
-    Subclasses not registered with ``modeltranslation`` (e.g. monolingual
-    test models) yield once with ``lang=None`` using the base columns.
+    The caller activates the yielded language before invoking
+    ``page.publish()`` so the per-language ``published_at_<lang>`` stamp
+    lands on the right column.
     """
-    from camomilla.models.page import AbstractPage
-    from camomilla.utils import activate_languages
-    from django.utils import timezone
+    from camomilla.models.draft import Draft, NO_LANGUAGE
 
-    models_to_check = [model_cls] if model_cls else list(_all_subclasses(AbstractPage))
-    now = timezone.now()
-
-    def _due_qs(subclass):
-        return (
-            subclass.objects.alive()
-            .filter(has_draft=True)
-            .filter(publish_at__isnull=False, publish_at__lte=now)
-        )
-
-    for subclass in models_to_check:
-        if subclass._meta.abstract:
+    for draft in Draft.objects.due_now().select_related("content_type"):
+        page = draft.content_object
+        if page is None:
+            # Orphaned draft (page was deleted out from under it). Skip;
+            # cron will leave it for cleanup.
             continue
-        if _has_translated_lifecycle(subclass):
-            # ``activate_languages`` cycles each language; modeltranslation
-            # rewrites ``publish_at`` / ``has_draft`` lookups to the
-            # active-language column.
-            for lang in activate_languages():
-                for page in _due_qs(subclass):
-                    yield page, lang
-        else:
-            for page in _due_qs(subclass):
-                yield page, None
+        yield page, (draft.language or None) if draft.language != NO_LANGUAGE else None
 
 
 __all__ = [

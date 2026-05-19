@@ -1,27 +1,28 @@
 """Querysets and managers for ``AbstractPage`` and ``UrlNode``.
 
-The page lifecycle is driven entirely by three timestamps on the page row:
+The page lifecycle is visibility-only and reads from two timestamps on
+the page row:
 
-    published_at : the moment live content goes / went public
-    publish_at   : the moment the pending draft should next be applied
-    deleted_at   : the moment the page was soft-deleted
+    published_at : the moment live content goes / went public (per language)
+    deleted_at   : the moment the page was soft-deleted (global)
 
-This module exposes those facts at the queryset level via:
+Drafts and scheduled publishes live in :class:`camomilla.models.draft.Draft`;
+this module surfaces them via EXISTS subqueries (``.draft()``,
+``.scheduled()``, ``.due_for_publish()``) so callers can mix lifecycle
+state with draft presence without joining manually.
 
-* annotations:    ``is_public``, ``is_scheduled``, ``has_overlay_due``,
-                  ``computed_status``
+This module exposes:
+
+* annotation:     ``computed_status`` (PUB / DRF / PLA / TRS)
 * filter helpers: ``.public()``, ``.scheduled()``, ``.due_for_publish()``,
                   ``.trashed()``, ``.alive()``, ``.draft()``,
                   ``.first_publish_pending()``
-
-The legacy ``status`` field has been removed from the model; the
-``computed_status`` annotation (and the matching property on the model)
-gives back a PUB/DRF/PLA/TRS string for callers that still want a label.
 """
 
 from typing import Sequence, Tuple
 
 from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import (
@@ -29,7 +30,9 @@ from django.db.models import (
     Case,
     CharField,
     DateTimeField,
+    Exists,
     F,
+    OuterRef,
     Q,
     Value,
     When,
@@ -51,37 +54,52 @@ PAGE_STATUS_SCHEDULED = "PLA"
 PAGE_STATUS_TRASHED = "TRS"
 
 
-def _is_public_q(now=None) -> Q:
-    """Q expression for "live content is reachable to the public right now".
+def _draft_exists_subquery(model_cls, *, scheduled=None, due_now=False):
+    """Build an ``Exists`` subquery against the :class:`Draft` table.
 
-    ``published_col`` lets callers point at a specific language column
-    (e.g. ``published_at_en``); defaults to the base name, which
-    ``modeltranslation`` rewrites to the active-language column inside
-    ``filter()`` / ``exclude()``. The override is used for ``annotate()``
-    contexts where modeltranslation doesn't rewrite.
+    ``scheduled``:
+        * ``None`` — any draft (pending or scheduled).
+        * ``True`` — only scheduled drafts (``scheduled_for IS NOT NULL``).
+        * ``False`` — only pending drafts.
+    ``due_now``: narrows to drafts whose ``scheduled_for`` has passed.
+
+    The subquery filters by ContentType ID and the outer ``pk`` so it
+    works across every AbstractPage subclass with a single ``Draft``
+    table (generic FK).
+    """
+    from camomilla.models.draft import Draft
+
+    ct = ContentType.objects.get_for_model(model_cls)
+    qs = Draft.objects.filter(content_type=ct, object_id=OuterRef("pk"))
+    if scheduled is True:
+        qs = qs.filter(scheduled_for__isnull=False)
+    elif scheduled is False:
+        qs = qs.filter(scheduled_for__isnull=True)
+    if due_now:
+        qs = qs.filter(scheduled_for__lte=timezone.now())
+    return Exists(qs)
+
+
+def _is_public_q(now=None) -> Q:
+    """Q for "live content reachable to the public right now".
+
+    Uses ``localized_fieldname('published_at')`` so modeltranslation can
+    auto-rewrite the lookup to the active-language column in filter
+    contexts; for annotate contexts callers should pass the resolved
+    column name themselves.
     """
     now = now or timezone.now()
-    return Q(deleted_at__isnull=True) & Q(**{f"{localized_fieldname('published_at')}__lte": now})
-
-
-def _overlay_due_q(now=None) -> Q:
-    """Q expression for "a pending draft is due to be applied"."""
-    now = now or timezone.now()
-    return Q(has_draft=True) & Q(**{f"{localized_fieldname('publish_at')}__lte": now})
-
-
-def _scheduled_q(now=None) -> Q:
-    """Q expression for "a future publish is queued"."""
-    now = now or timezone.now()
-    return Q(**{f"{localized_fieldname('publish_at')}__isnull": False}) & Q(**{f"{localized_fieldname('publish_at')}__gt": now})
+    return Q(deleted_at__isnull=True) & Q(
+        **{f"{localized_fieldname('published_at')}__lte": now}
+    )
 
 
 class PageQuerySet(QuerySet):
     """Lifecycle-aware queryset for any ``AbstractPage`` subclass.
 
     Always usable directly (no need to call ``with_lifecycle()`` first) — the
-    filter helpers compile their conditions from raw timestamp fields so they
-    work even on an un-annotated queryset.
+    filter helpers compile their conditions from raw timestamp fields and
+    Draft EXISTS subqueries so they work even on an un-annotated queryset.
     """
 
     __UrlNodeModel = None
@@ -122,15 +140,9 @@ class PageQuerySet(QuerySet):
         (PUB / DRF / PLA / TRS) for ``ORDER BY``, ``GROUP BY`` or
         ``.values()`` listings.
 
-        Boolean derivations (``is_public``, ``has_overlay_due``,
-        ``is_scheduled``) are NOT annotated here on purpose: they collide
-        with the equivalent ``@property`` declarations on ``AbstractPage``
-        (Django setattr's annotations onto the instance, but properties
-        without setters error). Use the filter helpers
-        (``.public()`` / ``.due_for_publish()`` / ``.scheduled()``) for
-        DB-level filtering, and the properties for instance reads. The
-        ``computed_status`` annotation here is the single SQL output that
-        adds value beyond what the helpers/properties already provide.
+        Mirrors :meth:`camomilla.models.page.AbstractPage._lifecycle_label`:
+        visibility is a function of ``deleted_at`` and the per-language
+        ``published_at``; drafts do NOT contribute to ``status``.
 
         Per-language: ``Case``/``When`` references inside ``annotate()`` are
         NOT rewritten by ``modeltranslation``, so we resolve the
@@ -139,7 +151,6 @@ class PageQuerySet(QuerySet):
         """
         now = timezone.now()
         published_col = localized_fieldname("published_at", target=self.model)
-        publish_col = localized_fieldname("publish_at", target=self.model)
         return self.annotate(
             computed_status=Case(
                 When(deleted_at__isnull=False, then=Value(PAGE_STATUS_TRASHED)),
@@ -147,13 +158,11 @@ class PageQuerySet(QuerySet):
                     **{f"{published_col}__lte": now},
                     then=Value(PAGE_STATUS_PUBLISHED),
                 ),
-                # Rule 2 already covered ``published_at <= now``, so reaching
-                # this branch with ``published_at IS NOT NULL`` implies a
-                # future stamp — equivalent to the Python ``_lifecycle_label``
-                # which drops the ``> now`` comparison for the same reason.
+                # Rule 2 already short-circuited for ``published_at <= now``;
+                # any remaining row with ``published_at IS NOT NULL`` is in
+                # the future, i.e. a legacy scheduled-first-publish.
                 When(
-                    Q(**{f"{publish_col}__isnull": False})
-                    | Q(**{f"{published_col}__isnull": False}),
+                    **{f"{published_col}__isnull": False},
                     then=Value(PAGE_STATUS_SCHEDULED),
                 ),
                 default=Value(PAGE_STATUS_DRAFT),
@@ -175,27 +184,51 @@ class PageQuerySet(QuerySet):
         return self.filter(deleted_at__isnull=True)
 
     def draft(self):
-        """Pages carrying a non-empty draft overlay."""
-        return self.filter(has_draft=True)
+        """Pages carrying any pending Draft row (any language)."""
+        return self.annotate(
+            _has_any_draft=_draft_exists_subquery(self.model)
+        ).filter(_has_any_draft=True)
 
     def scheduled(self):
-        """Pages with a future publish action queued."""
-        return self.filter(_scheduled_q())
+        """Pages with a future publish action queued.
+
+        Two valid sources of "scheduled":
+
+        * A Draft row with ``scheduled_for`` set (content swap).
+        * The page's ``published_at`` is in the future (legacy
+          "scheduled first publish").
+
+        Returns the union of both.
+        """
+        now = timezone.now()
+        published_col = localized_fieldname(
+            "published_at", target=self.model
+        )
+        return self.annotate(
+            _has_scheduled_draft=_draft_exists_subquery(
+                self.model, scheduled=True
+            )
+        ).filter(
+            Q(_has_scheduled_draft=True)
+            | Q(**{f"{published_col}__gt": now})
+        )
 
     def due_for_publish(self):
-        """Pages whose ``publish_at`` (in the **active language**) has
-        passed and still have a draft.
+        """Pages with a Draft whose ``scheduled_for`` has passed.
 
-        ``publish_at`` is translatable, so this filter only matches against
-        the language currently active. Use
-        :func:`camomilla.preview.resolve_scheduled_pages` if you need to
-        scan every language (the cron's worklist).
+        ``Draft.language`` is the canonical per-language marker — the
+        cron / lazy-materialisation worklist iterates Drafts directly
+        (see :func:`camomilla.preview.resolve_scheduled_pages`); this
+        helper is the page-side equivalent for ad-hoc queries.
         """
-        return self.filter(_overlay_due_q())
+        return self.annotate(
+            _has_due_draft=_draft_exists_subquery(self.model, due_now=True)
+        ).filter(_has_due_draft=True)
 
     def first_publish_pending(self):
         """Never-public pages with a future ``published_at``: the legacy
-        "scheduled to first appear at X" bucket."""
+        "scheduled to first appear at X" bucket. Independent of Draft
+        state."""
         now = timezone.now()
         return self.filter(
             deleted_at__isnull=True,
@@ -260,8 +293,6 @@ class UrlNodeManager(models.Manager):
         per-language meaning when translations are enabled) and the
         downstream ``is_public`` annotation would lie across languages.
         """
-        # related_name → related model, so each F-join can be resolved to the
-        # right per-language column for that specific related model.
         relations_by_name = {
             rel["name"]: rel["model"] for rel in self.get_reverse_pages_relations()
         }
@@ -289,11 +320,14 @@ class UrlNodeManager(models.Manager):
         return self._annotate_lifecycle(qs)
 
     def _annotate_lifecycle(self, qs: models.QuerySet):
-        """Annotate ``is_public`` + the legacy ``status`` label on UrlNodes.
+        """Annotate ``is_public`` + ``status`` on UrlNodes.
 
-        Both are derived from the page's ``published_at`` / ``publish_at`` /
-        ``deleted_at`` timestamps (already surfaced onto the UrlNode by
-        ``_annotate_fields`` via per-concrete-model joins).
+        Both are derived from the page's ``published_at`` / ``deleted_at``
+        timestamps (already surfaced onto the UrlNode by
+        ``_annotate_fields`` via per-concrete-model joins). ``status``
+        no longer consults ``publish_at`` — that column doesn't exist
+        anymore; scheduled content swaps live in the ``Draft`` table
+        and don't affect the UrlNode's visibility label.
         """
         now = timezone.now()
         return qs.annotate(
@@ -310,7 +344,7 @@ class UrlNodeManager(models.Manager):
                 When(deleted_at__isnull=False, then=Value(PAGE_STATUS_TRASHED)),
                 When(published_at__lte=now, then=Value(PAGE_STATUS_PUBLISHED)),
                 When(
-                    Q(publish_at__isnull=False) | Q(published_at__gt=now),
+                    published_at__isnull=False,
                     then=Value(PAGE_STATUS_SCHEDULED),
                 ),
                 default=Value(PAGE_STATUS_DRAFT),
@@ -334,19 +368,9 @@ class UrlNodeManager(models.Manager):
                         Value(None, DateTimeField()),
                     ),
                     (
-                        "publish_at",
-                        DateTimeField(),
-                        Value(None, DateTimeField()),
-                    ),
-                    (
                         "deleted_at",
                         DateTimeField(),
                         Value(None, DateTimeField()),
-                    ),
-                    (
-                        "has_draft",
-                        BooleanField(),
-                        Value(False, BooleanField()),
                     ),
                     (
                         "date_updated_at",
