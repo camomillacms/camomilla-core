@@ -1,9 +1,27 @@
 from django import forms
+from django.db import models as django_models
 from camomilla import settings
 from .translations import TranslationAwareModelAdmin
 from camomilla.models import UrlNode
 
 from camomilla.utils import get_templates
+
+
+# HTML5 datetime-local input formats — browsers emit ``YYYY-MM-DDTHH:MM``
+# without seconds, but Django's default DateTimeField parser only accepts
+# the seconds-bearing variants. Listing both lets the form round-trip
+# values that arrive from any modern browser.
+_DATETIME_LOCAL_FORMATS = (
+    "%Y-%m-%dT%H:%M",
+    "%Y-%m-%dT%H:%M:%S",
+)
+
+
+def _datetime_local_widget() -> forms.DateTimeInput:
+    return forms.DateTimeInput(
+        attrs={"type": "datetime-local"},
+        format=_DATETIME_LOCAL_FORMATS[0],
+    )
 
 
 class AbstractPageModelFormMeta(forms.models.ModelFormMetaclass):
@@ -51,6 +69,21 @@ class AbstractPageModelForm(
 
 class AbstractPageAdmin(TranslationAwareModelAdmin):
     form = AbstractPageModelForm
+
+    # Replace Django admin's ``AdminSplitDateTime`` (two free-text inputs,
+    # one for date and one for time) with a single HTML5 ``datetime-local``
+    # picker. ``formfield_overrides`` is the canonical hook: modeltranslation
+    # builds per-language sibling fields by calling
+    # ``DateTimeField.formfield()``, so the override applies uniformly to
+    # ``published_at_<lang>`` / ``publish_at_<lang>`` without duplicating the
+    # widget configuration per language.
+    formfield_overrides = {
+        django_models.DateTimeField: {
+            "form_class": forms.DateTimeField,
+            "widget": _datetime_local_widget(),
+            "input_formats": _DATETIME_LOCAL_FORMATS,
+        },
+    }
 
     def get_form(self, request, obj=None, **kwargs):
         kwargs["form"] = self.form

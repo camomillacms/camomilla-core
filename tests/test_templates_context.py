@@ -23,7 +23,7 @@ class TemoplateContextTestCase(TestCase):
                 "autopermalink_en": False,
                 "permalink_en": "permalink_context_template",
                 "template": "website/page_context_template_based.html",
-                "status_en": "PUB",
+                "published_at_en": "2020-01-01 00:00:00",
             },
             format="multipart",
         )
@@ -68,7 +68,7 @@ class TemoplateContextTestCase(TestCase):
                 "autopermalink_en": False,
                 "permalink_en": "permalink_context_template",
                 "template": "website/page_context_model_based.html",
-                "status_en": "PUB",
+                "published_at_en": "2020-01-01 00:00:00",
             },
             format="multipart",
         )
@@ -113,7 +113,7 @@ class TemoplateContextTestCase(TestCase):
                 "autopermalink_en": False,
                 "permalink_en": "permalink_context_template",
                 "template": "website/page_context_mixed.html",
-                "status_en": "PUB",
+                "published_at_en": "2020-01-01 00:00:00",
             },
             format="multipart",
         )

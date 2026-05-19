@@ -16,3 +16,6 @@ class CamomillaConfig(AppConfig):
         setattr(settings, "MIGRATION_MODULES", migration_modules)
         self.module.autodiscover()
         monkey_patch_mysql_datetime()
+        from camomilla.preview import auto_register_page_models
+
+        auto_register_page_models()

@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.test import TestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
@@ -19,13 +20,13 @@ class PageRelationApi(TestCase):
         exposed_related_page_model = ExposedRelatedPageModel.objects.create(
             title="ExposedRelatedPageModel 1",
             permalink="exposed-related-page-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
         related_page_model = RelatedPageModel.objects.create(
             title="RelatedPageModel 1",
             permalink="related-page-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
         related_page_model.exposed_pages.add(exposed_related_page_model)
@@ -49,13 +50,13 @@ class PageRelationApi(TestCase):
         unexposed_related_page_model = UnexposedRelatedPageModel.objects.create(
             title="UnexposedRelatedPageModel 1",
             permalink="unexposed-related-page-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
         related_page_model = RelatedPageModel.objects.create(
             title="RelatedPageModel 1",
             permalink="related-page-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
 

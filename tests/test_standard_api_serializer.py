@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.test import TestCase
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
@@ -19,7 +20,7 @@ class StandardApiSerializer(TestCase):
         DefaultApiSerializerModel.objects.create(
             title="DefaultApiSerializerModel 1",
             permalink="default-api-serializer-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
             description=self.description_value
         )
@@ -34,7 +35,7 @@ class StandardApiSerializer(TestCase):
         CustomApiSerializerModel.objects.create(
             title="CustomApiSerializerModel 1",
             permalink="custom-api-serializer-model-1",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
             description=self.description_value
         )

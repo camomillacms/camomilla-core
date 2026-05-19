@@ -1,3 +1,4 @@
+from django.utils import timezone
 import pytest
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -27,7 +28,7 @@ class PagaMetaTestCase(TestCase):
             title="Test Page",
             custom_field="Custom Data",
             permalink="test-page",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
         page.save()
@@ -43,13 +44,13 @@ class PagaMetaTestCase(TestCase):
         parent_page = Page.objects.create(
             title="Parent Page",
             permalink="parent-page",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
         child_page = CustomPageMetaModel.objects.create(
             title="Child Page",
             custom_field="Child Data",
-            status="PUB",
+            published_at=timezone.now(),
             custom_parent_page=parent_page,
         )
         assert child_page.permalink == "/parent-page/child-page"
@@ -61,7 +62,7 @@ class PagaMetaTestCase(TestCase):
             title="Test Page with Custom Serializer",
             custom_field="Custom Data",
             permalink="test-page-custom-serializer",
-            status="PUB",
+            published_at=timezone.now(),
             autopermalink=False,
         )
 
