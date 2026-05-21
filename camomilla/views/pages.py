@@ -188,8 +188,10 @@ def pages_router(request, permalink=""):
     frontend and a server-rendered template stay in lockstep on lifecycle
     transitions.
 
-    Editor previews are served exclusively by ``PageViewSet.preview`` and
-    ``PageViewSet.render_preview``, both of which require authentication.
+    Editor previews are served by ``pages_router_preview`` (same shape,
+    auth-required, bypasses ``is_public`` and overlays the Draft) and by
+    ``PageViewSet.preview`` / ``PageViewSet.render_preview`` (page-id
+    routed, used by the admin Draft Inspector).
     """
     redirect_obj = UrlRedirect.find_redirect_from_url(f"/{permalink}")
     if redirect_obj:
@@ -222,3 +224,37 @@ def pages_router(request, permalink=""):
 
     data = RouteSerializer(node, context={"request": request}).data
     return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def pages_router_preview(request, permalink=""):
+    """Authenticated mirror of :func:`pages_router` for editor previews.
+
+    Returns the same ``RouteSerializer``-shaped payload as ``pages_router``
+    but with two differences:
+
+    * The ``is_public`` gate is bypassed — trashed, draft, and scheduled
+      rows return their content here so editors can preview every state.
+    * The active-language Draft is overlaid via ``_draft_overlay`` and the
+      response carries ``has_draft: true`` when one exists.
+
+    Crucially does **not** call :meth:`AbstractPage.publish_if_due`. A
+    preview must show the *current* pending state — running the lazy
+    publish would consume the Draft as a side-effect of looking at it,
+    which is exactly the wrong semantics for a preview.
+
+    Lookup by permalink is intentionally single-shot here so external
+    rendering frontends (e.g. the astro integration) don't have to do a
+    list-then-detail round-trip to resolve a page by URL for preview.
+    """
+    url_decomposition = url_lang_decompose(permalink)
+    if not url_decomposition["permalink"].startswith("/"):
+        url_decomposition["permalink"] = f"/{url_decomposition['permalink']}"
+    activate_language(url_decomposition["language"])
+    node: UrlNode = get_object_or_404(
+        UrlNode, permalink=url_decomposition["permalink"]
+    )
+    page = node.page
+    data = RouteSerializer(node, context={"request": request}).data
+    return Response(_draft_overlay(page, data))

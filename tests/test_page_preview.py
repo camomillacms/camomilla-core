@@ -651,3 +651,79 @@ class PagePreviewTestCase(TransactionTestCase):
         anon = Client()
         resp = anon.get("/")
         assert resp.status_code == 404
+
+    # ------------------------------------------------------------------
+    # pages-router-preview — single-shot authenticated preview by permalink
+    # ------------------------------------------------------------------
+    #
+    # Designed for external rendering frontends (e.g. the astro integration)
+    # that need to resolve a preview by URL in one round-trip instead of
+    # listing pages + fetching detail. Same response shape as
+    # ``pages_router``, but auth-required, bypasses ``is_public``, overlays
+    # the active-language Draft, and does NOT call ``publish_if_due``.
+
+    def test_pages_router_preview_requires_authentication(self):
+        page_id = self._create_published_page("preview-auth")
+        page = Page.objects.get(pk=page_id)
+        anon = APIClient()
+        resp = anon.get(f"/api/camomilla/pages-router-preview{page.permalink}")
+        assert resp.status_code in (401, 403)
+
+    def test_pages_router_preview_returns_trashed_page(self):
+        """Trashed rows 404 on the public router but ARE returned here so
+        editors can recover them."""
+        page_id = self._create_published_page("trash-preview")
+        Page.objects.filter(pk=page_id).update(deleted_at=timezone.now())
+        page = Page.objects.get(pk=page_id)
+        resp = self.client.get(
+            f"/api/camomilla/pages-router-preview{page.permalink}"
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "TRS"
+
+    def test_pages_router_preview_returns_never_published_page(self):
+        resp = self.client.post(
+            "/api/camomilla/pages/",
+            {"translations": {"en": {"title": "never-public-preview"}}},
+            format="json",
+        )
+        page = Page.objects.get(pk=resp.json()["id"])
+        resp = self.client.get(
+            f"/api/camomilla/pages-router-preview{page.permalink}"
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "DRF"
+
+    def test_pages_router_preview_overlays_active_language_draft(self):
+        page_id = self._create_published_page("live-with-overlay")
+        self.client.patch(
+            f"/api/camomilla/pages/{page_id}/draft/",
+            {"translations": {"en": {"title": "drafted title"}}},
+            format="json",
+        )
+        page = Page.objects.get(pk=page_id)
+        resp = self.client.get(
+            f"/api/camomilla/pages-router-preview{page.permalink}"
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body.get("has_draft") is True
+        translations = body.get("translations") or {}
+        assert (translations.get("en") or {}).get("title") == "drafted title"
+
+    def test_pages_router_preview_does_not_consume_due_draft(self):
+        """``publish_if_due`` would apply + delete a due Draft as a side
+        effect. The preview endpoint must NOT trigger that — the editor
+        is looking at the pending state, not asking to materialise it."""
+        page_id = self._create_published_page("due-preview")
+        page = Page.objects.get(pk=page_id)
+        page.save_draft(
+            {"translations": {"en": {"title": "due title"}}},
+            scheduled_for=timezone.now() - timedelta(minutes=1),
+        )
+        resp = self.client.get(
+            f"/api/camomilla/pages-router-preview{page.permalink}"
+        )
+        assert resp.status_code == 200
+        # The Draft must still be on disk after the preview call.
+        assert Draft.objects.for_(page, language="en").exists()
