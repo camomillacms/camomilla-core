@@ -1,8 +1,11 @@
-import re
 from typing import Any, Iterator, List, Optional, Sequence, Union
 
 from django.db.models import Model, Q
-from django.utils.translation.trans_real import activate, get_language
+from django.utils.translation.trans_real import (
+    activate,
+    get_language,
+    get_language_from_path,
+)
 from modeltranslation.utils import build_localized_fieldname
 from camomilla.settings import BASE_URL, DEFAULT_LANGUAGE, LANGUAGE_CODES
 from django.http import QueryDict
@@ -58,15 +61,33 @@ def get_nofallbacks(instance: Model, attr: str, *args, **kwargs) -> Any:
 
 
 def url_lang_decompose(url):
+    """Split ``url`` into its language prefix and permalink portion.
+
+    Thin wrapper over Django's :func:`get_language_from_path` — the same
+    parser that powers ``i18n_patterns`` — so language detection here
+    matches what Django applies to the HTML route. Accepts paths with
+    or without a leading slash and strips ``BASE_URL`` first when set.
+
+    Behavior::
+
+        /it/about → {language: "it", permalink: "/about"}
+        /it       → {language: "it", permalink: "/"}
+        /it/      → {language: "it", permalink: "/"}
+        /about    → {language: DEFAULT_LANGUAGE, permalink: "/about"}
+        /         → {language: DEFAULT_LANGUAGE, permalink: "/"}
+    """
     if BASE_URL and url.startswith(BASE_URL):
         url = url[len(BASE_URL) :]
-    data = {"url": url, "permalink": url, "language": DEFAULT_LANGUAGE}
-    result = re.match(rf"^/?({'|'.join(LANGUAGE_CODES)})?/(.*)", url)  # noqa: W605
-    groups = result and result.groups()
-    if groups and len(groups) == 2:
-        data["language"] = groups[0]
-        data["permalink"] = "/%s" % groups[1]
-    return data
+    normalized = url if url.startswith("/") else "/" + url
+    language = get_language_from_path(normalized)
+    if language:
+        permalink = normalized[len("/" + language) :] or "/"
+    else:
+        language = DEFAULT_LANGUAGE
+        permalink = normalized
+    if not permalink.startswith("/"):
+        permalink = "/" + permalink
+    return {"url": url, "permalink": permalink, "language": language}
 
 
 def get_field_translations(instance: Model, field_name: str, *args, **kwargs):

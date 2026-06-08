@@ -32,13 +32,13 @@ class PageRelationApi(TestCase):
         related_page_model.exposed_pages.add(exposed_related_page_model)
         related_page_model.save()
 
-        response = client.get("/api/camomilla/pages-router/related-page-model-1")
+        response = client.get("/api/camomilla/pages-router/related-page-model-1/")
         assert response.status_code == 200
         data = response.json()
         assert data["exposed_pages"][0]["id"] == exposed_related_page_model.id
 
         response = client.get(
-            "/api/camomilla/pages-router/exposed-related-page-model-1"
+            "/api/camomilla/pages-router/exposed-related-page-model-1/"
         )
         assert response.status_code == 200
         data = response.json()
@@ -63,13 +63,13 @@ class PageRelationApi(TestCase):
         related_page_model.unexposed_pages.add(unexposed_related_page_model)
         related_page_model.save()
 
-        response = client.get("/api/camomilla/pages-router/related-page-model-1")
+        response = client.get("/api/camomilla/pages-router/related-page-model-1/")
         assert response.status_code == 200
         data = response.json()
         assert data["unexposed_pages"][0]["id"] == unexposed_related_page_model.id
 
         response = client.get(
-            "/api/camomilla/pages-router/unexposed-related-page-model-1"
+            "/api/camomilla/pages-router/unexposed-related-page-model-1/"
         )
         assert response.status_code == 200
         data = response.json()

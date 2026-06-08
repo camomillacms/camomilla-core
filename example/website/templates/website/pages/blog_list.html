@@ -1,0 +1,25 @@
+{% extends "website/base.html" %}
+
+{% block content %}
+  <h1>{{ page.title }}</h1>
+  {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+  {% if page.template_data.intro %}<p>{{ page.template_data.intro }}</p>{% endif %}
+
+  {% if blog_articles %}
+    <div class="grid grid-2">
+      {% for article in blog_articles %}
+        <article class="card">
+          <h2 style="margin-top:0;">
+            <a href="{{ article.routerlink }}">{{ article.title }}</a>
+          </h2>
+          {% if article.description %}<p>{{ article.description }}</p>{% endif %}
+          <p style="font-size:.875rem;color:var(--fg-soft);">
+            {% for tag in article.tags.all %}<span class="tag">{{ tag.name }}</span> {% endfor %}
+          </p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="lead">No articles published yet.</p>
+  {% endif %}
+{% endblock %}

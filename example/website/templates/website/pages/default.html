@@ -1,0 +1,66 @@
+{% extends "website/base.html" %}
+
+{% block content %}
+  <article>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+
+    {% if page.template_data.body %}
+      {{ page.template_data.body|safe }}
+    {% endif %}
+
+    {% if page.template_data.values %}
+      <h2>What we care about</h2>
+      <div class="grid grid-3">
+        {% for value in page.template_data.values %}
+          <div class="card feature-card">
+            <h3>{{ value.title | safe }}</h3>
+            <p>{{ value.description | safe }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if page.template_data.team %}
+      <h2>Team</h2>
+      <div class="grid grid-3">
+        {% for member in page.template_data.team %}
+          <div class="card feature-card">
+            <h3>{{ member.name | safe }}</h3>
+            <p style="color:var(--fg-soft);font-size:.875rem;margin:0;">{{ member.role }}</p>
+            {% if member.bio %}<p>{{ member.bio }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if page.template_data.features %}
+      <h2>What you get</h2>
+      <div class="grid grid-3">
+        {% for feature in page.template_data.features %}
+          <div class="card feature-card">
+            {% if feature.icon %}<span class="feature-icon" aria-hidden="true">{{ feature.icon }}</span>{% endif %}
+            <h3>{{ feature.title | safe }}</h3>
+            <p>{{ feature.description | safe }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if page.template_data.methods %}
+      <h2>How to reach us</h2>
+      <ul class="methods">
+        {% for method in page.template_data.methods %}
+          <li>
+            <span class="method-label">{{ method.label }}</span>
+            {% if method.href %}
+              <a href="{{ method.href }}">{{ method.value }}</a>
+            {% else %}
+              <span>{{ method.value }}</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </article>
+{% endblock %}

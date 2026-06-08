@@ -123,10 +123,13 @@ class UrlNode(models.Model):
         append_slash = getattr(django_settings, "APPEND_SLASH", True)
         try:
             if permalink == "/":
-                return reverse("camomilla-homepage")
-            url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
-            if append_slash and not url.endswith("/"):
-                url += "/"
+                url = reverse("camomilla-homepage")
+            else:
+                url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
+                if append_slash and not url.endswith("/"):
+                    url += "/"
+            # Both branches funnel through here so an absolute URI is built
+            # for the homepage too — not only for sub-paths.
             if request:
                 url = request.build_absolute_uri(url)
             return url
@@ -136,6 +139,14 @@ class UrlNode(models.Model):
     @property
     def routerlink(self) -> str:
         return self.reverse_url(self.permalink) or self.permalink
+
+    def get_routerlink(self, request: Optional[HttpRequest] = None) -> str:
+        """Request-aware ``routerlink``. Same value as the property, but
+        absolute (scheme + host) when a request is supplied. Use this from
+        any code path that has a request in hand (template tags, serializer
+        ``to_representation`` with ``context['request']``); fall back to the
+        bare :attr:`routerlink` property when you don't."""
+        return self.reverse_url(self.permalink, request=request) or self.permalink
 
     def get_absolute_url(self) -> str:
         if self.routerlink == "/":

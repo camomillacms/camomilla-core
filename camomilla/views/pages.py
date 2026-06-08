@@ -171,6 +171,46 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
         return Response(self.get_serializer(page).data)
 
 
+def _resolve_route_request(permalink: str) -> tuple[UrlNode, dict | None]:
+    """Resolve a request permalink to its ``UrlNode`` and, when the request
+    form differs from the canonical form, a ``{redirect, status: 301}``
+    descriptor.
+
+    Shared between the public router and the authenticated preview router.
+    Activates the language detected on the path so downstream serializer /
+    template code reads the right per-language columns, and computes the
+    canonical URL against the FULL requested path — a single rule catches
+    trailing-slash, bare-lang-prefix, and lang-sub-path-no-slash mismatches
+    at once.
+
+    Raises ``Http404`` when no ``UrlNode`` matches. Public-vs-preview
+    policy (``is_public`` gate, ``publish_if_due`` materialisation, draft
+    overlay) is the caller's responsibility.
+    """
+    decomposition = url_lang_decompose(permalink)
+    activate_language(decomposition["language"])
+    decomposed_permalink = decomposition["permalink"]
+    # ``UrlNode.permalink`` is stored without a trailing slash (except
+    # the homepage ``"/"``); look up against the stripped form so both
+    # ``/about`` and ``/about/`` resolve to the same row.
+    lookup_path = (
+        decomposed_permalink
+        if decomposed_permalink == "/"
+        else decomposed_permalink.rstrip("/")
+    )
+    node: UrlNode = get_object_or_404(UrlNode, permalink=lookup_path)
+    full_requested_path = (
+        permalink if permalink.startswith("/") else "/" + permalink
+    )
+    canonical_url = UrlNode.reverse_url(lookup_path) or full_requested_path
+    canonical = (
+        {"redirect": canonical_url, "status": 301}
+        if canonical_url != full_requested_path
+        else None
+    )
+    return node, canonical
+
+
 @api_view(["GET"])
 @staff_excluded_cache(PAGE_ROUTER_CACHE)
 @permission_classes(
@@ -197,11 +237,8 @@ def pages_router(request, permalink=""):
     if redirect_obj:
         redirected = redirect_obj.redirect()
         return Response({"redirect": redirected.url, "status": redirected.status_code})
-    url_decomposition = url_lang_decompose(permalink)
-    if not url_decomposition["permalink"].startswith("/"):
-        url_decomposition["permalink"] = f"/{url_decomposition['permalink']}"
-    activate_language(url_decomposition["language"])
-    node: UrlNode = get_object_or_404(UrlNode, permalink=url_decomposition["permalink"])
+
+    node, canonical = _resolve_route_request(permalink)
     page = node.page
 
     # First public read after the Draft becomes due wins the publish;
@@ -211,16 +248,17 @@ def pages_router(request, permalink=""):
     if page.publish_if_due():
         node = UrlNode.objects.get(pk=node.pk)
 
-    # Only public-visible pages are served here. Trashed (``deleted_at``
-    # set), draft (``published_at IS NULL``), and scheduled-first-publish
-    # (``published_at`` in the future) rows must 404 just like the HTML
-    # render route. The check runs *after* ``publish_if_due()`` so a
-    # never-public page with a due Draft (the "first-publish via Draft"
-    # path) is allowed to flip to public on the way in. ``publish_if_due``
-    # refreshes the page in-memory, so ``page.is_public`` reflects the
-    # post-materialisation state.
+    # ``is_public`` MUST be checked before honoring the canonical-form
+    # redirect, otherwise the descriptor leaks the existence of non-public
+    # rows: an attacker probing hidden URLs would get a 301 (page exists,
+    # non-canonical URL) instead of a 404. Runs *after* ``publish_if_due()``
+    # so a never-public page with a due Draft is allowed to flip to public
+    # on the way in.
     if not page.is_public:
         raise Http404("Page is not public")
+
+    if canonical is not None:
+        return Response(canonical)
 
     data = RouteSerializer(node, context={"request": request}).data
     return Response(data)
@@ -248,13 +286,8 @@ def pages_router_preview(request, permalink=""):
     rendering frontends (e.g. the astro integration) don't have to do a
     list-then-detail round-trip to resolve a page by URL for preview.
     """
-    url_decomposition = url_lang_decompose(permalink)
-    if not url_decomposition["permalink"].startswith("/"):
-        url_decomposition["permalink"] = f"/{url_decomposition['permalink']}"
-    activate_language(url_decomposition["language"])
-    node: UrlNode = get_object_or_404(
-        UrlNode, permalink=url_decomposition["permalink"]
-    )
-    page = node.page
+    node, canonical = _resolve_route_request(permalink)
+    if canonical is not None:
+        return Response(canonical)
     data = RouteSerializer(node, context={"request": request}).data
-    return Response(_draft_overlay(page, data))
+    return Response(_draft_overlay(node.page, data))

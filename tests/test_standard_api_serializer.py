@@ -25,7 +25,7 @@ class StandardApiSerializer(TestCase):
             description=self.description_value
         )
 
-        response = client.get('/api/camomilla/pages-router/default-api-serializer-model-1')
+        response = client.get('/api/camomilla/pages-router/default-api-serializer-model-1/')
         assert response.status_code == 200
         data = response.json()
         assert data["description"] == self.description_value
@@ -40,7 +40,7 @@ class StandardApiSerializer(TestCase):
             description=self.description_value
         )
 
-        response = client.get('/api/camomilla/pages-router/custom-api-serializer-model-1')
+        response = client.get('/api/camomilla/pages-router/custom-api-serializer-model-1/')
         assert response.status_code == 200
         data = response.json()
         assert data["description"] == f'{self.description_value}-CustomApiSerializer'

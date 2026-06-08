@@ -67,7 +67,7 @@ class PagaMetaTestCase(TestCase):
         )
 
         response = self.client.get(
-            "/api/camomilla/pages-router/test-page-custom-serializer"
+            "/api/camomilla/pages-router/test-page-custom-serializer/"
         )
         assert response.status_code == 200
         data = response.json()

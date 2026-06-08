@@ -180,7 +180,7 @@ class PagePreviewTestCase(TransactionTestCase):
 
         # Public route still serves OLD content.
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/")
         assert resp.status_code == 200
         body = resp.json()
         translations = body.get("translations") or {}
@@ -200,7 +200,7 @@ class PagePreviewTestCase(TransactionTestCase):
             scheduled_for=timezone.now() - timedelta(minutes=1)
         )
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}?cache_bust=1")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/?cache_bust=1")
         assert resp.status_code == 200
         page.refresh_from_db()
         assert page.title_en == "swap title"
@@ -292,7 +292,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=page_id)
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}?cb=1")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/?cb=1")
         assert resp.status_code == 200
         data = resp.json()
         assert "draft_data" not in data
@@ -313,7 +313,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=page_id)
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}?preview=true")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/?preview=true")
         assert resp.status_code == 200
         data = resp.json()
         assert "draft_data" not in data
@@ -577,7 +577,7 @@ class PagePreviewTestCase(TransactionTestCase):
         Page.objects.filter(pk=page_id).update(deleted_at=timezone.now())
         page = Page.objects.get(pk=page_id)
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/")
         assert resp.status_code == 404
 
     def test_pages_router_404s_never_published_page(self):
@@ -588,7 +588,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=resp.json()["id"])
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/")
         assert resp.status_code == 404
 
     def test_pages_router_404s_scheduled_first_publish(self):
@@ -603,7 +603,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=page_id)
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/")
         assert resp.status_code == 404
 
     def test_pages_router_promotes_never_public_with_due_draft(self):
@@ -622,7 +622,7 @@ class PagePreviewTestCase(TransactionTestCase):
             scheduled_for=timezone.now() - timedelta(minutes=1),
         )
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router{page.permalink}/")
         assert resp.status_code == 200
         page.refresh_from_db()
         assert page.is_public is True
@@ -666,7 +666,7 @@ class PagePreviewTestCase(TransactionTestCase):
         page_id = self._create_published_page("preview-auth")
         page = Page.objects.get(pk=page_id)
         anon = APIClient()
-        resp = anon.get(f"/api/camomilla/pages-router-preview{page.permalink}")
+        resp = anon.get(f"/api/camomilla/pages-router-preview{page.permalink}/")
         assert resp.status_code in (401, 403)
 
     def test_pages_router_preview_returns_trashed_page(self):
@@ -676,7 +676,7 @@ class PagePreviewTestCase(TransactionTestCase):
         Page.objects.filter(pk=page_id).update(deleted_at=timezone.now())
         page = Page.objects.get(pk=page_id)
         resp = self.client.get(
-            f"/api/camomilla/pages-router-preview{page.permalink}"
+            f"/api/camomilla/pages-router-preview{page.permalink}/"
         )
         assert resp.status_code == 200
         assert resp.json()["status"] == "TRS"
@@ -689,7 +689,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=resp.json()["id"])
         resp = self.client.get(
-            f"/api/camomilla/pages-router-preview{page.permalink}"
+            f"/api/camomilla/pages-router-preview{page.permalink}/"
         )
         assert resp.status_code == 200
         assert resp.json()["status"] == "DRF"
@@ -703,7 +703,7 @@ class PagePreviewTestCase(TransactionTestCase):
         )
         page = Page.objects.get(pk=page_id)
         resp = self.client.get(
-            f"/api/camomilla/pages-router-preview{page.permalink}"
+            f"/api/camomilla/pages-router-preview{page.permalink}/"
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -722,8 +722,132 @@ class PagePreviewTestCase(TransactionTestCase):
             scheduled_for=timezone.now() - timedelta(minutes=1),
         )
         resp = self.client.get(
-            f"/api/camomilla/pages-router-preview{page.permalink}"
+            f"/api/camomilla/pages-router-preview{page.permalink}/"
         )
         assert resp.status_code == 200
         # The Draft must still be on disk after the preview call.
         assert Draft.objects.for_(page, language="en").exists()
+
+    # ------------------------------------------------------------------
+    # Canonical-URL trailing-slash handling
+    # ------------------------------------------------------------------
+    #
+    # ``UrlNode.permalink`` is stored without a trailing slash (homepage
+    # excepted). The HTML route's canonical form follows Django's
+    # ``APPEND_SLASH`` setting (with-slash by default). The API must
+    # honor the same canonical so an external renderer doesn't end up
+    # with two valid URLs for the same content — when the visitor asks
+    # for the non-canonical form, the API returns a 301 redirect
+    # descriptor in the response body, the same shape ``UrlRedirect``
+    # matches already emit.
+
+    def test_pages_router_serves_with_slash_when_append_slash_is_true(self):
+        # APPEND_SLASH defaults to True. The canonical for /about is /about/.
+        self._create_published_page("trailing-slash")
+        Page.objects.filter(title="trailing-slash").update(published_at=timezone.now())
+        # Pin a stable permalink so the test asserts on a known URL.
+        page = Page.objects.get(title="trailing-slash")
+        from camomilla.utils import set_nofallbacks
+        for lang in ("en", "it"):
+            set_nofallbacks(page, "autopermalink", False, language=lang)
+            set_nofallbacks(page, "permalink", "/canonical-test", language=lang)
+        page.save()
+
+        anon = APIClient()
+        # With-slash form: served 200 directly.
+        resp = anon.get("/api/camomilla/pages-router/canonical-test/")
+        assert resp.status_code == 200, resp.content
+
+    def test_pages_router_redirects_without_slash_to_with_slash(self):
+        page_id = self._create_published_page("trailing-redirect")
+        page = Page.objects.get(pk=page_id)
+        from camomilla.utils import set_nofallbacks
+        for lang in ("en", "it"):
+            set_nofallbacks(page, "autopermalink", False, language=lang)
+            set_nofallbacks(page, "permalink", "/redirect-test", language=lang)
+        page.save()
+
+        anon = APIClient()
+        # No-slash request → API returns the redirect descriptor.
+        resp = anon.get("/api/camomilla/pages-router/redirect-test")
+        assert resp.status_code == 200, resp.content
+        body = resp.json()
+        assert body.get("status") == 301
+        assert body.get("redirect", "").endswith("/redirect-test/")
+
+    def test_pages_router_homepage_never_redirects(self):
+        # The homepage permalink is ``/`` — adding/removing a trailing
+        # slash here would produce nonsense. Make sure the canonical-form
+        # comparison treats ``/`` as a fixed point.
+        Page.get_or_create_homepage()
+        anon = APIClient()
+        resp = anon.get("/api/camomilla/pages-router/")
+        assert resp.status_code == 200
+        body = resp.json()
+        # Not a redirect descriptor — actual page response.
+        assert "redirect" not in body or body.get("status") != 301
+
+    def test_pages_router_preview_redirects_too(self):
+        page_id = self._create_published_page("preview-redirect")
+        page = Page.objects.get(pk=page_id)
+        from camomilla.utils import set_nofallbacks
+        for lang in ("en", "it"):
+            set_nofallbacks(page, "autopermalink", False, language=lang)
+            set_nofallbacks(page, "permalink", "/preview-redirect-test", language=lang)
+        page.save()
+
+        # Authenticated, no-slash request → 301 descriptor (same as the
+        # public router so the editor preview URL canonical matches live).
+        resp = self.client.get("/api/camomilla/pages-router-preview/preview-redirect-test")
+        assert resp.status_code == 200, resp.content
+        body = resp.json()
+        assert body.get("status") == 301
+        assert body.get("redirect", "").endswith("/preview-redirect-test/")
+
+    def test_pages_router_redirects_bare_language_prefix(self):
+        """A bare ``/it`` (no trailing slash) should redirect to ``/it/``.
+
+        Without the bare-lang-prefix handling in ``url_lang_decompose``,
+        ``/it`` falls through as a regular permalink lookup and 404s,
+        which is hostile UX (especially when external links drop the
+        trailing slash). The redirect lets the visitor land on the
+        canonical italian-homepage URL.
+        """
+        Page.get_or_create_homepage()
+        anon = APIClient()
+        # ``/it/`` (italian homepage) serves directly.
+        resp = anon.get("/api/camomilla/pages-router/it/")
+        assert resp.status_code == 200, resp.content
+        body = resp.json()
+        assert "redirect" not in body or body.get("status") != 301
+        # ``/it`` (no slash) gets a 301 descriptor.
+        resp = anon.get("/api/camomilla/pages-router/it")
+        assert resp.status_code == 200, resp.content
+        body = resp.json()
+        assert body.get("status") == 301
+        assert body.get("redirect", "").endswith("/it/")
+
+    def test_pages_router_honors_append_slash_false(self):
+        # When APPEND_SLASH is False, canonical is no-slash. With-slash
+        # requests then get redirected to the no-slash form.
+        from django.test import override_settings
+
+        page_id = self._create_published_page("append-slash-off")
+        page = Page.objects.get(pk=page_id)
+        from camomilla.utils import set_nofallbacks
+        for lang in ("en", "it"):
+            set_nofallbacks(page, "autopermalink", False, language=lang)
+            set_nofallbacks(page, "permalink", "/no-slash-canonical", language=lang)
+        page.save()
+
+        anon = APIClient()
+        with override_settings(APPEND_SLASH=False):
+            # No-slash served 200
+            resp = anon.get("/api/camomilla/pages-router/no-slash-canonical")
+            assert resp.status_code == 200
+            # With-slash redirected to no-slash
+            resp = anon.get("/api/camomilla/pages-router/no-slash-canonical/")
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body.get("status") == 301
+            assert body.get("redirect", "").rstrip("/").endswith("/no-slash-canonical")
