@@ -1,16 +1,20 @@
 ---
-home: true
-heroImage: /images/camomilla-logo-light.svg
-heroImageDark: /images/camomilla-logo-dark.svg
-heroText: Our beloved Django CMS
-tagline: A powerful and flexible content management system built with Django. Perfect for building dynamic websites and applications.
-actions:
-  - text: Quick Start →
-    link: /QuickStart/
-    type: primary
-  - text: View on GitHub
-    link: https://github.com/camomillacms/camomilla-core
-    type: secondary
+layout: home
+hero:
+  name: Camomilla
+  text: Our beloved Django CMS
+  tagline: A powerful and flexible content management system built with Django. Perfect for building dynamic websites and applications.
+  image:
+    light: /images/camomilla-logo-light.svg
+    dark: /images/camomilla-logo-dark.svg
+    alt: Camomilla
+  actions:
+    - text: Quick Start →
+      link: /QuickStart/
+      theme: brand
+    - text: View on GitHub
+      link: https://github.com/camomillacms/camomilla-core
+      theme: alt
 features:
   - title: 🧘‍♀️ Built on giant shoulders
     details: Solid, extensible foundation leveraging Django’s reliability and ecosystem.

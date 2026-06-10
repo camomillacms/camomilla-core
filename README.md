@@ -97,6 +97,21 @@ Run the server
 $ python manage.py runserver
 ```
 
+## 🤖 AI-readable docs (llms.txt / MCP)
+
+The documentation site is built with [VitePress](https://vitepress.dev/) and ships machine-readable bundles for AI tools, generated automatically on every docs build:
+
+- **`llms.txt`** — a curated index of the docs ([camomillacms.github.io/camomilla-core/llms.txt](https://camomillacms.github.io/camomilla-core/llms.txt))
+- **`llms-full.txt`** — the entire documentation concatenated into one file ([…/llms-full.txt](https://camomillacms.github.io/camomilla-core/llms-full.txt))
+
+Point any `llms.txt`-aware tool (Claude Code, Cursor, Windsurf, …) at those URLs. To expose the docs to an MCP client, run the community [`mcpdoc`](https://github.com/langchain-ai/mcpdoc) server against the hosted `llms.txt` — no extra hosting required:
+
+```bash
+uvx --from mcpdoc mcpdoc --urls "Camomilla:https://camomillacms.github.io/camomilla-core/llms.txt" --transport stdio
+```
+
+> Working **on** camomilla with Claude Code? The repo also ships two skills under `.claude/skills/` — `camomilla-usage` (building on top of camomilla) and `camomilla-internal-architecture` (editing camomilla's source). They load automatically; no MCP needed.
+
 ## 🧑‍💻 How to Contribute
 
 We welcome contributions to Camomilla! If you want to contribute, please read our [contributing guide](./CONTRIBUTING.md) for more information on how to get started.
@@ -121,7 +136,7 @@ We use [uv](https://github.com/astral-sh/uv) for fast dependency management and 
     ```
 2. Sync dependencies (runtime + dev):
     ```bash
-    make sync
+    make install
     ```
 3. Run tests:
     ```bash
@@ -131,4 +146,20 @@ We use [uv](https://github.com/astral-sh/uv) for fast dependency management and 
     ```bash
     make format lint
     ```
+
+### 🤖 AI-assisted contributing (bring your own agent)
+
+Camomilla ships a **tool-agnostic agent setup** so you can contribute with whatever AI coding assistant you prefer. The single source of truth is [`AGENTS.md`](./AGENTS.md) at the repo root — the cross-editor standard that Cursor, OpenAI Codex, Aider, Gemini CLI, GitHub Copilot, Zed and others read automatically. It carries the dev commands, conventions, repository map, a "gotchas" section, and pointers to the deep references.
+
+Per-tool entry points are **thin adapters that defer to `AGENTS.md`** (no duplicated, drift-prone instructions):
+
+| Tool | Reads | Notes |
+|---|---|---|
+| Most agents (Cursor, Codex, Aider, Gemini CLI, Zed, …) | `AGENTS.md` | Auto-detected; nothing to configure. |
+| Claude Code | `CLAUDE.md` → imports `AGENTS.md` | Also auto-loads two skills under `.claude/skills/` (`camomilla-usage`, `camomilla-internal-architecture`). |
+| GitHub Copilot | `.github/copilot-instructions.md` → points to `AGENTS.md` | Recent Copilot reads `AGENTS.md` natively too. |
+
+The two **deep references** under `.claude/skills/` are plain Markdown — open them with any agent or editor, not just Claude: `camomilla-usage/SKILL.md` (building on top of camomilla) and `camomilla-internal-architecture/SKILL.md` (editing camomilla's source). The published docs also expose an [`llms.txt`](https://camomillacms.github.io/camomilla-core/llms.txt) for AI ingestion.
+
+Using a tool that needs an explicit instructions path? Point it at `AGENTS.md`.
 

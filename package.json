@@ -1,11 +1,11 @@
 {
   "name": "camomilla-docs",
   "version": "1.0.0",
-  "description": "Camomilla documentation build with Vuepress",
+  "description": "Camomilla documentation build with VitePress",
   "scripts": {
-    "docs:dev": "vuepress dev docs",
-    "docs:build": "vuepress build docs",
-    "docs:publish": "./docs/.vuepress/publishDOCS.sh"
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "engines": {
     "node": ">=22",
@@ -16,10 +16,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@vuepress/bundler-vite": "^2.0.0-rc.24",
-    "@vuepress/theme-default": "^2.0.0-rc.112",
-    "sass-embedded": "^1.86.0",
-    "vue": "^3.5.13",
-    "vuepress": "2.0.0-rc.24"
+    "vitepress": "^1.6.3",
+    "vitepress-plugin-llms": "^1.7.5"
   }
 }

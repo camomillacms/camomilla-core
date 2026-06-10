@@ -39,8 +39,10 @@ docs-dev: clean
 docs-build: clean
 	pnpm run docs:build
 
-docs-publish: clean
-	pnpm run docs:publish
+docs-preview: clean
+	pnpm run docs:preview
+
+# Note: docs are published to GitHub Pages automatically by .github/workflows/doc.yml.
 
 
-.PHONY: clean install format lint test migrations migrations-reset docs-dev docs-build docs-publish
+.PHONY: clean install format lint test migrations migrations-reset docs-dev docs-build docs-preview

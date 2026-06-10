@@ -67,7 +67,7 @@ In templates, resolve a node to its URL with the `node_url` filter rather than r
 {{ item|node_url:request }}  {# absolute, e.g. https://host/it/about/ #}
 ```
 
-`request` is available in the menu template via the standard request context processor (the menu renderer always binds it, falling back to `None`), so `{{ item|node_url:request }}` is always safe to write — static links ignore the request and pass through verbatim.
+`request` is available in the menu template via the standard request context processor (the menu renderer always binds it, falling back to `None`), so <code v-pre>{{ item|node_url:request }}</code> is always safe to write — static links ignore the request and pass through verbatim.
 
 
 
