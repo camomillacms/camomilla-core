@@ -10,7 +10,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("camomilla", "0001_initial"),
+        # camomilla migrations are generated on the fly into ``camomilla_migrations``
+        # (injected via MIGRATION_MODULES, not committed), so depend on ``__first__``
+        # rather than a hard-coded name — matching the other website migrations.
+        ("camomilla", "__first__"),
         ("website", "0009_page_lifecycle_timestamps"),
     ]
 
