@@ -33,5 +33,16 @@ def render_menu(
 
 
 @register.filter(name="node_url")
-def get_menu_node_url(node: MenuNode):
-    return node.link.url
+def get_menu_node_url(node: MenuNode, request=None):
+    """Resolve a menu node's link to a URL.
+
+    Pass the ``request`` to get an absolute URI for relational links::
+
+        {{ item|node_url }}          {# root-relative #}
+        {{ item|node_url:request }}  {# absolute, scheme + host #}
+
+    ``request`` is available in the menu template via the standard
+    request context processor. Static links ignore it (passed through
+    verbatim).
+    """
+    return node.link.get_url(request=request)

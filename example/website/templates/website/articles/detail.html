@@ -1,0 +1,27 @@
+{% extends "website/base.html" %}
+
+{% block content %}
+  <article>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+    <p style="color:var(--fg-soft);font-size:.875rem;">
+      {% for tag in page.tags.all %}<span class="tag">{{ tag.name }}</span> {% endfor %}
+      {% if page.author %} · by {{ page.author.username }}{% endif %}
+    </p>
+    {% if page.content %}
+      <div class="article-content">{{ page.content|safe|linebreaks }}</div>
+    {% endif %}
+  </article>
+
+  {% if related_articles %}
+    <h2>Related articles</h2>
+    <div class="grid grid-2">
+      {% for article in related_articles %}
+        <a href="{{ article.routerlink }}" class="card" style="text-decoration:none;color:inherit;">
+          <h3 style="margin:0 0 .5rem;">{{ article.title }}</h3>
+          {% if article.description %}<p style="margin:0;">{{ article.description }}</p>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,242 @@
+{% load menus i18n camomilla_filters %}<!DOCTYPE html>
+<html lang="{{ request.LANGUAGE_CODE|default:'en' }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{{ page.title }}{% endblock %} · Camomilla demo</title>
+    {% if page.description %}<meta name="description" content="{{ page.description }}" />{% endif %}
+    <style>
+      :root {
+        --fg: #0d1117;
+        --fg-soft: #475569;
+        --bg: #f7fafc;
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --accent: #2563eb;
+        --accent-fg: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #f1f5f9;
+          --fg-soft: #94a3b8;
+          --bg: #0d1117;
+          --bg-card: #161b22;
+          --border: #30363d;
+          --accent: #60a5fa;
+          --accent-fg: #0d1117;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        color: var(--fg);
+        background: var(--bg);
+        line-height: 1.5;
+        /* Sticky footer: column flex so <main> stretches and pushes
+           <footer.site> to the bottom even on short pages. */
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      footer.site { flex: 0 0 auto; }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .container { max-width: 980px; margin: 0 auto; padding: 0 1.5rem; }
+      header.site {
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-card);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      header.site .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+      }
+      header.site .brand { font-weight: 700; font-size: 1.125rem; }
+      header.site nav ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+      }
+      header.site nav ul ul {
+        position: absolute;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 0.5rem 0;
+        margin-top: 0.5rem;
+        min-width: 12rem;
+        display: none;
+      }
+      header.site nav li { position: relative; }
+      header.site nav li:hover > ul { display: block; }
+      header.site nav ul ul li a { display: block; padding: 0.5rem 1rem; }
+      header.site nav a { color: var(--fg); }
+      main { padding: 2.5rem 0 4rem; flex: 1 0 auto; }
+      .breadcrumbs {
+        font-size: 0.875rem;
+        color: var(--fg-soft);
+        margin-bottom: 1.5rem;
+      }
+      .breadcrumbs a { color: var(--fg-soft); }
+      .breadcrumbs span:not(:last-child)::after { content: " / "; padding: 0 0.25rem; }
+      footer.site {
+        border-top: 1px solid var(--border);
+        padding: 2rem 0;
+        color: var(--fg-soft);
+        font-size: 0.875rem;
+      }
+      footer.site .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      footer.site nav ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 1.25rem;
+      }
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.25rem 1.5rem;
+      }
+      .grid { display: grid; gap: 1.25rem; }
+      .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      @media (max-width: 720px) {
+        .grid-3, .grid-2 { grid-template-columns: 1fr; }
+        header.site nav ul { gap: 1rem; }
+      }
+      .tag {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        background: var(--border);
+        border-radius: 999px;
+        color: var(--fg-soft);
+      }
+      .preview-banner {
+        background: var(--accent);
+        color: var(--accent-fg);
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+      .header-right { display: flex; align-items: center; gap: 1rem; }
+      .lang-switch { display: inline-flex; gap: 0.25rem; }
+      .lang-switch__chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--fg-soft);
+        text-decoration: none;
+      }
+      .lang-switch__chip:hover { background: var(--border); text-decoration: none; }
+      .lang-switch__chip--active {
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+      }
+      .lang-switch__chip--disabled { opacity: 0.4; cursor: not-allowed; }
+      .feature-card { display: flex; flex-direction: column; gap: 0.25rem; }
+      .feature-card .feature-icon { font-size: 1.75rem; }
+      .feature-card h3 { margin: 0; font-size: 1rem; }
+      .feature-card p { margin: 0; color: var(--fg-soft); font-size: 0.95rem; }
+      blockquote.testimonial {
+        margin: 2rem 0;
+        padding: 1.5rem 2rem;
+        background: var(--bg-card);
+        border-left: 4px solid var(--accent);
+        font-size: 1.125rem;
+        font-style: italic;
+        color: var(--fg);
+      }
+      blockquote.testimonial cite {
+        display: block;
+        margin-top: 0.75rem;
+        font-style: normal;
+        font-size: 0.875rem;
+        color: var(--fg-soft);
+      }
+      .methods { list-style: none; padding: 0; margin: 1.5rem 0; }
+      .methods li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .methods .method-label { color: var(--fg-soft); }
+      h1 { margin: 0 0 0.5rem; font-size: 2rem; }
+      h2 { margin: 2rem 0 0.75rem; font-size: 1.5rem; }
+      .lead { font-size: 1.125rem; color: var(--fg-soft); margin: 0 0 1.5rem; }
+    </style>
+  </head>
+  <body>
+    {% if draft_data %}<div class="preview-banner">📝 Preview mode — draft fields overlaid on the live page</div>{% endif %}
+
+    <header class="site">
+      <div class="container">
+        <div class="brand">
+          <a href="/">Camomilla Demo</a>
+        </div>
+        <div class="header-right">
+          {% block main_menu %}
+            {% render_menu "main" "website/parts/main_menu.html" %}
+          {% endblock %}
+          {% block lang_switch %}
+            {% include "website/parts/lang_switch.html" %}
+          {% endblock %}
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        {% block breadcrumbs %}
+          {% if page.breadcrumbs|length > 1 %}
+            <nav class="breadcrumbs" aria-label="breadcrumb">
+              {% for crumb in page.breadcrumbs %}
+                <span>
+                  {% if not forloop.last %}<a href="{{ crumb.permalink }}">{{ crumb.title }}</a>{% else %}{{ crumb.title }}{% endif %}
+                </span>
+              {% endfor %}
+            </nav>
+          {% endif %}
+        {% endblock %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <footer class="site">
+      <div class="container">
+        <span>© Camomilla demo · rendered from <code>{{ page.template_file }}</code></span>
+        {% block footer_menu %}
+          {% render_menu "footer" "website/parts/main_menu.html" %}
+        {% endblock %}
+      </div>
+    </footer>
+  </body>
+</html>

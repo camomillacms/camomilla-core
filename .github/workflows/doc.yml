@@ -49,11 +49,11 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
-      - name: 📦 Install dependencies (vuepress)
+      - name: 📦 Install dependencies (vitepress)
         run: pnpm install --frozen-lockfile
 
-      - name: 🔖 Move CHANGELOG into docs
-        run: bash docs/.vuepress/moveCHANGELOG.sh
+      - name: 🔖 Sync CHANGELOG / CONTRIBUTING / LICENSE into docs
+        run: bash scripts/sync-docs-from-root.sh
 
       - name: 📚 Build docs
         env:
@@ -64,6 +64,6 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/.vuepress/dist
+          publish_dir: docs/.vitepress/dist
           publish_branch: "gh-pages"
           commit_message: "docs: publish ${{ github.sha }} @ ${{ github.event.workflow_run.created_at }}"

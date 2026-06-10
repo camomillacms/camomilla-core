@@ -1,0 +1,57 @@
+{% extends "website/base.html" %}
+
+{% block breadcrumbs %}{% endblock %}{# homepage doesn't need breadcrumbs #}
+
+{% block content %}
+  <section class="hero">
+    <h1>{{ page.template_data.hero.headline|default:page.title }}</h1>
+    {% if page.template_data.hero.subheadline %}
+      <p class="lead">{{ page.template_data.hero.subheadline }}</p>
+    {% endif %}
+    {% if page.template_data.hero.cta %}
+      <p>
+        <a href="{{ page.template_data.hero.cta.url }}" style="display:inline-block;padding:.75rem 1.5rem;background:var(--accent);color:var(--accent-fg);border-radius:6px;">
+          {{ page.template_data.hero.cta_label|default:"Learn more" }}
+        </a>
+      </p>
+    {% endif %}
+  </section>
+
+  {% if page.template_data.features %}
+    <h2>Highlights</h2>
+    <div class="grid grid-3">
+      {% for feature in page.template_data.features %}
+        <div class="card feature-card">
+          {% if feature.icon %}<span class="feature-icon" aria-hidden="true">{{ feature.icon }}</span>{% endif %}
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if page.template_data.testimonial %}
+    <blockquote class="testimonial">
+      “{{ page.template_data.testimonial.quote }}”
+      <cite>
+        — {{ page.template_data.testimonial.author }}
+        {% if page.template_data.testimonial.role %}, {{ page.template_data.testimonial.role }}{% endif %}
+      </cite>
+    </blockquote>
+  {% endif %}
+
+  {% if featured_articles %}
+    <h2>Latest from the blog</h2>
+    <div class="grid grid-3">
+      {% for article in featured_articles %}
+        <article class="card">
+          <h3 style="margin-top:0;"><a href="{{ article.routerlink }}">{{ article.title }}</a></h3>
+          {% if article.description %}<p>{{ article.description }}</p>{% endif %}
+          <p>
+            {% for tag in article.tags.all %}<span class="tag">{{ tag.name }}</span>{% endfor %}
+          </p>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

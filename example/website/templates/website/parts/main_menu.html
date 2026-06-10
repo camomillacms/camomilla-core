@@ -1,0 +1,27 @@
+{% load menus %}
+{% comment %}
+Recursive menu renderer used by ``{% render_menu "<key>" "website/parts/main_menu.html" %}``.
+
+``menu`` is whatever the calling context passes: at the top level it's the
+``Menu`` row (with ``.nodes``); on recursion it's a ``MenuNode`` (also
+``.nodes``). Both shapes have ``.nodes`` and (for nodes) ``.link``/``.title``.
+The ``node_url`` filter handles relational vs static link resolution.
+{% endcomment %}
+{% if menu.nodes|length %}
+  <nav>
+    <ul>
+      {% for item in menu.nodes %}
+        <li>
+          {% if item.link.url %}
+            <a href="{{ item|node_url:request }}">{{ item.title }}</a>
+          {% else %}
+            <span>{{ item.title }}</span>
+          {% endif %}
+          {% if item.nodes|length %}
+            {% include "website/parts/main_menu.html" with menu=item %}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+{% endif %}

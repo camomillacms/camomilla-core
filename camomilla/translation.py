@@ -20,9 +20,9 @@ class AbstractPageTranslationOptions(SeoMixinTranslationOptions):
     fields = (
         "breadcrumbs_title",
         "autopermalink",
-        "status",
         "indexable",
         "template_data",
+        "published_at",
     )
 
 

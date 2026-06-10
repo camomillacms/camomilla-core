@@ -1,0 +1,15 @@
+/* Camomilla brand — green accent, ported from the VuePress theme. */
+:root {
+  --vp-c-brand-1: #379b6e;
+  --vp-c-brand-2: #3eaf7c;
+  --vp-c-brand-3: #3eaf7c;
+  --vp-c-brand-soft: rgb(62 175 124 / 16%);
+}
+
+/* Home hero logo sizing (matches the previous site). */
+.VPHero .image-bg {
+  display: none;
+}
+.VPHero .VPImage {
+  max-height: 220px;
+}

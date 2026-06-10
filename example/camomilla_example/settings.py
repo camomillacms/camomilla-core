@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "modeltranslation",
     "rest_framework",
     "rest_framework.authtoken",
+    "reversion",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

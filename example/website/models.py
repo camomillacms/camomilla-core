@@ -1,6 +1,7 @@
 from typing import Optional, List
 from django.db import models
 from camomilla.models import AbstractPage, Media
+from camomilla.types import Permalink
 from structured.fields import StructuredJSONField
 from structured.pydantic.fields import QuerySet
 from structured.pydantic.models import BaseModel
@@ -167,4 +168,64 @@ class CustomApiSerializerModel(AbstractPage):
 
     class PageMeta:
         standard_serializer = "example.website.serializers.CustomApiSerializerModelSerializer"
+
+
+# ---------------------------------------------------------------------------
+# Typed ``template_data`` example
+# ---------------------------------------------------------------------------
+#
+# Demonstrates the supported pattern for redeclaring ``template_data`` on a
+# project-specific page model. The schema below pins the JSON shape and types
+# the navigation field with :data:`camomilla.types.Permalink`, so on-the-wire
+# serialization rewrites ``"/about"`` to the active-language routerlink
+# (``/it/about/`` on /it/) without the page serializer ever walking the
+# JSON tree. The same stored value is consumed verbatim by Django templates
+# via ``{% localized_url %}`` — both sides share one source of truth.
+
+
+class HeroBlock(BaseModel):
+    headline: str = ""
+    subheadline: str = ""
+    cta_label: str = ""
+    # The reason ``HomePage`` exists: ``cta`` is the typed link primitive
+    # from :class:`camomilla.types.Permalink`. For a relational pick the
+    # struct holds a ``UrlNode`` FK and the ``url`` computed field emits
+    # the active-language routerlink (``/it/about/`` on /it/). For an
+    # external it holds a free-form string. No serializer-level walk
+    # needed — the type localizes itself at the field boundary.
+    cta: Optional[Permalink] = None
+
+
+class FeatureBlock(BaseModel):
+    icon: str = ""
+    title: str = ""
+    description: str = ""
+
+
+class TestimonialBlock(BaseModel):
+    quote: str = ""
+    author: str = ""
+    role: str = ""
+
+
+class HomePageData(BaseModel):
+    hero: HeroBlock = HeroBlock()
+    features: List[FeatureBlock] = []
+    testimonial: Optional[TestimonialBlock] = None
+
+
+def _home_default():
+    return HomePageData()
+
+
+@model_api.register()
+class HomePage(AbstractPage):
+    template_data = StructuredJSONField(schema=HomePageData, default=_home_default)
+
+    class Meta:
+        verbose_name = "Home Page"
+        verbose_name_plural = "Home Pages"
+
+    class PageMeta:
+        default_template = "website/pages/home.html"
 

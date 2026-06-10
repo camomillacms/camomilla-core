@@ -209,15 +209,16 @@ class PagesTestCase(TransactionTestCase):
 
     def test_pages_url_nodes_navigation(self):
         # Test the camomilla.dynamic_pages_url handler for navigating and rendering UrlNodes
+        past = (datetime.now() - timedelta(1)).strftime("%Y-%m-%d") + " 00:00:00"
         self.client.post(
             "/api/camomilla/pages/",
             {
                 "autopermalink_en": False,
                 "permalink_en": "permalink_4_en",
-                "status_en": "PUB",
+                "published_at_en": past,
                 "autopermalink_it": False,
                 "permalink_it": "permalink_4_it",
-                "status_it": "PUB",
+                "published_at_it": past,
             },
         )
 
@@ -234,12 +235,10 @@ class PagesTestCase(TransactionTestCase):
                     "it": {
                         "autopermalink": False,
                         "permalink": "permalink_5_it",
-                        "status": "PLA",
                     },
                     "en": {
                         "autopermalink": False,
                         "permalink": "permalink_5_en",
-                        "status": "DRF",
                     },
                 }
             },
@@ -249,14 +248,14 @@ class PagesTestCase(TransactionTestCase):
         response = self.client.get("/permalink_5_en/")
         assert response.status_code == 404
         response = self.client.get("/permalink_5_en/?preview=true")
-        assert response.status_code == 200
+        assert response.status_code == 404
         response = self.client.get("/it/permalink_5_it/")
         assert response.status_code == 404
 
         self.client.patch(
             "/api/camomilla/pages/2/",
             {
-                "publication_date": (datetime.now() - timedelta(1)).strftime("%Y-%m-%d")
+                "published_at_it": (datetime.now() - timedelta(1)).strftime("%Y-%m-%d")
                 + " 00:00:00",
             },
         )
@@ -273,12 +272,10 @@ class PagesTestCase(TransactionTestCase):
                     "it": {
                         "autopermalink": False,
                         "permalink": "permalink_6_it",
-                        "status": "PUB",
                     },
                     "en": {
                         "autopermalink": False,
                         "permalink": "permalink_6_en",
-                        "status": "PUB",
                     },
                 }
             },

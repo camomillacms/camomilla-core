@@ -11,15 +11,37 @@ if TYPE_CHECKING:
 
 class AbstractPageMixin(StructuredModelSerializer, serializers.ModelSerializer):
     """
-    This mixin is needed to serialize AbstractPage models.
-    It provides permalink validation and some extra fields serialization.
+    This mixin is needed to serialize ``AbstractPage`` models. It provides
+    permalink validation and the standard read-only lifecycle / breadcrumb
+    fields. Use it as a base class for your serializer if you need to
+    serialize custom ``AbstractPage`` models.
 
-    Use it as a base class for your serializer if you need to serialize custom AbstractPage models.
+    URL localization inside ``template_data``:
+        When a page declares its ``template_data`` as a typed schema
+        (``StructuredJSONField`` with a pydantic schema), URL-bearing
+        fields should be typed with :data:`camomilla.types.Permalink`.
+        The type serializes itself to the active-language routerlink on
+        the way out — no walk over free-form JSON happens here, and the
+        stored value stays a raw permalink so writes round-trip safely.
+
+        For pages that keep ``template_data`` as a raw ``JSONField``,
+        render-time helpers are the supported path: ``{% localized_url %}``
+        in Django templates, and the equivalent server-side resolution
+        on the API consumer side (the astro integration ships one).
     """
 
     breadcrumbs = serializers.SerializerMethodField()
     routerlink = serializers.CharField(read_only=True)
     template_file = serializers.SerializerMethodField()
+    # Visibility flags — fine to expose anywhere, including the public
+    # route. Read-only and computed from ``published_at`` / ``deleted_at``.
+    status = serializers.CharField(read_only=True)
+    is_public = serializers.BooleanField(read_only=True)
+    # ``has_draft`` / ``has_scheduled_draft`` are NOT declared here — those
+    # are author-facing observability flags and the ``PageViewSet.preview``
+    # action attaches them via ``_draft_overlay`` when relevant. Keeping
+    # them off the default serializer prevents the public ``pages-router``
+    # from revealing whether a page has pending edits.
 
     def get_template_file(self, instance: "AbstractPage"):
         return instance.get_template_path()

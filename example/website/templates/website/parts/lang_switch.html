@@ -1,0 +1,23 @@
+{% load i18n %}
+{% comment %}
+Inline language switch. Reads ``page.alternate_urls`` (returned by
+``AbstractPage.alternate_urls()``) — a dict ``{lang_code: url_or_none}``
+for every language EXCEPT the currently active one. ``url`` is ``None``
+when the page isn't public in that language; we render that as a disabled
+chip so editors / readers see the lang exists but can't follow the link.
+{% endcomment %}
+<div class="lang-switch" aria-label="language">
+  {% get_current_language as current_lang %}
+  <span class="lang-switch__chip lang-switch__chip--active" title="{{ current_lang }}">
+    {{ current_lang|upper }}
+  </span>
+  {% for lang_code, alt_url in page.alternate_urls.items %}
+    {% if alt_url %}
+      <a class="lang-switch__chip" href="{{ alt_url }}" title="{{ lang_code }}">{{ lang_code|upper }}</a>
+    {% else %}
+      <span class="lang-switch__chip lang-switch__chip--disabled" title="{{ lang_code }}: not available">
+        {{ lang_code|upper }}
+      </span>
+    {% endif %}
+  {% endfor %}
+</div>

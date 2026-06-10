@@ -20,7 +20,7 @@ from camomilla.views import (
     MenuViewSet,
 )
 from structured_metaobjects.views import MetaInstanceViewSet, MetaTypeViewSet
-from camomilla.views.pages import pages_router
+from camomilla.views.pages import pages_router, pages_router_preview
 from camomilla.redirects import url_patterns as old_redirects
 
 router = routers.DefaultRouter()
@@ -42,6 +42,8 @@ urlpatterns = [
     path("", include(router.urls)),
     path("pages-router/", pages_router),
     path("pages-router/<path:permalink>", pages_router),
+    path("pages-router-preview/", pages_router_preview),
+    path("pages-router-preview/<path:permalink>", pages_router_preview),
     path("token-auth/", CamomillaObtainAuthToken.as_view(), name="api_token"),
     path("auth/login/", CamomillaAuthLogin.as_view(), name="login"),
     path("auth/logout/", CamomillaAuthLogout.as_view(), name="logout"),

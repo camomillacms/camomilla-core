@@ -1,6 +1,8 @@
-from typing import Sequence, Tuple, Optional, Union
+import logging
+from typing import Sequence, Tuple, Optional
 from uuid import uuid4
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
 from django.db import models, transaction
@@ -30,6 +32,9 @@ from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
 from modeltranslation.utils import build_localized_fieldname
 from django.utils.module_loading import import_string
+
+
+logger = logging.getLogger(__name__)
 
 
 class UrlRedirect(models.Model):
@@ -118,10 +123,13 @@ class UrlNode(models.Model):
         append_slash = getattr(django_settings, "APPEND_SLASH", True)
         try:
             if permalink == "/":
-                return reverse("camomilla-homepage")
-            url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
-            if append_slash and not url.endswith("/"):
-                url += "/"
+                url = reverse("camomilla-homepage")
+            else:
+                url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
+                if append_slash and not url.endswith("/"):
+                    url += "/"
+            # Both branches funnel through here so an absolute URI is built
+            # for the homepage too — not only for sub-paths.
             if request:
                 url = request.build_absolute_uri(url)
             return url
@@ -131,6 +139,14 @@ class UrlNode(models.Model):
     @property
     def routerlink(self) -> str:
         return self.reverse_url(self.permalink) or self.permalink
+
+    def get_routerlink(self, request: Optional[HttpRequest] = None) -> str:
+        """Request-aware ``routerlink``. Same value as the property, but
+        absolute (scheme + host) when a request is supplied. Use this from
+        any code path that has a request in hand (template tags, serializer
+        ``to_representation`` with ``context['request']``); fall back to the
+        bare :attr:`routerlink` property when you don't."""
+        return self.reverse_url(self.permalink, request=request) or self.permalink
 
     def get_absolute_url(self) -> str:
         if self.routerlink == "/":
@@ -164,12 +180,25 @@ class UrlNode(models.Model):
 PAGE_CHILD_RELATED_NAME = "%(app_label)s_%(class)s_child_pages"
 URL_NODE_RELATED_NAME = "%(app_label)s_%(class)s"
 
-PAGE_STATUS = (
-    ("PUB", _("Published")),
-    ("DRF", _("Draft")),
-    ("TRS", _("Trash")),
-    ("PLA", _("Planned")),
+# Lifecycle labels — computed at read time from the visibility pair
+# (published_at, deleted_at). Drafts (scheduled or not) don't affect the
+# label; they're surfaced via the separate ``has_draft`` /
+# ``has_scheduled_draft`` properties. Kept as constants so callers and
+# templates that want a human-readable lifecycle string have a stable name.
+PAGE_STATUS_PUBLISHED = "PUB"
+PAGE_STATUS_DRAFT = "DRF"
+PAGE_STATUS_SCHEDULED = "PLA"
+PAGE_STATUS_TRASHED = "TRS"
+
+PAGE_STATUS_CHOICES = (
+    (PAGE_STATUS_PUBLISHED, _("Published")),
+    (PAGE_STATUS_DRAFT, _("Draft")),
+    (PAGE_STATUS_TRASHED, _("Trash")),
+    (PAGE_STATUS_SCHEDULED, _("Planned")),
 )
+
+# Kept under the old name for any external code that imported it.
+PAGE_STATUS = PAGE_STATUS_CHOICES
 
 
 class PageBase(models.base.ModelBase):
@@ -245,12 +274,11 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         null=True,
         editable=False,
     )
-    publication_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(
-        max_length=3,
-        choices=PAGE_STATUS,
-        default="DRF",
-    )
+    # Visibility — derived lifecycle (PUB / PLA / DRF / TRS) reads from
+    # these two timestamps alone. Drafts and scheduled publishes live on
+    # the ``camomilla.Draft`` table (see :mod:`camomilla.models.draft`).
+    published_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
     indexable = models.BooleanField(default=True)
     autopermalink = models.BooleanField(default=True)
 
@@ -326,15 +354,343 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             return self.parent.breadcrumbs + [breadcrumb]
         return [breadcrumb]
 
+    # ------------------------------------------------------------------
+    # Lifecycle status — visibility-only derivation
+    # ------------------------------------------------------------------
+    #
+    # ``status`` / ``is_public`` are functions of two things and two things
+    # only: ``deleted_at`` (global, "is the row hidden?") and the per-
+    # language ``published_at`` ("when did this language go live?"). Drafts
+    # do NOT affect status — they're a separate concept observable via the
+    # ``Draft`` table (``has_draft`` / ``has_scheduled_draft`` properties).
+
+    def _lifecycle_label(self) -> str:
+        """In-memory Python computation of the lifecycle label.
+
+        Mirrors the SQL ``Case`` expression in
+        :meth:`camomilla.managers.pages.PageQuerySet.with_lifecycle`. The
+        invariant is enforced by ``test_lifecycle_property_matches_db_layer``.
+        """
+        if get_nofallbacks(self, "deleted_at") is not None:
+            return PAGE_STATUS_TRASHED
+        now = timezone.now()
+        published_at = get_nofallbacks(self, "published_at")
+        if published_at is not None and published_at <= now:
+            return PAGE_STATUS_PUBLISHED
+        if published_at is not None:
+            # Future stamp — legacy "scheduled first publish".
+            return PAGE_STATUS_SCHEDULED
+        return PAGE_STATUS_DRAFT
+
+    @property
+    def status(self) -> str:
+        return self._lifecycle_label()
+
     @property
     def is_public(self) -> bool:
-        status = get_nofallbacks(self, "status")
-        publication_date = get_nofallbacks(self, "publication_date")
-        if status == "PUB":
-            return True
-        if status == "PLA":
-            return bool(publication_date) and timezone.now() > publication_date
-        return False
+        return self._lifecycle_label() == PAGE_STATUS_PUBLISHED
+
+    # ------------------------------------------------------------------
+    # Draft accessors — per-active-language helpers around the Draft table
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _draft_language() -> str:
+        """Active language code to use for draft lookups.
+
+        For monolingual installs we use the empty string (``NO_LANGUAGE``)
+        so the same ``UNIQUE(content_type, object_id, language)`` constraint
+        works without NULL-vs-NULL backend quirks. Translated installs use
+        the active Django language.
+        """
+        from camomilla.models.draft import NO_LANGUAGE
+        from django.utils.translation import get_language
+
+        return get_language() or NO_LANGUAGE
+
+    def _drafts(self, language=None):
+        """Queryset of Drafts for this page (filtered by language if given)."""
+        from camomilla.models.draft import Draft
+
+        return Draft.objects.for_(self, language=language)
+
+    @property
+    def has_draft(self) -> bool:
+        """True when a pending draft exists for the active language."""
+        return self._drafts(language=self._draft_language()).exists()
+
+    @property
+    def has_scheduled_draft(self) -> bool:
+        return self._drafts(language=self._draft_language()).scheduled().exists()
+
+    @property
+    def overlay_due(self) -> bool:
+        """The active language's draft is due (scheduled_for ≤ now)."""
+        return self._drafts(language=self._draft_language()).due_now().exists()
+
+    @property
+    def draft_data(self) -> dict:
+        """The active language's pending draft payload (or ``{}``).
+
+        Kept as a property — not a column — so callers that just want to
+        inspect the staged state still have an ergonomic accessor. Compare
+        :meth:`save_draft` for writes.
+        """
+        draft = self._drafts(language=self._draft_language()).first()
+        return dict(draft.serialized) if draft else {}
+
+    # ------------------------------------------------------------------
+    # Draft write surface — every mutation goes through the Draft model
+    # ------------------------------------------------------------------
+
+    def save_draft(self, data: dict, merge: bool = True, *, scheduled_for=None) -> None:
+        """Persist ``data`` as the pending draft for the active language.
+
+        ``merge=True`` (default) merges into the existing draft body so a
+        partial PATCH only updates the named keys; ``merge=False`` replaces
+        wholesale. ``scheduled_for`` lets callers stage and schedule in one
+        call; pass ``None`` to keep the existing schedule (or no schedule).
+        """
+        from camomilla.models.draft import Draft
+
+        lang = self._draft_language()
+        ct = ContentType.objects.get_for_model(type(self))
+        draft, created = Draft.objects.get_or_create(
+            content_type=ct,
+            object_id=self.pk,
+            language=lang,
+            defaults={
+                "serialized": dict(data),
+                "scheduled_for": scheduled_for,
+            },
+        )
+        if not created:
+            current = dict(draft.serialized or {})
+            draft.serialized = {**current, **data} if merge else dict(data)
+            if scheduled_for is not None:
+                draft.scheduled_for = scheduled_for
+            draft.save(
+                update_fields=["serialized", "scheduled_for", "updated_at"]
+                if scheduled_for is not None
+                else ["serialized", "updated_at"]
+            )
+
+    def discard_draft(self) -> None:
+        self._drafts(language=self._draft_language()).delete()
+
+    def _apply_draft_via_serializer(self, draft_data: dict) -> None:
+        """Apply ``draft_data`` through the model's edit serializer.
+
+        Validates the payload as if it had arrived through the API's PATCH
+        path. Keeps nested ``translations`` round-tripping correctly via the
+        write-shaped base chain (``get_editable_bases``).
+        """
+        if not draft_data:
+            return
+        from camomilla.serializers.utils import (
+            build_standard_model_serializer,
+            get_editable_bases,
+        )
+
+        serializer_cls = build_standard_model_serializer(
+            self.__class__,
+            bases=get_editable_bases(self.__class__.get_serializer()),
+            name_suffix="Draft",
+        )
+        instance = self.__class__.objects.get(pk=self.pk)
+        serializer = serializer_cls(instance, data=draft_data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        self.refresh_from_db()
+
+    def publish(self, *, create_revision: bool = True, comment: str = "") -> None:
+        """Apply the active-language draft (if any) and mark the row public.
+
+        - Loads the active language's Draft, applies its ``serialized``
+          payload through the publish serializer, then deletes the Draft.
+        - Stamps ``published_at = now()`` (only if unset or in the future,
+          to keep repeated ``publish()`` idempotent against an already-live
+          page).
+        - Snapshots a reversion revision for revert.
+        """
+        from camomilla.preview import reversion_available
+
+        draft = self._drafts(language=self._draft_language()).first()
+        had_draft = draft is not None
+        if had_draft:
+            self._apply_draft_via_serializer(draft.serialized)
+            draft.delete()
+
+        now = timezone.now()
+        current_published_at = get_nofallbacks(self, "published_at")
+        if current_published_at is None or current_published_at > now:
+            self.published_at = now
+
+        if create_revision and reversion_available():
+            import reversion
+
+            with reversion.create_revision():
+                self.save()
+                reversion.set_comment(
+                    comment
+                    or ("Published with pending draft" if had_draft else "Published")
+                )
+        else:
+            self.save()
+
+    def publish_if_due(self) -> bool:
+        """Lazy-publish the active language's due Draft, if there is one.
+
+        Concurrency: the locked SELECT is on the Draft row, not the page.
+        Two concurrent reads contend for the Draft; the loser observes the
+        row has been consumed and returns ``False``.
+
+        Expected runtime failures (validation, transient DB) are caught
+        and logged; the request proceeds with whatever lives in the DB
+        now. Programmer errors propagate.
+        """
+        from django.db.utils import DatabaseError, NotSupportedError, OperationalError
+        from rest_framework.exceptions import ValidationError
+
+        from camomilla.models.draft import Draft
+
+        lang = self._draft_language()
+        if not Draft.objects.for_(self, language=lang).due_now().exists():
+            return False
+        try:
+            with transaction.atomic():
+                try:
+                    locked = (
+                        Draft.objects.select_for_update()
+                        .for_(self, language=lang)
+                        .due_now()
+                        .first()
+                    )
+                except (NotSupportedError, OperationalError):
+                    locked = (
+                        Draft.objects.for_(self, language=lang).due_now().first()
+                    )
+                if locked is None:
+                    return False
+                # Re-fetch page under the lock to read fresh published_at.
+                page = self.__class__.objects.get(pk=self.pk)
+                page._apply_draft_via_serializer(locked.serialized)
+                now = timezone.now()
+                current = get_nofallbacks(page, "published_at")
+                if current is None or current > now:
+                    page.published_at = now
+                from camomilla.preview import reversion_available
+
+                if reversion_available():
+                    import reversion
+
+                    with reversion.create_revision():
+                        page.save()
+                        reversion.set_comment("Auto-published on first read")
+                else:
+                    page.save()
+                locked.delete()
+        except (ValidationError, DatabaseError) as exc:
+            logger.warning(
+                "publish_if_due skipped for %s pk=%s: %s",
+                type(self).__name__,
+                self.pk,
+                exc,
+            )
+            self.refresh_from_db()
+            return False
+        self.refresh_from_db()
+        return True
+
+    def schedule(self, when, *, create_revision: bool = False) -> None:
+        """Schedule the next publish moment for the active language.
+
+        Two paths, depending on whether the active language has ever been
+        public:
+
+        * **Never public** (``published_at IS NULL``) — set ``published_at
+          = when`` so the page enters the "scheduled first publish" bucket.
+          No Draft is required: the live row IS the content that will
+          appear at ``when``.
+        * **Already public** — attach ``scheduled_for=when`` to the
+          existing Draft (must be saved first via :meth:`save_draft`). The
+          public live content stays visible until ``when``; the Draft's
+          payload swaps in at that moment.
+
+        Calling :meth:`schedule` against an already-public page with no
+        Draft is a no-op + warning — there's nothing to schedule.
+        """
+        from camomilla.preview import reversion_available
+
+        lang = self._draft_language()
+        current_published_at = get_nofallbacks(self, "published_at")
+        if current_published_at is None:
+            # First-appearance schedule: the live row becomes the future
+            # content.
+            self.published_at = when
+            if create_revision and reversion_available():
+                import reversion
+
+                with reversion.create_revision():
+                    self.save()
+                    reversion.set_comment(f"Scheduled for {when.isoformat()}")
+            else:
+                self.save()
+            return
+
+        # Already public: schedule the existing draft.
+        draft = self._drafts(language=lang).first()
+        if draft is None:
+            logger.warning(
+                "schedule() called on a live %s pk=%s with no pending draft "
+                "in language %r — nothing to schedule.",
+                type(self).__name__,
+                self.pk,
+                lang,
+            )
+            return
+        draft.scheduled_for = when
+        draft.save(update_fields=["scheduled_for", "updated_at"])
+
+    def trash(self) -> None:
+        """Soft-delete the page. Reversible via :meth:`restore`."""
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["deleted_at", "date_updated_at"])
+
+    def restore(self) -> None:
+        """Undo :meth:`trash` (the page returns to whatever lifecycle state
+        its timestamps describe)."""
+        self.deleted_at = None
+        self.save(update_fields=["deleted_at", "date_updated_at"])
+
+    def list_revisions(self):
+        """Return the ``reversion`` versions for this page (newest first)."""
+        from camomilla.preview import reversion_available
+
+        if not reversion_available():
+            return []
+        from reversion.models import Version
+
+        return Version.objects.get_for_object(self)
+
+    def revert_to_revision(self, version_id: int) -> None:
+        """Revert the page state to the given reversion ``Version``.
+
+        Restores both the page fields and the associated ``UrlNode`` state
+        captured at revision time (so manually-set permalinks round-trip).
+        """
+        from camomilla.preview import reversion_available
+
+        if not reversion_available():
+            raise RuntimeError("django-reversion is not installed")
+        import reversion
+        from reversion.models import Version
+
+        version = Version.objects.get_for_object(self).get(pk=version_id)
+        with reversion.create_revision():
+            version.revision.revert(delete=False)
+            reversion.set_comment(f"Reverted to revision {version_id}")
+        self.refresh_from_db()
 
     def get_template_path(self, request: Optional[HttpRequest] = None) -> str:
         return self.template or pointed_getter(self, "_page_meta.default_template")
@@ -432,10 +788,7 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 bases += (cls.DoesNotExist,)
             message = "%s matching query does not exist." % cls._meta.object_name
             if public_error:
-                message = (
-                    "Match found: %s.\nThe page appears not to be public.\nUse ?preview=true in the url to see it."
-                    % page
-                )
+                message = "Match found: %s.\nThe page appears not to be public." % page
             raise type("PageDoesNotExist", bases, {})(message)
         return page
 
@@ -452,6 +805,22 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
 
     @classmethod
     def get_or_create_homepage(cls) -> Tuple["AbstractPage", bool]:
+        """Return the page at ``/``, creating it on the fly if missing.
+
+        Auto-created homepages are stamped as **publicly published right
+        now** (per language). The public ``fetch()`` route bypasses the
+        ``is_public`` check on this branch and renders whatever it gets,
+        but other lifecycle surfaces — ``Page.objects.public()``, the
+        sitemap, the admin status column, ``page.is_public`` — would
+        otherwise see the row as DRAFT. Stamping ``published_at`` on
+        creation keeps every surface in agreement instead of having one
+        path silently serve a row that the rest of the system thinks is
+        unpublished.
+
+        ``published_at`` is translatable, so we cycle through every
+        language and set the per-language column. Monolingual models get
+        the base column written (``localized_fieldname`` falls back).
+        """
         try:
             if settings.ENABLE_TRANSLATIONS:
                 node = UrlNode.objects.get(lang_fallback_query(permalink="/"))
@@ -459,7 +828,13 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
                 node = UrlNode.objects.get(permalink="/")
             return node.page, False
         except UrlNode.DoesNotExist:
-            return cls.get_or_create(None, permalink="/")
+            page, created = cls.get_or_create(None, permalink="/")
+            if created and page is not None:
+                now = timezone.now()
+                for lang in activate_languages():
+                    set_nofallbacks(page, "published_at", now, language=lang)
+                page.save()
+            return page, created
 
     @classmethod
     def get_or_404(cls, request: HttpRequest, *args, **kwargs) -> "AbstractPage":
@@ -469,22 +844,12 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             raise Http404(ex)
 
     def alternate_urls(self, *args, **kwargs) -> dict:
-        request: Union[HttpRequest, bool] = False
-        if len(args) > 0:
-            request = args[0]
-        if "request" in kwargs:
-            request = kwargs["request"]
-        preview = request and getattr(request, "GET", {}).get("preview", False)
         permalinks = get_field_translations(self.url_node or object, "permalink", None)
         for lang in activate_languages():
             if lang in permalinks and permalinks[lang]:
                 permalinks[lang] = (
-                    UrlNode.reverse_url(permalinks[lang])
-                    if preview or self.is_public
-                    else None
+                    UrlNode.reverse_url(permalinks[lang]) if self.is_public else None
                 )
-            if preview:
-                permalinks = {k: f"{v}?preview=true" for k, v in permalinks.items()}
         permalinks.pop(get_language(), None)
         return permalinks
 

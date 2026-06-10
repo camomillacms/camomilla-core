@@ -67,6 +67,64 @@ CAMOMILLA = {
 }
 ```
 
+### Typed template_data
+
+By default `template_data` is a plain `JSONField` accepting any structure. For richer editing you can **redeclare it on a custom page model** with a [`StructuredJSONField`](../Use%20StructuredJSONField/README.md) schema: the admin gets a structured form, the API gets validated payloads, and URL fields can localize themselves.
+
+```python
+from typing import List, Optional
+from camomilla.models import AbstractPage
+from camomilla.types import Permalink
+from structured.fields import StructuredJSONField
+from structured.pydantic.models import BaseModel
+
+class HeroBlock(BaseModel):
+    headline: str = ""
+    cta_label: str = ""
+    # Permalink localizes itself to the active language on the way out.
+    cta: Optional[Permalink] = None
+
+class FeatureBlock(BaseModel):
+    icon: str = ""
+    title: str = ""
+
+class HomePageData(BaseModel):
+    hero: HeroBlock = HeroBlock()
+    features: List[FeatureBlock] = []
+
+def _home_default():
+    return HomePageData()
+
+class HomePage(AbstractPage):
+    template_data = StructuredJSONField(schema=HomePageData, default=_home_default)
+
+    class PageMeta:
+        default_template = "website/pages/home.html"
+```
+
+Use [`camomilla.types.Permalink`](../Use%20StructuredJSONField/README.md#permalink-field-typed-links) for any field that stores a navigation target. Its `url` computed field resolves to the active-language routerlink, so on `/it/` a link to the about page comes back as `/it/about/` with no work on the consumer's side:
+
+```html
+{% if page.template_data.hero.cta %}
+  <a href="{{ page.template_data.hero.cta.url }}">{{ page.template_data.hero.cta_label }}</a>
+{% endif %}
+```
+
+::: warning Register translations
+If you want `template_data` (and the other inherited fields) translated per-language on a custom page model, register it with `AbstractPageTranslationOptions` — see [🌍 Use Modeltranslation](../Use%20Modeltranslation/README.md). Otherwise modeltranslation falls back to the single base column and different locales overwrite each other on save.
+:::
+
+#### Localizing raw-string permalinks in templates
+
+When `template_data` stays a plain `JSONField` (no schema) and you store a navigation target as a bare permalink string (e.g. `"/about"`), the `localized_url` template tag resolves it to the active-language URL at render time:
+
+```html
+{% load camomilla_filters %}
+<a href="{% localized_url page.template_data.cta_url %}">CTA</a>
+```
+
+It looks up the matching `UrlNode` and returns its routerlink (so `/about` becomes `/it/about/` while Italian is active); strings that don't resolve — typos, external links, `mailto:` — pass through unchanged. When a `request` is in the template context (the standard request context processor puts it there), the returned URL is **absolute**; otherwise it's root-relative.
+
 ### Set the permalink
 
 By default camomilla Page autogenerates it's permalink by slugification of the SEO title.
@@ -180,8 +238,12 @@ class MyCamomillaPageSitemap(CamomillaPageSitemap):
     priority = 0.5
 
     def items(self):
-        return super().items().filter(status="PUB")
+        return super().items().filter(...)
 ```
+
+::: tip Lifecycle-aware filtering
+There is no `status` database column — a page's lifecycle is derived from its timestamps. On **page** querysets `.filter(status="PUB")` / `.exclude(status="TRS")` / `.filter(is_public=True)` still work (the manager rewrites them into timestamp conditions), and the explicit helpers `.public()` / `.alive()` / `.trashed()` / `.draft()` / `.scheduled()` express the same intent more clearly. (`order_by`/`values("status")` need `.with_lifecycle()`.) Note the sitemap's `items()` yields `UrlNode` objects (see the note below), not pages. See [🌱 Use Page Lifecycle](../Use%20Page%20Lifecycle/README.md#🔎-queryset-helpers).
+:::
 
 Remember that items is a queryset of `UrlNode` objects and to access the page model you need to use the `page` property of the `UrlNode` object.
 
@@ -197,17 +259,20 @@ Camomilla comes with a builtin pages router endpoint that allows you to browse y
 
 - `api/camomilla/pages-router/<page_url>`
 
-You can provide as the page_url parameter the full url of the page without language prefix.
-The language you want to match against is taken from the request params.
-If no language is specified, the default language is used.
+You provide as `page_url` the **full public path of the page, including any language prefix** — exactly the URL a visitor would type. The router derives the language from that prefix (the same way Django's `i18n_patterns` does on the HTML route), looks up the page, and serves it already translated into that language:
 
-To specify the language in the request params you can use the `lang` parameter:
+- `/api/camomilla/pages-router/about` → the about page in the default language
+- `/api/camomilla/pages-router/it/about` → the about page in Italian
 
-`/api/camomilla/pages-router/<page_url>?lang=en`
+When no language prefix is present, the default language is used. If the requested permalink doesn't exist in the resolved language, the endpoint returns a `404`.
 
-When you try to get a page from the url, the router will always take in to account the active language.
-If you are trying to get a page with a certain language, make sure to set the language in the request params.
-If the specified url is not present in current language, the router endpoint will return a 404 error.
+::: tip Canonical redirects
+The router enforces canonical URLs. A request whose form differs from the canonical one (missing trailing slash, bare `/it` instead of `/it/`, etc.) returns a redirect descriptor in the body — `{"redirect": "/it/about/", "status": 301}` — rather than the page payload, so external renderers stay on a single canonical URL per page.
+:::
+
+::: warning Editor previews
+`pages-router` always serves the **public** state of a page — trashed, draft and scheduled pages return `404`. To preview unpublished content (with any pending draft overlaid), authenticated editors use the mirror endpoint `api/camomilla/pages-router-preview/<page_url>`, which bypasses the public gate. See [🌱 Use Page Lifecycle](../Use%20Page%20Lifecycle/README.md) for the full drafting / preview / scheduling workflow.
+:::
 
 **Simple Response:**
 

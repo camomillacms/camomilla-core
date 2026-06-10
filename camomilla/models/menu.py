@@ -1,86 +1,22 @@
-from enum import Enum
 from uuid import uuid4
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.template.loader import render_to_string
 from django.template import RequestContext
 from django.utils.safestring import mark_safe
-from pydantic import (
-    ConfigDict,
-    Field,
-    computed_field,
-    model_validator,
-)
+from pydantic import Field
 from structured.pydantic.models import BaseModel
-from structured.pydantic.conditionals import When, conditional_schema
 from structured.fields import StructuredJSONField
-from camomilla.models.page import UrlNode, AbstractPage
-from typing import Optional, Union, List
-from typing_extensions import Annotated
-from structured.pydantic.fields.serializer import FieldSerializer
-from rest_framework import serializers
+from camomilla.types import Permalink, LinkTypes
+from typing import Union, List
 
 
-class AbstractPageMinimalSerializer(serializers.Serializer):
-    def to_representation(self, instance):
-        return {
-            "id": instance.id,
-            "name": instance.__str__(),
-            "model": f"{instance._meta.app_label}.{instance._meta.model_name}",
-        }
-
-
-class LinkTypes(str, Enum):
-    relational = "RE"
-    static = "ST"
-
-
-class MenuNodeLink(BaseModel):
-    link_type: LinkTypes = LinkTypes.static
-    static: Optional[str] = None
-    content_type: Optional[ContentType] = None
-    page: Annotated[Optional[AbstractPage], FieldSerializer(AbstractPageMinimalSerializer)] = None
-    url_node: Optional[UrlNode] = None
-
-    model_config = ConfigDict(
-        json_schema_extra=conditional_schema(
-            When(
-                "link_type",
-                equals=LinkTypes.static.value,
-                controls=["static"],
-                then={"required": ["static"]},
-            ),
-            When(
-                "link_type",
-                equals=LinkTypes.relational.value,
-                controls=["url_node"],
-            ),
-            # content_type and page are auto-derived; hide them from the editor
-            When("link_type", equals="__auto__", controls=["content_type", "page"]),
-        )
-    )
-
-    @model_validator(mode="after")
-    def derive_page_and_content_type(self):
-        if self.link_type == LinkTypes.relational and self.url_node:
-            url_node_id = getattr(self.url_node, "pk", self.url_node)
-            url_node = UrlNode.objects.filter(pk=url_node_id).first()
-            if url_node and url_node.page:
-                self.page = url_node.page
-                self.content_type = ContentType.objects.get_for_model(self.page.__class__)
-        return self
-
-    def get_url(self, request=None):
-        if self.link_type == LinkTypes.relational:
-            return isinstance(self.url_node, UrlNode) and self.url_node.routerlink
-        elif self.link_type == LinkTypes.static:
-            return self.static
-
-    @computed_field
-    @property
-    def url(self) -> Optional[str]:
-        return self.get_url()
+# ``MenuNodeLink`` used to live here as the canonical polymorphic link
+# primitive. It now lives in :mod:`camomilla.types` as :class:`Permalink`
+# so other ``template_data`` schemas (not just menus) can use the same
+# shape. The alias keeps any legacy importer working.
+MenuNodeLink = Permalink
+__all__ = ["LinkTypes", "MenuNodeLink", "MenuNode", "Menu"]
 
 
 class MenuNode(BaseModel):
@@ -88,7 +24,7 @@ class MenuNode(BaseModel):
     meta: dict = {}
     nodes: List["MenuNode"] = []
     title: str = ""
-    link: MenuNodeLink
+    link: Permalink
 
 
 class Menu(models.Model):
@@ -109,10 +45,11 @@ class Menu(models.Model):
     ):
         if isinstance(context, RequestContext):
             context = context.flatten()
-        is_preview = (
-            False if request is None else bool(request.GET.get("preview", False))
-        )
-        context.update({"menu": self, "is_preview": is_preview})
+        # Always bind ``request`` (even as ``None``) so a menu template can
+        # safely do ``{{ item|node_url:request }}`` to get absolute URLs.
+        # Without this, a render without a request would raise
+        # ``VariableDoesNotExist`` on the unresolved ``request`` filter arg.
+        context = {"request": request, **context, "menu": self}
         return mark_safe(render_to_string(template_path, context, request))
 
     class defaultdict(dict):

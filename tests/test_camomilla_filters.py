@@ -1,3 +1,4 @@
+from django.utils import timezone
 import os
 import mock
 
@@ -18,7 +19,7 @@ class CamomillaFiltersTestCase(TestCase):
 
     def test_filter_content(self):
         Page.objects.create(
-            identifier="path", title="Path", permalink="/path", status="PUB"
+            identifier="path", title="Path", permalink="/path", published_at=timezone.now()
         )
         request_factory = RequestFactory()
         request = request_factory.get("/path")
@@ -36,7 +37,7 @@ class CamomillaFiltersTestCase(TestCase):
 
     def test_filter_alternate_urls(self):
         Page.objects.create(
-            identifier="path", title="Path", permalink="/path", status="PUB"
+            identifier="path", title="Path", permalink="/path", published_at=timezone.now()
         )
         request = RequestFactory().get("/path")
         request.META["HTTP_HOST"] = "localhost"

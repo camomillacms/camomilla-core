@@ -366,6 +366,7 @@ dependencies = [
     { name = "django-ckeditor" },
     { name = "django-jsonform" },
     { name = "django-modeltranslation" },
+    { name = "django-reversion" },
     { name = "django-structured-json-field" },
     { name = "django-structured-metaobjects" },
     { name = "django-tinymce" },
@@ -406,6 +407,7 @@ requires-dist = [
     { name = "django-ckeditor", specifier = ">=6.7,<7.0.0" },
     { name = "django-jsonform", specifier = ">=2.23" },
     { name = "django-modeltranslation", specifier = ">=0.19.17,<0.20.0" },
+    { name = "django-reversion", specifier = ">=5.0.0" },
     { name = "django-structured-json-field", specifier = ">=1.5.1" },
     { name = "django-structured-metaobjects", specifier = ">=1.0.0" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
@@ -514,6 +516,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c1/af/3c34fca94fccae681a15734bc6557cf9be958d1d063ddbb233580b894054/django_modeltranslation-0.19.19.tar.gz", hash = "sha256:26dd8454f19540a2eb05e303608a2d89dd80aacb75ab95f8ea272cf4324d2644", size = 77750 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/2a/fdf265e91e37ee363b2c45f3d2a01752a3b38ab082a3ec0b0677105bd367/django_modeltranslation-0.19.19-py3-none-any.whl", hash = "sha256:55ac2ce47486b9e8ca18b155f7705170a53b7e1346bf7bf89304e99787486e8f", size = 93441 },
+]
+
+[[package]]
+name = "django-reversion"
+version = "6.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/8b/72000ad3ba05cb72134f62ad093267e3d83d8fdf1406102d2a1a2ec7d55e/django_reversion-6.1.0.tar.gz", hash = "sha256:31dd7fee02e2a21af7c2d0a61c1c0f27ba07df2317c9a0a3f31d3ee40069025d", size = 76140 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/8e/c80904ce5cb94f78cdd7d794cb7b4a8e8891a7515621bbce5f2a45de6555/django_reversion-6.1.0-py3-none-any.whl", hash = "sha256:1f5815791d9accdb0bad9d5982668f217dc65225be57041ae9641dbdcd838ce3", size = 86196 },
 ]
 
 [[package]]

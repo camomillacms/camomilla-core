@@ -38,10 +38,12 @@ build/
 *.egg-info
 
 
-# vuepress
+# docs (vitepress)
 node_modules
 .temp
 .cache
+docs/.vitepress/dist
+docs/.vitepress/cache
 !docs/features/media
 camomilla_migrations
 test_db
