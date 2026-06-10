@@ -1,0 +1,28 @@
+# Camomilla
+
+> Our beloved Django CMS
+
+A powerful and flexible content management system built with Django. Perfect for building dynamic websites and applications.
+
+## Table of Contents
+
+### How to
+
+- [📝 Use Pages](/camomilla-core/How to/Use Pages.md)
+- [🌱 Use Page Lifecycle](/camomilla-core/How to/Use Page Lifecycle.md)
+- [🧩 Use Pages Context](/camomilla-core/How to/Use Pages Context.md)
+- [🧬 Use Structured JSON Field](/camomilla-core/How to/Use StructuredJSONField.md)
+- [🗂️ Use Meta Models](/camomilla-core/How to/Use Meta Models.md)
+- [🖼️ Use Media](/camomilla-core/How to/Use Media.md)
+- [🍜 Use Menu](/camomilla-core/How to/Use Menu.md)
+- [🎭 Use Modeltranslation](/camomilla-core/How to/Use Modeltranslation.md)
+- [🐝 Use API](/camomilla-core/How to/Use API.md)
+- [🚀 Use Astro Integration](/camomilla-core/How to/Use Astro Integration.md)
+- [⚙️ Use Settings](/camomilla-core/How to/Use Settings.md)
+
+### Other
+
+- [🚀 Bootstrap your project](/camomilla-core/QuickStart.md)
+- [CHANGELOG](/camomilla-core/Changelog.md)
+- [How to contribute 🤝](/camomilla-core/Contribute.md)
+- [Untitled](/camomilla-core/License.md)
