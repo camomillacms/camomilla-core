@@ -40,7 +40,7 @@ The default template is very simple and looks like this:
   {% for item in menu.nodes %}
   <li>
     {% if item.link.url %}
-      <a href="{{ item.link.url }}">{{ item.title }}</a>
+      <a href="{{ item|node_url:request }}">{{ item.title }}</a>
     {% else %}
       <span>{{item.title}}</span>
     {% endif %}
@@ -50,6 +50,24 @@ The default template is very simple and looks like this:
 </ul>
 {% endif %}
 ```
+
+### Menu node links
+
+Each menu node carries a `link` of type [`camomilla.types.Permalink`](../Use%20StructuredJSONField/README.md#permalink-field-typed-links) — the same polymorphic link primitive you can use in any typed `template_data`. A node link is either:
+
+- **relational** — a foreign key to a camomilla page (`UrlNode`). It survives renames and resolves to the active-language URL.
+- **static** — a free-form URL string for external links, `mailto:`, `tel:`, anchors.
+
+In templates, resolve a node to its URL with the `node_url` filter rather than reading `link.url` directly — it handles both link kinds and, when you pass the request, returns an **absolute** URL:
+
+```html
+{% load menus %}
+
+{{ item|node_url }}          {# root-relative, e.g. /it/about/ #}
+{{ item|node_url:request }}  {# absolute, e.g. https://host/it/about/ #}
+```
+
+`request` is available in the menu template via the standard request context processor (the menu renderer always binds it, falling back to `None`), so `{{ item|node_url:request }}` is always safe to write — static links ignore the request and pass through verbatim.
 
 
 
