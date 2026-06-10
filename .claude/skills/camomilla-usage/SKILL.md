@@ -236,7 +236,7 @@ class ProductPage(AbstractPage):
 
 `AbstractPage` already includes: `title`, `description`, SEO fields (og_*, canonical, keywords), `template`, `template_data` (JSONField), `ordering`, `parent_page`, `identifier` (UUID), `published_at` (translatable, when this language went/goes public), `deleted_at` (global soft-delete marker), `autopermalink`, `breadcrumbs_title`.
 
-**Lifecycle labels (derived, not stored as a column):** `PUB` (Published), `DRF` (Draft), `TRS` (Trashed), `PLA` (Planned). `status`, `is_public`, `has_draft`, `has_scheduled_draft` are read-only Python properties. The label is computed at read time from `published_at` + `deleted_at` + the `Draft` table; there is no `status` column to set. Use `Page.objects.public()` / `.trashed()` / `.draft()` / `.scheduled()` for filtering — `filter(status="PUB")` no longer works.
+**Lifecycle labels (derived, not stored as a column):** `PUB` (Published), `DRF` (Draft), `TRS` (Trashed), `PLA` (Planned). `status`, `is_public`, `has_draft`, `has_scheduled_draft` are read-only Python properties. The label is computed at read time from `published_at` + `deleted_at` + the `Draft` table; there is no `status` column to set. Filtering: `Page.objects.filter(status="PUB")` / `.exclude(status="TRS")` / `.filter(is_public=True)` work — the manager rewrites those lookups into the equivalent timestamp conditions. `Page.objects.public()` / `.trashed()` / `.draft()` / `.scheduled()` are the explicit canonical helpers; for `order_by` / `values("status")` use `.with_lifecycle()` (annotates `computed_status`).
 
 ### Step 2 — Translation registration
 
@@ -1075,7 +1075,7 @@ python manage.py regenerate_thumbnails     # regenerate all media thumbnails
 
 8. **Don't use `Date` types in JSON fields for StructuredJSONField.** Use standard Pydantic types (`str`, `int`, `float`, `bool`, Django models for FK, `QuerySet[Model]` for M2M). Datetime types are not natively supported in the JSON schema.
 
-9. **Don't filter pages by `status="PUB"`.** The `status` column was removed; it's now a derived read-only property. Old code like `Page.objects.filter(status="PUB")` returns nothing. Use `Page.objects.public()` (or `.draft()` / `.scheduled()` / `.trashed()` / `.alive()`). Same for the sitemap and template-context examples.
+9. **`status` is a derived property, not a column — but `.filter(status=...)` still works.** The column was removed; the manager rewrites `Page.objects.filter(status="PUB")` / `.exclude(status="TRS")` / `.filter(is_public=True)` into the equivalent timestamp conditions, so upgrading code keeps working. Caveats: only keyword lookups on `filter`/`exclude`/`get` are rewritten — `status` wrapped in a `Q()`, or `order_by("status")` / `values("status")`, is **not**; use `.with_lifecycle()` (the `computed_status` annotation) there. The explicit helpers `.public()` / `.draft()` / `.scheduled()` / `.trashed()` / `.alive()` remain the clearest way to express intent.
 
 10. **Don't mutate drafts via raw page fields.** There's no `publish_at` or `draft_data` column anymore — those live on the separate `Draft` model. Use `page.save_draft(data)` / `page.discard_draft()` / `page.publish()` / `page.schedule(when)`, or the API actions under `/api/camomilla/pages/{id}/`.
 

@@ -438,6 +438,8 @@ Before the refactor: `status` (ChoiceField), `publish_at` (translatable), `draft
 
 The current design eliminates that class of bug by making the label a function of the underlying state. The cost: two implementations to keep aligned (covered by the contract test), a hand-written `LifecycleStatusFilter` for admin, and a more demanding mental model for newcomers. The win is correctness — see the `test_lifecycle_property_matches_db_layer` scenarios for the full enumeration this design encodes.
 
+**Query ergonomics are preserved without re-introducing the column.** `PageQuerySet._filter_or_exclude` rewrites derived `status` / `is_public` keyword lookups into timestamp `Q`s (via `_status_q` / `_is_public_q`), so `Page.objects.filter(status="PUB")` keeps working for upgraders — but purely at query-build time, with **no** annotation written onto fetched instances. That's deliberate: a cached annotation on the instance would be a second source of truth for `page.status` and could diverge from the property after an in-memory edit (set `page.deleted_at`, the cache still says `PUB`) — exactly the drift the column removal killed. The rewrite is guarded so a subclass that declares a *real* `status` field keeps Django's native field filtering. `order_by` / `values("status")` are not rewritten — use `with_lifecycle()` (`computed_status`).
+
 ## How to add a new core model
 
 Step-by-step to add a new model to camomilla (e.g. `Product`):

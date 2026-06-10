@@ -94,6 +94,48 @@ def _is_public_q(now=None) -> Q:
     )
 
 
+# The four derived lifecycle labels, kept in sync with
+# ``AbstractPage._lifecycle_label`` / ``with_lifecycle``.
+_LIFECYCLE_STATUSES = frozenset(
+    {
+        PAGE_STATUS_PUBLISHED,
+        PAGE_STATUS_DRAFT,
+        PAGE_STATUS_SCHEDULED,
+        PAGE_STATUS_TRASHED,
+    }
+)
+
+
+def _status_q(label: str, now=None) -> Q:
+    """Q selecting pages whose *derived* lifecycle label equals ``label``.
+
+    Query-side mirror of
+    :meth:`camomilla.models.page.AbstractPage._lifecycle_label`: there is no
+    ``status`` column, so ``.filter(status="PUB")`` is rewritten (by
+    :meth:`PageQuerySet._filter_or_exclude`) into the timestamp conditions
+    below. The four labels partition the row space exactly the way the
+    property does — ``deleted_at`` wins first (``TRS``), then the active
+    language's ``published_at``: ``<= now`` → ``PUB``, ``> now`` → ``PLA``,
+    ``NULL`` → ``DRF``.
+    """
+    if label not in _LIFECYCLE_STATUSES:
+        raise ValueError(
+            f"Unknown lifecycle status {label!r}; expected one of "
+            f"{sorted(_LIFECYCLE_STATUSES)}."
+        )
+    now = now or timezone.now()
+    if label == PAGE_STATUS_TRASHED:
+        return Q(deleted_at__isnull=False)
+    published_col = localized_fieldname("published_at")
+    alive = Q(deleted_at__isnull=True)
+    if label == PAGE_STATUS_PUBLISHED:
+        return alive & Q(**{f"{published_col}__lte": now})
+    if label == PAGE_STATUS_SCHEDULED:
+        return alive & Q(**{f"{published_col}__gt": now})
+    # PAGE_STATUS_DRAFT
+    return alive & Q(**{f"{published_col}__isnull": True})
+
+
 class PageQuerySet(QuerySet):
     """Lifecycle-aware queryset for any ``AbstractPage`` subclass.
 
@@ -132,6 +174,65 @@ class PageQuerySet(QuerySet):
                     "%s matching query does not exist." % self.model._meta.object_name
                 )
         return super().get(*args, **kwargs)
+
+    # -- derived-status filtering ----------------------------------------
+
+    def _lifecycle_filter_keys(self):
+        """Which of ``status`` / ``is_public`` we may translate.
+
+        Only translate a key when the concrete model does NOT define a real
+        field by that name. ``AbstractPage`` exposes ``status`` / ``is_public``
+        as read-only *properties* (no column), so they're translated; a
+        downstream subclass that adds an actual ``status`` field keeps Django's
+        native field filtering instead of being hijacked.
+        """
+        field_names = {f.name for f in self.model._meta.get_fields()}
+        keys = set()
+        if "status" not in field_names:
+            keys |= {"status", "status__in"}
+        if "is_public" not in field_names:
+            keys |= {"is_public"}
+        return keys
+
+    def _translate_lifecycle_kwargs(self, kwargs):
+        """Pop derived ``status`` / ``is_public`` lookups from ``kwargs`` and
+        return the equivalent ``Q`` (ANDed), or ``None`` if there's nothing to
+        translate. Lets ``.filter()`` / ``.exclude()`` / ``.get()`` accept the
+        derived label even though no such column exists.
+        """
+        translatable = self._lifecycle_filter_keys()
+        if not (set(kwargs) & translatable):
+            return None
+        now = timezone.now()
+        combined = Q()
+        if "status" in translatable and "status" in kwargs:
+            combined &= _status_q(kwargs.pop("status"), now)
+        if "status__in" in translatable and "status__in" in kwargs:
+            labels = list(kwargs.pop("status__in"))
+            if not labels:
+                combined &= Q(pk__in=[])  # empty __in matches nothing
+            else:
+                sub = Q()
+                for label in labels:
+                    sub |= _status_q(label, now)
+                combined &= sub
+        if "is_public" in translatable and "is_public" in kwargs:
+            public_q = _is_public_q(now)
+            combined &= public_q if kwargs.pop("is_public") else ~public_q
+        return combined
+
+    def _filter_or_exclude(self, negate, args, kwargs):
+        # Rewrite derived-status kwargs into timestamp conditions before
+        # Django tries (and fails) to resolve them as real columns. Works for
+        # filter(), exclude() and get() (which funnels through here), under the
+        # same negate semantics. NOTE: only keyword lookups are translated —
+        # ``status`` wrapped inside a ``Q()`` positional arg, or used in
+        # ``order_by`` / ``values``, is not; use ``with_lifecycle()`` (the
+        # ``computed_status`` annotation) for those.
+        extra = self._translate_lifecycle_kwargs(kwargs)
+        if extra is not None:
+            args = (*args, extra)
+        return super()._filter_or_exclude(negate, args, kwargs)
 
     # -- lifecycle annotations -------------------------------------------
 

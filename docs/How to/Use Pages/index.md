@@ -242,7 +242,7 @@ class MyCamomillaPageSitemap(CamomillaPageSitemap):
 ```
 
 ::: tip Lifecycle-aware filtering
-There is no `status` database column — a page's lifecycle is derived from its timestamps, so `.filter(status="PUB")` won't work. Filter your **page** querysets with the lifecycle helpers (`.public()`, `.alive()`, `.trashed()`, …) instead. Note the sitemap's `items()` yields `UrlNode` objects (see the note below), not pages. See [🌱 Use Page Lifecycle](../Use%20Page%20Lifecycle/README.md#🔎-queryset-helpers).
+There is no `status` database column — a page's lifecycle is derived from its timestamps. On **page** querysets `.filter(status="PUB")` / `.exclude(status="TRS")` / `.filter(is_public=True)` still work (the manager rewrites them into timestamp conditions), and the explicit helpers `.public()` / `.alive()` / `.trashed()` / `.draft()` / `.scheduled()` express the same intent more clearly. (`order_by`/`values("status")` need `.with_lifecycle()`.) Note the sitemap's `items()` yields `UrlNode` objects (see the note below), not pages. See [🌱 Use Page Lifecycle](../Use%20Page%20Lifecycle/README.md#🔎-queryset-helpers).
 :::
 
 Remember that items is a queryset of `UrlNode` objects and to access the page model you need to use the `page` property of the `UrlNode` object.

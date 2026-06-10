@@ -57,7 +57,7 @@ docs/                    # VitePress documentation site (publishes llms.txt for 
 
 ## Gotchas (read before touching these areas)
 
-- **Lifecycle status is derived, not a DB column.** Filter with `Page.objects.public()` / `.draft()` / `.scheduled()` / `.trashed()` — never `.filter(status=...)`. The label comes from `published_at` + `deleted_at` + the `Draft` table.
+- **Lifecycle status is derived, not a DB column** (computed from `published_at` + `deleted_at` + the `Draft` table). `Page.objects.filter(status="PUB")` / `.exclude(status="TRS")` / `.filter(is_public=True)` still work — the manager rewrites those lookups into timestamp conditions (`PageQuerySet._filter_or_exclude`). The explicit helpers `.public()` / `.draft()` / `.scheduled()` / `.trashed()` are the canonical equivalents; for `order_by` / `values("status")` use `.with_lifecycle()` (the `computed_status` annotation).
 - **Meta Models are external.** They live in the `django-structured-metaobjects` package, not in `camomilla/` — there is no `camomilla/meta/`. Camomilla only mounts its viewsets in `camomilla/urls.py`.
 - **URL localization in `template_data` is type-driven** via `camomilla.types.Permalink` — do not add a serializer JSON-tree walk to rewrite links.
 - **Translatable columns are dynamic** (`title_en`, `permalink_it`, …). Use `camomilla.utils.set_nofallbacks` / `get_nofallbacks` (or `getattr(obj, f"{field}_{lang}")`) rather than hand-built attribute strings.

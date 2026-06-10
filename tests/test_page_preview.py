@@ -562,6 +562,74 @@ class PagePreviewTestCase(TransactionTestCase):
         assert Page.objects.alive().count() == 2
         assert Page.objects.trashed().filter(pk=live_id).exists()
 
+    def test_filter_by_derived_status(self):
+        """``.filter(status=...)`` / ``.filter(is_public=...)`` work again
+        even though ``status`` is a derived property, not a column.
+
+        The manager rewrites the derived lookups into timestamp conditions
+        (see ``PageQuerySet._filter_or_exclude``), so upgrading code that
+        used the old ``status`` column keeps working without a data change.
+        """
+        live = self._create_published_page("live")
+        draft = Page.objects.create()  # never published → DRF
+        planned = Page.objects.create(  # future publish → PLA
+            published_at=timezone.now() + timedelta(hours=1),
+        )
+        trashed = self._create_published_page("trashed")
+        Page.objects.filter(pk=trashed).update(deleted_at=timezone.now())  # → TRS
+
+        def ids(qs):
+            return set(qs.values_list("pk", flat=True))
+
+        all_ids = ids(Page.objects.all())
+
+        # filter(status=...) mirrors the dedicated helper querysets.
+        assert ids(Page.objects.filter(status="PUB")) == ids(Page.objects.public())
+        assert ids(Page.objects.filter(status="TRS")) == ids(Page.objects.trashed())
+        assert ids(Page.objects.filter(status="PLA")) == ids(
+            Page.objects.first_publish_pending()
+        )
+        assert draft.pk in ids(Page.objects.filter(status="DRF"))
+        assert planned.pk in ids(Page.objects.filter(status="PLA"))
+
+        # The four labels partition every page exactly once.
+        partition = (
+            ids(Page.objects.filter(status="PUB"))
+            | ids(Page.objects.filter(status="DRF"))
+            | ids(Page.objects.filter(status="PLA"))
+            | ids(Page.objects.filter(status="TRS"))
+        )
+        assert partition == all_ids
+        assert (
+            sum(Page.objects.filter(status=s).count() for s in ("PUB", "DRF", "PLA", "TRS"))
+            == Page.objects.count()
+        )
+
+        # status__in unions; exclude negates.
+        assert ids(Page.objects.filter(status__in=["PUB", "TRS"])) == (
+            ids(Page.objects.filter(status="PUB"))
+            | ids(Page.objects.filter(status="TRS"))
+        )
+        assert ids(Page.objects.exclude(status="TRS")) == (
+            all_ids - ids(Page.objects.filter(status="TRS"))
+        )
+
+        # is_public mirrors .public(); False is its complement.
+        assert ids(Page.objects.filter(is_public=True)) == ids(Page.objects.public())
+        assert ids(Page.objects.filter(is_public=False)) == (
+            all_ids - ids(Page.objects.public())
+        )
+
+        # The rewrite doesn't annotate on fetch — the property still agrees,
+        # and plain .all()/instantiation is unaffected.
+        assert all(p.status == "PUB" for p in Page.objects.filter(status="PUB"))
+        assert Page.objects.all().count() == Page.objects.count()
+        assert Page.objects.get(pk=live).status == "PUB"
+
+        # An unknown label is a loud error, not a silent empty queryset.
+        with self.assertRaises(ValueError):
+            list(Page.objects.filter(status="NOPE"))
+
     # ------------------------------------------------------------------
     # Public route lifecycle gating — nothing non-public must leak
     # ------------------------------------------------------------------
