@@ -407,6 +407,10 @@ page.revert_to_revision(version_id)                             # rollback
 
 If installed, `publish()`, `publish_if_due()`, and `revert_to_revision()` create reversion `Revision` entries. The `/revisions/` and `/revert/` endpoints return `501 Not Implemented` when reversion is absent. Add it to `INSTALLED_APPS` and run migrations to enable.
 
+### Upgrading an existing project (status → lifecycle)
+
+Projects upgrading from camomilla ≤ 6.4 have data in the old `status` (translatable CharField PUB/DRF/PLA/TRS) + `publication_date` columns; the new system derives state from `published_at` + `deleted_at`. Camomilla ships a ready-made **custom migration operation**: after `makemigrations camomilla`, drop `camomilla.upgrades.MigrateStatusToLifecycle()` into the generated migration — positioned **after** the `AddField(published_at/deleted_at)` ops and **before** the `RemoveField(status/publication_date)` ops — then `migrate`. (A `RunPython`-compatible `migrate_status_to_lifecycle` callable is also exported if you prefer.) It maps every page model per-language (PUB→past published_at; PLA→publication_date; DRF/TRS→null; global `deleted_at` only when all languages are TRS), preserving the old `is_public` result exactly. Drafts start empty (the old system had no draft storage). Full procedure: the "Upgrading from status-based publication" docs page.
+
 ## How to create an API endpoint for a model
 
 ### Option A: `@model_api.register()` decorator (quick)
