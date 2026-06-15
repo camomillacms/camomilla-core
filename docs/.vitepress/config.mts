@@ -30,6 +30,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'QuickStart', link: '/QuickStart/' },
       { text: 'How to', link: '/How to/' },
+      { text: 'Upgrading', link: '/Upgrading/' },
       { text: 'Demo', link: 'https://camomilla.lotrek.io/' },
     ],
     sidebar: [
@@ -52,6 +53,7 @@ export default defineConfig({
           { text: 'Use Settings', link: '/How to/Use Settings/' },
         ],
       },
+      { text: 'Upgrading', link: '/Upgrading/' },
       { text: 'Contribute', link: '/Contribute/' },
       { text: 'Changelog', link: '/Changelog/' },
       { text: 'License', link: '/License/' },
