@@ -30,6 +30,7 @@ trashed in some languages but live in others keeps its live languages; the
 trashed ones simply become "not published" (``published_at_L = NULL``).
 """
 
+from django.db.migrations.operations import AddField, RemoveField
 from django.utils import timezone
 
 from camomilla.upgrades.base import (
@@ -38,6 +39,7 @@ from camomilla.upgrades.base import (
     iter_models_with_fields,
     model_lang_codes,
 )
+from camomilla.upgrades.injection import register_injector
 
 
 OLD_STATUS_PUBLISHED = "PUB"
@@ -147,3 +149,47 @@ class MigrateStatusToLifecycle(DataMigrationOperation):
     @property
     def migration_name_fragment(self):
         return "migrate_status_to_lifecycle"
+
+
+# -- makemigrations auto-injection -----------------------------------------
+
+_LEGACY_REMOVE_NAMES = ("status", "publication_date")
+_LIFECYCLE_ADD_NAMES = ("published_at", "deleted_at")
+
+
+def _is_legacy_status_remove(op):
+    return isinstance(op, RemoveField) and (
+        op.name in _LEGACY_REMOVE_NAMES or op.name.startswith("status_")
+    )
+
+
+def _adds_lifecycle_columns(operations):
+    return any(
+        isinstance(op, AddField)
+        and (op.name in _LIFECYCLE_ADD_NAMES or op.name.startswith("published_at_"))
+        for op in operations
+    )
+
+
+@register_injector
+def inject_status_to_lifecycle(migration):
+    """Insert :class:`MigrateStatusToLifecycle` when ``migration`` both adds the
+    new lifecycle columns and removes the legacy ``status`` / ``publication_date``
+    columns. Registered so ``camomilla_makemigrations`` wires it in automatically.
+
+    Correctness is guaranteed by **partitioning** rather than index math: the
+    legacy ``RemoveField`` ops are moved to the end and the data op inserted just
+    before them, so every ``AddField`` (and ``CreateModel("Draft")``) runs before
+    the transform, which runs before any legacy column is dropped — regardless of
+    how the autodetector ordered them.
+    """
+    ops = migration.operations
+    if any(isinstance(op, MigrateStatusToLifecycle) for op in ops):
+        return None  # already wired up — idempotent
+    if not (_adds_lifecycle_columns(ops) and any(_is_legacy_status_remove(o) for o in ops)):
+        return None
+
+    legacy_removes = [o for o in ops if _is_legacy_status_remove(o)]
+    rest = [o for o in ops if not _is_legacy_status_remove(o)]
+    migration.operations = rest + [MigrateStatusToLifecycle()] + legacy_removes
+    return "MigrateStatusToLifecycle"

@@ -21,8 +21,13 @@ To add a new one:
    ``run(apps, schema_editor)``, ``describe()`` and ``migration_name_fragment``.
    Reuse the helpers in ``base`` (``iter_models_with_fields``,
    ``model_lang_codes``, ``default_language``).
-3. Re-export the operation from this ``__init__``.
-4. Document the procedure on the docs "Upgrading" page.
+3. Define an injector in the same module and decorate it with
+   ``@camomilla.upgrades.injection.register_injector`` so
+   ``camomilla_makemigrations`` wires the operation into a generated migration
+   automatically.
+4. Re-export the operation from this ``__init__`` (importing the module here is
+   what registers its injector).
+5. Document the procedure on the docs "Upgrading" page.
 """
 
 from camomilla.upgrades.base import DataMigrationOperation

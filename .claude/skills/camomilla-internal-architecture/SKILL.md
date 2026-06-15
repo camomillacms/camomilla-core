@@ -68,9 +68,9 @@ camomilla/
 ├── openapi/             # OpenAPI schema generator
 ├── theme/               # Admin customization (templates, static, admin classes)
 ├── templatetags/        # Django template tags (menus: render_menu/node_url; camomilla_filters: localized_url — both request-aware for absolute URLs)
-├── management/commands/ # manage.py commands (regenerate_thumbnails, camomilla_publish_scheduled)
+├── management/commands/ # manage.py commands (regenerate_thumbnails, camomilla_publish_scheduled, camomilla_makemigrations)
 ├── preview.py           # Scheduled-publish worklist (resolve_scheduled_pages); reversion_available()
-├── upgrades/            # Data-migration upgrades for breaking changes — base.py (DataMigrationOperation + helpers), one module per change (status_to_lifecycle.py = MigrateStatusToLifecycle); add new ones here
+├── upgrades/            # Data-migration upgrades for breaking changes — base.py (DataMigrationOperation + helpers), status_to_lifecycle.py (MigrateStatusToLifecycle), injection.py (auto-insert into generated migrations, used by the camomilla_makemigrations command)
 
 ├── model_api.py         # @model_api.register() decorator for auto-API
 ├── settings.py          # CAMOMILLA settings reader from django settings
