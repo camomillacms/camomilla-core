@@ -105,6 +105,67 @@ def test_operation_serializes_into_a_migration():
     assert any(imp.startswith("import camomilla.upgrades") for imp in imports)
 
 
+class _SaveNotAllowed(Exception):
+    """Raised if the backfill ever full-saves a row instead of UPDATE-ing it."""
+
+
+# Armed only while the transform runs (not during fixture setup), so any
+# ``pre_save`` on the guarded field during the backfill means a full save slipped
+# through. A direct UPDATE never calls ``pre_save`` on unrelated columns.
+_BACKFILL_GUARD = {"armed": False}
+
+
+class _GuardedField(dj_models.TextField):
+    def pre_save(self, model_instance, add):
+        if _BACKFILL_GUARD["armed"]:
+            raise _SaveNotAllowed("lifecycle backfill must not full-save the row")
+        return super().pre_save(model_instance, add)
+
+
+@pytest.mark.django_db(transaction=True)
+@isolate_apps("tests")
+def test_transform_updates_columns_without_full_save():
+    """Regression: the backfill must write the lifecycle columns with a direct
+    UPDATE, not ``obj.save()``. A full save runs every field's ``pre_save`` —
+    e.g. a structured/JSON field resolving relational links into *other* page
+    tables that haven't gained their new columns yet — which crashed real
+    upgrades with ``column project_project.published_at does not exist``."""
+
+    class LegacySideEffectPage(dj_models.Model):
+        status = dj_models.CharField(max_length=3, null=True)
+        publication_date = dj_models.DateTimeField(null=True)
+        published_at = dj_models.DateTimeField(null=True)
+        deleted_at = dj_models.DateTimeField(null=True)
+        payload = _GuardedField(null=True)
+
+        class Meta:
+            app_label = "tests"
+
+    now = timezone.now()
+    past = now - timedelta(days=2)
+
+    with connection.schema_editor() as se:
+        se.create_model(LegacySideEffectPage)
+    try:
+        pub = LegacySideEffectPage.objects.create(
+            status="PUB", publication_date=past, payload="keep me"
+        )
+
+        _BACKFILL_GUARD["armed"] = True
+        try:
+            # With the old obj.save() this raised _SaveNotAllowed (payload.pre_save).
+            migrate_model_status_to_lifecycle(LegacySideEffectPage)
+        finally:
+            _BACKFILL_GUARD["armed"] = False
+
+        pub.refresh_from_db()
+        assert pub.published_at == past   # lifecycle column written
+        assert pub.payload == "keep me"   # unrelated field never touched
+    finally:
+        with connection.schema_editor() as se:
+            se.delete_model(LegacySideEffectPage)
+
+
 @pytest.mark.django_db(transaction=True)
 @isolate_apps("tests")
 def test_transform_monolingual_end_to_end():

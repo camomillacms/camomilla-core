@@ -18,9 +18,9 @@ To add a new one:
 
 1. Create ``camomilla/upgrades/<change>.py``.
 2. Subclass :class:`camomilla.upgrades.base.DataMigrationOperation`; implement
-   ``run(apps, schema_editor)``, ``describe()`` and ``migration_name_fragment``.
-   Reuse the helpers in ``base`` (``iter_models_with_fields``,
-   ``model_lang_codes``, ``default_language``).
+   ``run(apps, schema_editor, app_label)``, ``describe()`` and
+   ``migration_name_fragment``. Reuse the helpers in ``base``
+   (``iter_models_with_fields``, ``model_lang_codes``, ``default_language``).
 3. Define an injector in the same module and decorate it with
    ``@camomilla.upgrades.injection.register_injector`` so
    ``camomilla_makemigrations`` wires the operation into a generated migration

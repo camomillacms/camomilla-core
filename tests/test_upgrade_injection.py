@@ -130,6 +130,52 @@ def test_injection_only_targets_models_in_transition():
     assert targeted == ["page"]
 
 
+def test_injection_backfills_when_only_legacy_removes_present():
+    """Split upgrade: the lifecycle AddFields already landed in an earlier
+    migration (e.g. a plain ``makemigrations`` was run first), so this one only
+    drops the legacy columns. The backfill must STILL be injected — and before
+    the removes — otherwise ``status`` is dropped with ``published_at`` left NULL
+    = silent loss of every page's publication state."""
+    m = migrations.Migration("0014_dropstatus", "camomilla")
+    m.operations = [
+        migrations.RemoveField("page", "status"),
+        migrations.RemoveField("page", "status_en"),
+        migrations.RemoveField("page", "publication_date"),
+    ]
+    inserted = inject_upgrade_operations(m)
+    assert inserted == ["MigrateStatusToLifecycle(page)"]
+
+    ops = m.operations
+    data_ops = [o for o in ops if isinstance(o, MigrateStatusToLifecycle)]
+    assert len(data_ops) == 1 and data_ops[0].model_name == "page"
+    # The backfill runs BEFORE any legacy column is dropped (status still exists).
+    op_idx = _index(ops, lambda o: isinstance(o, MigrateStatusToLifecycle))[0]
+    first_remove = min(_index(ops, lambda o: isinstance(o, migrations.RemoveField)))
+    assert op_idx < first_remove
+
+
+def test_injection_resequences_a_misordered_existing_op():
+    """A hand-edited / merged / squashed migration with the data op placed AFTER
+    the legacy RemoveField self-heals: the injector re-sequences it before the
+    removes so the backfill reads ``status`` while it still exists (it would
+    otherwise no-op against the already-dropped column)."""
+    m = migrations.Migration("0015_handedited", "camomilla")
+    m.operations = [
+        migrations.AddField("page", "published_at", models.DateTimeField(null=True)),
+        migrations.RemoveField("page", "status"),
+        MigrateStatusToLifecycle("page"),  # mis-placed: sits after the remove
+    ]
+    # Re-sequencing an existing op reports nothing new, but still reorders.
+    assert inject_upgrade_operations(m) == []
+
+    ops = m.operations
+    data_ops = [o for o in ops if isinstance(o, MigrateStatusToLifecycle)]
+    assert len(data_ops) == 1  # not duplicated
+    op_idx = _index(ops, lambda o: isinstance(o, MigrateStatusToLifecycle))[0]
+    first_remove = min(_index(ops, lambda o: isinstance(o, migrations.RemoveField)))
+    assert op_idx < first_remove
+
+
 def test_registry_is_generic_runs_any_registered_injector():
     """The injection system isn't coupled to the status upgrade — any module can
     register an injector and `camomilla_makemigrations` will run it."""
