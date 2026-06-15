@@ -50,61 +50,48 @@ INSTALLED_APPS = [
 ]
 ```
 
-### 2. Generate the schema migration
+### 2. Generate the migration — with the data step already inserted
+
+Use camomilla's `camomilla_makemigrations` command instead of `makemigrations`:
 
 ```bash
-python manage.py makemigrations camomilla
+python manage.py camomilla_makemigrations
 ```
 
-This produces one migration that **adds** `published_at` / `deleted_at`, **removes** `status` / `publication_date`, and **creates** the `Draft` table.
+It's a drop-in wrapper around `makemigrations` (same flags — `--dry-run`, `--name`, …) that runs camomilla's migration injectors over the generated migrations and **auto-inserts the matching data step** in the correct position whenever it recognises a breaking change — here, the status → lifecycle transition. (It's a general mechanism: future camomilla upgrades register their own injectors, so the same command keeps handling them.) You get a ready-to-apply migration — no hand-editing. It prints a line when it injects:
 
-### 3. Insert the data step into that migration
-
-camomilla ships the transform as a ready-made **migration operation** — `MigrateStatusToLifecycle`. Open the generated migration and:
-
-1. Import it at the top.
-2. Make sure the `AddField` operations for `published_at*` / `deleted_at` come **before** the data step.
-3. Insert `MigrateStatusToLifecycle()` **before** the `RemoveField` operations for `status*` / `publication_date`.
-
-```python
-from django.db import migrations, models
-from camomilla.upgrades import MigrateStatusToLifecycle   # ← add
-
-class Migration(migrations.Migration):
-    dependencies = [ ... ]
-
-    operations = [
-        # 1) add the new columns
-        migrations.AddField("page", "published_at", models.DateTimeField(null=True, blank=True)),
-        migrations.AddField("page", "published_at_en", models.DateTimeField(null=True, blank=True)),
-        migrations.AddField("page", "published_at_it", models.DateTimeField(null=True, blank=True)),
-        migrations.AddField("page", "deleted_at", models.DateTimeField(null=True, blank=True)),
-        # … the same AddField ops for Article and any custom page models …
-
-        # 2) transform the data while BOTH old and new columns exist
-        MigrateStatusToLifecycle(),   # ← add
-
-        # 3) drop the old columns
-        migrations.RemoveField("page", "status"),
-        migrations.RemoveField("page", "publication_date"),
-        # … plus the per-language status_* removals, and CreateModel("Draft", …) …
-    ]
+```
+  + auto-inserted MigrateStatusToLifecycle into the camomilla migration
 ```
 
-The exact field/model names depend on your `LANGUAGES` setting and which page models you've defined — keep whatever `makemigrations` generated, and only **move** the `MigrateStatusToLifecycle()` line into position and add the import. The operation auto-discovers every page model that has both columns, so you don't list them anywhere.
-
-::: tip Prefer a plain function?
-The same logic is also exposed as a `RunPython`-compatible callable, if you'd rather not use a custom operation:
-`migrations.RunPython(camomilla.upgrades.migrate_status_to_lifecycle, migrations.RunPython.noop)`.
+::: tip Don't pass an app name
+Run it **without** an app argument. The transition affects `camomilla.Page` / `camomilla.Article` **and** any custom `AbstractPage` subclass in your own apps — whose migrations are generated in *your* app, not in `camomilla`. A no-arg run injects the data step into every affected app's migration in one pass; `… camomilla` would skip your custom page models. Add `--dry-run` to preview without writing.
 :::
 
-### 4. Apply it
+::: details Prefer to do it by hand?
+Run the normal `python manage.py makemigrations camomilla`, then open the generated migration and add the operation yourself: import it, and place `MigrateStatusToLifecycle()` **after** the `AddField` ops for `published_at*` / `deleted_at` and **before** the `RemoveField` ops for `status*` / `publication_date`.
+
+```python
+from camomilla.upgrades import MigrateStatusToLifecycle
+
+operations = [
+    migrations.AddField("page", "published_at", ...),   # + per-language, deleted_at
+    MigrateStatusToLifecycle(),                          # ← between Add and Remove
+    migrations.RemoveField("page", "status"),           # + per-language, publication_date
+    # … CreateModel("Draft", …) …
+]
+```
+
+The operation auto-discovers every page model that has both columns, so you don't list them anywhere. The same logic is also exposed as a `RunPython`-compatible callable if you prefer: `migrations.RunPython(camomilla.upgrades.migrate_status_to_lifecycle, migrations.RunPython.noop)`.
+:::
+
+### 3. Apply it
 
 ```bash
 python manage.py migrate
 ```
 
-### 5. Verify
+### 4. Verify
 
 ```python
 from camomilla.models import Page
