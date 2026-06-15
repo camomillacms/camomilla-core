@@ -111,6 +111,9 @@ class Media(models.Model):
         if self.thumbnail:
             return mark_safe('<img src="{0}" />'.format(self.thumbnail.url))
 
+    def get_structured_search_display(self) -> dict:
+        return {"image": self.thumbnail.url if self.thumbnail else None, "description": self.file.name}
+
     image_preview.short_description = _("Preview")
     image_thumb_preview.short_description = _("Thumbnail")
 

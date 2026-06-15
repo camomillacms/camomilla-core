@@ -3,6 +3,7 @@ import json
 import os
 from unittest import mock
 from django.conf import settings as django_settings
+from django.core.management import call_command
 from django.template import Context, Template
 from django.test import TransactionTestCase
 from camomilla import settings as camomilla_settings
@@ -285,6 +286,18 @@ class MediaRenditionsTestCase(TransactionTestCase):
         assert response.status_code == 200, response.content
         assert os.path.exists(sm_path)
         assert "sm-webp" in response.json()["renditions"]
+
+    def test_regenerate_renditions_command(self):
+        media = self._upload("37059501.png")
+        sm_path = os.path.join(
+            django_settings.MEDIA_ROOT, media.renditions["sm-webp"]["path"]
+        )
+        os.remove(sm_path)
+        Media.objects.filter(pk=media.pk).update(renditions={})
+        call_command("regenerate_renditions")
+        media.refresh_from_db()
+        assert "sm-webp" in media.renditions
+        assert os.path.exists(sm_path)
 
     def test_per_instance_config_override(self):
         media = self._upload("37059501.png")

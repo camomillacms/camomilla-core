@@ -159,6 +159,12 @@ __URL:__ `/api/camomilla/media/<media_id>/regenerate-renditions/` __METHOD:__ `P
 
 The response is the freshly re-serialized Media payload.
 
+To regenerate renditions for **every** image Media at once (e.g. after changing the global `VARIANTS`), use the management command:
+
+```bash
+python manage.py regenerate_renditions
+```
+
 ### Template tags
 
 For server-rendered Django templates, `camomilla` ships a `media_extras` library:
