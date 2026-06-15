@@ -2058,6 +2058,10 @@ It's a drop-in wrapper around `makemigrations` (same flags — `--dry-run`, `--n
 Run it **without** an app argument. The transition affects `camomilla.Page` / `camomilla.Article` **and** any custom `AbstractPage` subclass in your own apps — whose migrations are generated in *your* app, not in `camomilla`. A no-arg run injects the data step into every affected app's migration in one pass; `… camomilla` would skip your custom page models. Add `--dry-run` to preview without writing.
 :::
 
+::: warning Already ran plain `makemigrations`?
+If you ran the stock `python manage.py makemigrations` **before** this step, it wrote a migration that drops `status` with **no backfill** in between — applying it would lose your publication state. Delete that just-generated migration and regenerate it with `camomilla_makemigrations` (the injector only rewrites migrations as they're generated, not ones already on disk). The data step *is* re-inserted automatically if the lifecycle columns were added in one migration and the legacy ones are dropped in a later one — but a single migration that does both without the backfill is unsafe to apply.
+:::
+
 ::: details Prefer to do it by hand?
 Run the normal `python manage.py makemigrations`, then open each generated migration and add **one operation per page model**, naming the model. Place each `MigrateStatusToLifecycle("<model>")` **after** that model's `AddField` ops (`published_at*` / `deleted_at`) and **before** its `RemoveField` ops (`status*` / `publication_date`).
 
