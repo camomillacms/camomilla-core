@@ -1,9 +1,10 @@
-"""Tests for the legacy status → timestamp-lifecycle upgrade mapping.
+"""Tests for the legacy status → timestamp-lifecycle upgrade.
 
-The DB-touching ``migrate_status_to_lifecycle`` runs inside a downstream
-project's migration (it needs the old ``status`` / ``publication_date``
-columns, which this repo's schema no longer has), so the unit tests here
-pin the pure mapping logic — the part that's easy to get wrong.
+The DB-touching transform runs inside a downstream project's migration (it
+needs the old ``status`` / ``publication_date`` columns, which this repo's
+schema no longer has), so most tests pin the pure mapping logic; the two
+end-to-end tests build a synthetic model with both column sets and run the
+per-model transform against it.
 """
 
 from datetime import timedelta
@@ -16,20 +17,9 @@ from django.utils import timezone
 
 from camomilla.upgrades import (
     MigrateStatusToLifecycle,
-    migrate_status_to_lifecycle,
+    migrate_model_status_to_lifecycle,
     published_at_from_status,
 )
-
-
-class _StubApps:
-    """Minimal stand-in for the historical ``apps`` registry — just enough for
-    ``migrate_status_to_lifecycle`` (which only calls ``get_models()``)."""
-
-    def __init__(self, models):
-        self._models = list(models)
-
-    def get_models(self):
-        return self._models
 
 
 def test_published_maps_past_publication_date_verbatim():
@@ -100,16 +90,18 @@ def test_visibility_is_preserved_across_the_mapping():
 
 def test_operation_serializes_into_a_migration():
     """``makemigrations`` must be able to write the custom op into a migration
-    file — so it has to deconstruct to ``camomilla.upgrades.MigrateStatusToLifecycle()``."""
+    file — so it has to deconstruct, round-tripping its ``model_name`` arg."""
     from django.db.migrations.writer import OperationWriter
 
-    op = MigrateStatusToLifecycle()
+    op = MigrateStatusToLifecycle("page")
     assert op.describe()
-    assert op.migration_name_fragment == "migrate_status_to_lifecycle"
+    assert op.migration_name_fragment == "migrate_page_status_to_lifecycle"
+    # deconstruct round-trips the model name so the serialized op rebuilds itself.
+    _name, args, kwargs = op.deconstruct()
+    assert list(args) == ["page"] and kwargs == {}
     string, imports = OperationWriter(op, indentation=0).serialize()
-    # Writer emits the fully-qualified, arg-less call (possibly multi-line),
-    # e.g. ``camomilla.upgrades.status_to_lifecycle.MigrateStatusToLifecycle(\n)``.
     assert "MigrateStatusToLifecycle(" in string
+    assert "'page'" in string
     assert any(imp.startswith("import camomilla.upgrades") for imp in imports)
 
 
@@ -138,7 +130,7 @@ def test_transform_monolingual_end_to_end():
         pla = LegacyPage.objects.create(status="PLA", publication_date=future)
         trs = LegacyPage.objects.create(status="TRS", publication_date=past)
 
-        migrate_status_to_lifecycle(_StubApps([LegacyPage]), None)
+        migrate_model_status_to_lifecycle(LegacyPage)
 
         for obj in (pub, pub_future, drf, pla, trs):
             obj.refresh_from_db()
@@ -186,7 +178,7 @@ def test_transform_bilingual_trash_aggregation():
             status="PUB", status_en="PUB", status_it="TRS", publication_date=past
         )
 
-        migrate_status_to_lifecycle(_StubApps([LegacyTransPage]), None)
+        migrate_model_status_to_lifecycle(LegacyTransPage)
         all_trs.refresh_from_db()
         mixed.refresh_from_db()
 

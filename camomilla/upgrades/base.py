@@ -74,15 +74,19 @@ class DataMigrationOperation(Operation):
         pass
 
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
-        # ``from_state`` is the project state just before this op runs.
-        self.run(from_state.apps, schema_editor)
+        # ``from_state`` is the project state just before this op runs;
+        # ``app_label`` is the app the migration belongs to (handy for ops that
+        # target a specific model in their own migration).
+        self.run(from_state.apps, schema_editor, app_label)
 
     def database_backwards(self, app_label, schema_editor, from_state, to_state):
         # Forward-only: surrounding RemoveField reversals re-create columns,
         # but their values are not reconstructed here.
         pass
 
-    def run(self, apps, schema_editor):
-        """Perform the data transform. ``apps`` is the historical registry;
-        use :func:`iter_models_with_fields` to find the tables to touch."""
+    def run(self, apps, schema_editor, app_label):
+        """Perform the data transform. ``apps`` is the historical registry and
+        ``app_label`` is the migration's app. Either resolve a specific model
+        (``apps.get_model(app_label, name)``) or sweep with
+        :func:`iter_models_with_fields`."""
         raise NotImplementedError

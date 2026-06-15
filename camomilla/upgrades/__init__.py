@@ -33,13 +33,13 @@ To add a new one:
 from camomilla.upgrades.base import DataMigrationOperation
 from camomilla.upgrades.status_to_lifecycle import (
     MigrateStatusToLifecycle,
-    migrate_status_to_lifecycle,
+    migrate_model_status_to_lifecycle,
     published_at_from_status,
 )
 
 __all__ = [
     "DataMigrationOperation",
     "MigrateStatusToLifecycle",
-    "migrate_status_to_lifecycle",
+    "migrate_model_status_to_lifecycle",
     "published_at_from_status",
 ]

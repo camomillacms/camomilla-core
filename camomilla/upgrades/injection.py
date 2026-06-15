@@ -18,14 +18,16 @@ _INJECTORS = []
 
 def register_injector(fn):
     """Register ``fn`` as an injector. Use as a decorator on the injector
-    defined alongside an upgrade's operation::
+    defined alongside an upgrade's operation. An injector inspects a migration,
+    inserts its operation(s) when its breaking change is detected, and returns a
+    **list of labels** for what it inserted (empty list when it doesn't apply)::
 
         @register_injector
         def inject_my_change(migration):
-            if _applies(migration):
-                migration.operations = ...   # insert the op
-                return "MyOperation"
-            return None
+            if not _applies(migration):
+                return []
+            migration.operations = ...   # insert the op(s)
+            return ["MyOperation"]
 
     Injectors run in registration order. Registering the same callable twice is
     a no-op (keeps imports idempotent).
@@ -37,11 +39,9 @@ def register_injector(fn):
 
 def inject_upgrade_operations(migration):
     """Run every registered injector against ``migration`` (mutating it in
-    place). Returns the list of inserted operation labels — empty when nothing
-    applied."""
+    place). Returns the flat list of inserted operation labels — empty when
+    nothing applied."""
     inserted = []
     for injector in _INJECTORS:
-        label = injector(migration)
-        if label:
-            inserted.append(label)
+        inserted.extend(injector(migration) or [])
     return inserted

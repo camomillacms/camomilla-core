@@ -36,7 +36,6 @@ from django.utils import timezone
 from camomilla.upgrades.base import (
     DataMigrationOperation,
     default_language,
-    iter_models_with_fields,
     model_lang_codes,
 )
 from camomilla.upgrades.injection import register_injector
@@ -71,84 +70,95 @@ def published_at_from_status(status, publication_date, now):
     return None
 
 
-def migrate_status_to_lifecycle(apps, schema_editor):
-    """Populate ``published_at`` / ``deleted_at`` from the legacy ``status`` /
-    ``publication_date`` columns, for every page model in ``apps``.
+def migrate_model_status_to_lifecycle(model, now=None, default_lang=None):
+    """Migrate a **single** (historical) model's rows: legacy ``status`` /
+    ``publication_date`` → ``published_at`` / ``deleted_at``.
 
-    The shared core used by :class:`MigrateStatusToLifecycle` (and usable as a
-    plain ``RunPython`` callable if you prefer). Must run while BOTH the old
-    and new columns exist — i.e. after the ``AddField`` ops for
-    ``published_at`` / ``deleted_at`` and before the ``RemoveField`` ops for
-    ``status`` / ``publication_date``. Operates on historical models, so no
-    custom ``save()`` / signals fire — plain column writes only.
+    No-op unless the model actually carries both a legacy ``status`` column and
+    a new ``published_at`` column, so it's safe to call on any model. Operates
+    on historical models, so no custom ``save()`` / signals fire — plain column
+    writes only. ``deleted_at`` (global) is set only when **every** language is
+    trashed.
     """
-    now = timezone.now()
-    default_lang = default_language()
+    field_names = {f.name for f in model._meta.get_fields()}
+    if "status" not in field_names or "published_at" not in field_names:
+        return  # not a legacy page model mid-transition — nothing to do
 
-    for model in iter_models_with_fields(apps, "status", "published_at"):
-        langs = model_lang_codes(model, "status")
-        for obj in model.objects.all().iterator():
-            publication_date = getattr(obj, "publication_date", None)
-            if langs:
-                trashed = []
-                for lang in langs:
-                    status = getattr(obj, f"status_{lang}", None)
-                    setattr(
-                        obj,
-                        f"published_at_{lang}",
-                        published_at_from_status(status, publication_date, now),
-                    )
-                    trashed.append(status == OLD_STATUS_TRASHED)
-                # Keep the non-suffixed base column mirroring the default
-                # language (modeltranslation's base/default-language contract).
-                base_lang = default_lang if default_lang in langs else langs[0]
-                obj.published_at = published_at_from_status(
-                    getattr(obj, f"status_{base_lang}", None), publication_date, now
-                )
-                fully_trashed = bool(trashed) and all(trashed)
-            else:
-                status = getattr(obj, "status", None)
-                obj.published_at = published_at_from_status(
-                    status, publication_date, now
-                )
-                fully_trashed = status == OLD_STATUS_TRASHED
+    now = now or timezone.now()
+    default_lang = default_lang or default_language()
+    langs = model_lang_codes(model, "status")
 
-            if fully_trashed:
-                obj.deleted_at = now
-            obj.save()
+    for obj in model.objects.all().iterator():
+        publication_date = getattr(obj, "publication_date", None)
+        if langs:
+            trashed = []
+            for lang in langs:
+                status = getattr(obj, f"status_{lang}", None)
+                setattr(
+                    obj,
+                    f"published_at_{lang}",
+                    published_at_from_status(status, publication_date, now),
+                )
+                trashed.append(status == OLD_STATUS_TRASHED)
+            # Keep the non-suffixed base column mirroring the default language
+            # (modeltranslation's base/default-language contract).
+            base_lang = default_lang if default_lang in langs else langs[0]
+            obj.published_at = published_at_from_status(
+                getattr(obj, f"status_{base_lang}", None), publication_date, now
+            )
+            fully_trashed = bool(trashed) and all(trashed)
+        else:
+            status = getattr(obj, "status", None)
+            obj.published_at = published_at_from_status(status, publication_date, now)
+            fully_trashed = status == OLD_STATUS_TRASHED
+
+        if fully_trashed:
+            obj.deleted_at = now
+        obj.save()
 
 
 class MigrateStatusToLifecycle(DataMigrationOperation):
     """Custom migration operation that backfills ``published_at`` /
-    ``deleted_at`` from the legacy ``status`` / ``publication_date`` columns.
+    ``deleted_at`` from the legacy ``status`` / ``publication_date`` columns for
+    **one model** — ``model_name`` within the migration's own app.
 
-    Drop it into the schema migration ``makemigrations`` generates, **after**
-    the ``AddField`` ops for the new columns and **before** the ``RemoveField``
-    ops for the old ones::
+    Targeting a single model is what lets the operation appear safely in several
+    apps' migrations at once: each app's migration carries one
+    ``MigrateStatusToLifecycle`` per page model it defines, and each op only ever
+    touches that one model. (For a hand-written single migration that owns every
+    page model, the un-targeted :func:`migrate_status_to_lifecycle` sweep is an
+    alternative.)
+
+    ``camomilla_makemigrations`` inserts these automatically; by hand, place each
+    one **after** its model's ``AddField`` ops and **before** its ``RemoveField``
+    ops::
 
         from camomilla.upgrades import MigrateStatusToLifecycle
 
         operations = [
-            migrations.AddField("page", "published_at", ...),   # + per-language
-            migrations.AddField("page", "deleted_at", ...),
-            MigrateStatusToLifecycle(),
-            migrations.RemoveField("page", "status"),           # + per-language
-            migrations.RemoveField("page", "publication_date"),
+            migrations.AddField("page", "published_at", ...),   # + per-language, deleted_at
+            MigrateStatusToLifecycle("page"),
+            migrations.RemoveField("page", "status"),           # + per-language, publication_date
         ]
     """
 
-    def run(self, apps, schema_editor):
-        migrate_status_to_lifecycle(apps, schema_editor)
+    def __init__(self, model_name):
+        self.model_name = model_name
+
+    def run(self, apps, schema_editor, app_label):
+        # Resolve the one model this op is responsible for, in its own app.
+        model = apps.get_model(app_label, self.model_name)
+        migrate_model_status_to_lifecycle(model)
 
     def describe(self):
         return (
-            "Backfill page published_at/deleted_at from legacy "
+            f"Backfill {self.model_name} published_at/deleted_at from legacy "
             "status/publication_date"
         )
 
     @property
     def migration_name_fragment(self):
-        return "migrate_status_to_lifecycle"
+        return f"migrate_{self.model_name}_status_to_lifecycle"
 
 
 # -- makemigrations auto-injection -----------------------------------------
@@ -163,33 +173,40 @@ def _is_legacy_status_remove(op):
     )
 
 
-def _adds_lifecycle_columns(operations):
-    return any(
-        isinstance(op, AddField)
-        and (op.name in _LIFECYCLE_ADD_NAMES or op.name.startswith("published_at_"))
-        for op in operations
+def _is_lifecycle_add(op):
+    return isinstance(op, AddField) and (
+        op.name in _LIFECYCLE_ADD_NAMES or op.name.startswith("published_at_")
     )
 
 
 @register_injector
 def inject_status_to_lifecycle(migration):
-    """Insert :class:`MigrateStatusToLifecycle` when ``migration`` both adds the
-    new lifecycle columns and removes the legacy ``status`` / ``publication_date``
-    columns. Registered so ``camomilla_makemigrations`` wires it in automatically.
+    """Insert one :class:`MigrateStatusToLifecycle` **per model** in
+    ``migration`` that both gains the new lifecycle columns and loses the legacy
+    ``status`` / ``publication_date`` columns. Registered so
+    ``camomilla_makemigrations`` wires them in automatically.
 
-    Correctness is guaranteed by **partitioning** rather than index math: the
-    legacy ``RemoveField`` ops are moved to the end and the data op inserted just
-    before them, so every ``AddField`` (and ``CreateModel("Draft")``) runs before
-    the transform, which runs before any legacy column is dropped — regardless of
-    how the autodetector ordered them.
+    One op per model (not per migration) so a single migration can carry several
+    — e.g. camomilla's migration handles both ``page`` and ``article`` — and each
+    op only touches its own model, with no overlap across apps. Placement is
+    guaranteed by **partitioning**: the legacy ``RemoveField`` ops are moved to
+    the end and the data ops inserted just before them, so every ``AddField``
+    (and ``CreateModel("Draft")``) runs before the transforms, which run before
+    any legacy column is dropped — regardless of the autodetector's ordering.
+
+    Returns a label per inserted op; idempotent (a model already carrying its op
+    is skipped).
     """
     ops = migration.operations
-    if any(isinstance(op, MigrateStatusToLifecycle) for op in ops):
-        return None  # already wired up — idempotent
-    if not (_adds_lifecycle_columns(ops) and any(_is_legacy_status_remove(o) for o in ops)):
-        return None
+    already = {o.model_name for o in ops if isinstance(o, MigrateStatusToLifecycle)}
+    add_models = {o.model_name for o in ops if _is_lifecycle_add(o)}
+    remove_models = {o.model_name for o in ops if _is_legacy_status_remove(o)}
+    transition_models = sorted((add_models & remove_models) - already)
+    if not transition_models:
+        return []
 
     legacy_removes = [o for o in ops if _is_legacy_status_remove(o)]
     rest = [o for o in ops if not _is_legacy_status_remove(o)]
-    migration.operations = rest + [MigrateStatusToLifecycle()] + legacy_removes
-    return "MigrateStatusToLifecycle"
+    data_ops = [MigrateStatusToLifecycle(m) for m in transition_models]
+    migration.operations = rest + data_ops + legacy_removes
+    return [f"MigrateStatusToLifecycle({m})" for m in transition_models]
