@@ -15,7 +15,7 @@ from django.db import models as dj_models
 from django.test.utils import isolate_apps
 from django.utils import timezone
 
-from camomilla.upgrades import (
+from camomilla.upgrades.migrations import (
     MigrateStatusToLifecycle,
     migrate_model_status_to_lifecycle,
     published_at_from_status,
@@ -102,7 +102,7 @@ def test_operation_serializes_into_a_migration():
     string, imports = OperationWriter(op, indentation=0).serialize()
     assert "MigrateStatusToLifecycle(" in string
     assert "'page'" in string
-    assert any(imp.startswith("import camomilla.upgrades") for imp in imports)
+    assert any(imp.startswith("import camomilla.upgrades.migrations") for imp in imports)
 
 
 class _SaveNotAllowed(Exception):

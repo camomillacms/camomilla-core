@@ -140,7 +140,7 @@ class MigrateStatusToLifecycle(DataMigrationOperation):
     one **after** its model's ``AddField`` ops and **before** its ``RemoveField``
     ops::
 
-        from camomilla.upgrades import MigrateStatusToLifecycle
+        from camomilla.upgrades.migrations import MigrateStatusToLifecycle
 
         operations = [
             migrations.AddField("page", "published_at", ...),   # + per-language, deleted_at

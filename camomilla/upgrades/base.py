@@ -1,9 +1,10 @@
 """Shared scaffolding for camomilla's data-migration upgrades.
 
 Each breaking schema change that needs to transform existing data gets its own
-module next to this one (see ``status_to_lifecycle.py`` for the reference
-example). They all subclass :class:`DataMigrationOperation` and reuse the
-helpers here, so a new upgrade is just "subclass + implement ``run``".
+module under ``camomilla/upgrades/migrations/`` (see
+``migrations/status_to_lifecycle.py`` for the reference example). They all
+subclass :class:`DataMigrationOperation` and reuse the helpers here, so a new
+upgrade is just "subclass + implement ``run``".
 """
 
 from django.db.migrations.operations.base import Operation

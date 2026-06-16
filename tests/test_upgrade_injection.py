@@ -7,7 +7,7 @@ the full ``makemigrations`` machinery.
 
 from django.db import migrations, models
 
-from camomilla.upgrades import MigrateStatusToLifecycle
+from camomilla.upgrades.migrations import MigrateStatusToLifecycle
 from camomilla.upgrades.injection import inject_upgrade_operations
 
 
