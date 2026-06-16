@@ -2066,7 +2066,7 @@ If you ran the stock `python manage.py makemigrations` **before** this step, it 
 Run the normal `python manage.py makemigrations`, then open each generated migration and add **one operation per page model**, naming the model. Place each `MigrateStatusToLifecycle("<model>")` **after** that model's `AddField` ops (`published_at*` / `deleted_at`) and **before** its `RemoveField` ops (`status*` / `publication_date`).
 
 ```python
-from camomilla.upgrades import MigrateStatusToLifecycle
+from camomilla.upgrades.migrations import MigrateStatusToLifecycle
 
 operations = [
     migrations.AddField("page", "published_at", ...),       # + per-language, deleted_at
