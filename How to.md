@@ -7,6 +7,7 @@ This documentation is a step-by-step guide to help you get started with the main
 It is divided into "How to .." sections, each one covering a specific topic.
 
 * [📝 Use Pages ](Use%20Pages/)
+* [🌱 Use Page Lifecycle](Use%20Page%20Lifecycle/)
 * [🧩 Use Pages Context](Use%20Pages%20Context/)
 * [🎭 Use Modeltranslation](Use%20Modeltranslation/)
 * [🐝 Use API](Use%20API/)

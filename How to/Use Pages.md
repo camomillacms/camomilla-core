@@ -7,6 +7,10 @@ url: /camomilla-core/How to/Use Pages.md
 
 Camomilla has it's own page model. The page model has an attribute for every relevant data in a web page. It takes care of SEO data and permalinks and template, and exposes jsonfields to manage additional data.
 
+::: tip Pages have a publish lifecycle 🌱
+A page's visibility is **derived from timestamps** — `published_at` (per language: when it goes live) and a global `deleted_at` (soft-delete) — rather than a `status` column. Pages also come with drafts, scheduling, preview, and optional revisions: a new page starts as a **draft** and isn't served publicly until published. See [🌱 Use Page Lifecycle](../Use%20Page%20Lifecycle/README.md) for the full workflow.
+:::
+
 To use camomilla pages you need to add the dynamic url resolver at the end of your website urlpatterns:
 
 ```python
