@@ -8,7 +8,7 @@ from camomilla import settings
 class AbstractArticle(AbstractPage):
     content = models.TextField(default="")
     author = models.ForeignKey(
-        dj_settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL
+        dj_settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL, related_name="%(app_label)s_%(class)s_authored_articles"
     )
     highlight_image = models.ForeignKey(
         "camomilla.Media",
@@ -17,7 +17,7 @@ class AbstractArticle(AbstractPage):
         on_delete=models.SET_NULL,
         related_name="%(app_label)s_%(class)s_highlight_images",
     )
-    tags = models.ManyToManyField("Tag", blank=True)
+    tags = models.ManyToManyField("Tag", blank=True, related_name="%(app_label)s_%(class)s_tags")
 
     class Meta:
         abstract = True
