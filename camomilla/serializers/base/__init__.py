@@ -4,6 +4,7 @@ from camomilla.serializers.mixins import (
     JSONFieldPatchMixin,
     NestMixin,
     OrderingMixin,
+    SafeNestingMixin,
     SetupEagerLoadingMixin,
     FilterFieldsMixin,
     FieldsOverrideMixin,
@@ -12,6 +13,10 @@ from camomilla.serializers.mixins import (
 from camomilla.settings import ENABLE_TRANSLATIONS
 
 bases = (
+    # First in the MRO so its build_(nested|relational)_field overrides win:
+    # any FK/O2O/M2M to the auth user model nests through the blacklist
+    # serializer instead of dumping the password hash / privilege columns.
+    SafeNestingMixin,
     SetupEagerLoadingMixin,
     NestMixin,
     FilterFieldsMixin,

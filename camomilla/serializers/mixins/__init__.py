@@ -6,6 +6,7 @@ from .nesting import NestMixin
 from .optimize import SetupEagerLoadingMixin
 from .ordering import OrderingMixin
 from .page import AbstractPageMixin
+from .safe_nesting import SafeNestingMixin
 from .translation import TranslationsMixin, RemoveTranslationsMixin
 
 
@@ -18,6 +19,7 @@ __all__ = [
     "SetupEagerLoadingMixin",
     "OrderingMixin",
     "AbstractPageMixin",
+    "SafeNestingMixin",
     "TranslationsMixin",
     "RemoveTranslationsMixin",
 ]

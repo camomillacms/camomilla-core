@@ -20,9 +20,11 @@ def get_standard_bases() -> tuple:
         FieldsOverrideMixin,
         FilterFieldsMixin,
         RemoveTranslationsMixin,
+        SafeNestingMixin,
     )
 
     return (
+        SafeNestingMixin,
         SetupEagerLoadingMixin,
         FilterFieldsMixin,
         NestMixin,

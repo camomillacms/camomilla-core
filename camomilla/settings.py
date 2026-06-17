@@ -121,6 +121,27 @@ MEDIA_RENDITIONS_PREVENT_INFLATE = pointed_getter(
 
 API_NESTING_DEPTH = pointed_getter(django_settings, "CAMOMILLA.API.NESTING_DEPTH", 10)
 
+# Auth-user columns that ``SafeNestingMixin`` strips when a depth-based read
+# serializer auto-nests a FK to ``AUTH_USER_MODEL`` (e.g. an article ``author``
+# on the public, unauthenticated page router). Everything *not* listed here —
+# including a project's own custom user columns — is exposed automatically;
+# only these known-sensitive defaults are removed. Add your custom user model's
+# secret columns here to keep them out of public nested output.
+SAFE_NESTING_SENSITIVE_USER_FIELDS = pointed_getter(
+    django_settings,
+    "CAMOMILLA.API.SAFE_NESTING.SENSITIVE_USER_FIELDS",
+    (
+        "password",
+        "last_login",
+        "is_superuser",
+        "is_staff",
+        "is_active",
+        "email",
+        "groups",
+        "user_permissions",
+    ),
+)
+
 AUTO_CREATE_HOMEPAGE = pointed_getter(
     django_settings, "CAMOMILLA.RENDER.AUTO_CREATE_HOMEPAGE", True
 )
@@ -202,7 +223,17 @@ DEBUG = pointed_getter(django_settings, "CAMOMILLA.DEBUG", django_settings.DEBUG
 #         "PAGES": {
 #             "DEFAULT_SERIALIZER": "camomilla.serializers.page.RouteSerializer"
 #         },
-#         "ROUTER_CACHE": 60 * 15
+#         "ROUTER_CACHE": 60 * 15,
+#         # Blacklist (fail-open): when a FK to AUTH_USER_MODEL is auto-nested
+#         # in API output, these columns are stripped and everything else —
+#         # including your custom user columns — is exposed. Add any secret
+#         # columns of a custom user model here.
+#         "SAFE_NESTING": {
+#             "SENSITIVE_USER_FIELDS": (
+#                 "password", "last_login", "is_superuser", "is_staff",
+#                 "is_active", "email", "groups", "user_permissions",
+#             )
+#         }
 #     },
 #     "DEBUG": False
 # }
