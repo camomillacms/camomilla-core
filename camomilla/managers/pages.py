@@ -135,6 +135,25 @@ def _status_q(label: str, now=None) -> Q:
     return alive & Q(**{f"{published_col}__isnull": True})
 
 
+# Default number of ancestor levels to eager-load for breadcrumbs.
+PAGE_ROUTING_DEPTH = 5
+
+
+def page_routing_relations(depth=PAGE_ROUTING_DEPTH):
+    """``select_related`` paths for a page's *routing chain*: its own
+    ``url_node`` (routerlink / permalink / is_public / alternate_urls) plus a
+    bounded ancestor chain, each with its ``url_node`` (breadcrumbs). Shared by
+    :meth:`PageQuerySet.with_urls` and the page serializer's eager-load hook so
+    both express the same fast path."""
+    rels = ["url_node"]
+    chain = "parent_page"
+    for _ in range(max(depth, 0)):
+        rels.append(chain)
+        rels.append(f"{chain}__url_node")
+        chain = f"{chain}__parent_page"
+    return rels
+
+
 class PageQuerySet(QuerySet):
     """Lifecycle-aware queryset for any ``AbstractPage`` subclass.
 
@@ -275,6 +294,21 @@ class PageQuerySet(QuerySet):
     def public(self):
         """Pages whose live content is reachable to the public right now."""
         return self.filter(_is_public_q())
+
+    def with_urls(self, depth=PAGE_ROUTING_DEPTH):
+        """Eager-load the routing chain — the page's ``url_node`` and a bounded
+        ancestor chain — so reading ``routerlink`` / ``permalink`` /
+        ``is_public`` / ``alternate_urls`` / ``breadcrumbs`` over the result set
+        costs **no** extra queries.
+
+        This is the canonical fast path for listing pages and rendering their
+        URLs. The intuitive ``for p in Page.objects.public(): p.routerlink`` is
+        an N+1; ``Page.objects.public().with_urls()`` is one query::
+
+            for p in Page.objects.public().with_urls():
+                p.routerlink          # cached — no query
+        """
+        return self.select_related(*page_routing_relations(depth))
 
     def trashed(self):
         return self.filter(deleted_at__isnull=False)

@@ -171,6 +171,28 @@ class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
         return Response(self.get_serializer(page).data)
 
 
+def _eager_load_routing_chain(node: UrlNode) -> None:
+    """Eager-load the resolved page's ancestor chain in one query.
+
+    The router serializes ``node.page`` at a deep nesting level, which walks
+    ``parent_page`` for both the breadcrumbs and the nested ``parent_page``
+    representation — an ``O(depth)`` N+1 (one ``url_node`` + one ``page`` query
+    per ancestor) when the chain isn't eager-loaded. ``with_page()`` already
+    cached ``node.page`` but not its ancestry, and the chain can't be folded
+    into the resolve query itself: that join would have to span *every* concrete
+    page model at once, blowing past the column limit. So re-fetch the single
+    resolved page with its routing chain (``parent_page__…__url_node``) and
+    re-prime the node's reverse cache, making the whole walk cache-resident at
+    the cost of one extra query. Root pages (no ``parent_page``) have nothing to
+    walk and are skipped, so shallow trees pay nothing.
+    """
+    page = node.page
+    if page is None or not getattr(page, "parent_page_id", None):
+        return
+    hydrated = type(page).objects.with_urls().get(pk=page.pk)
+    setattr(node, node.related_name, hydrated)
+
+
 def _resolve_route_request(permalink: str) -> tuple[UrlNode, dict | None]:
     """Resolve a request permalink to its ``UrlNode`` and, when the request
     form differs from the canonical form, a ``{redirect, status: 301}``
@@ -198,7 +220,10 @@ def _resolve_route_request(permalink: str) -> tuple[UrlNode, dict | None]:
         if decomposed_permalink == "/"
         else decomposed_permalink.rstrip("/")
     )
-    node: UrlNode = get_object_or_404(UrlNode, permalink=lookup_path)
+    node: UrlNode = get_object_or_404(
+        UrlNode.objects.with_page(), permalink=lookup_path
+    )
+    _eager_load_routing_chain(node)
     full_requested_path = (
         permalink if permalink.startswith("/") else "/" + permalink
     )
@@ -246,7 +271,8 @@ def pages_router(request, permalink=""):
     # state (the node's annotated fields — is_public, status — were
     # computed before the row was flipped).
     if page.publish_if_due():
-        node = UrlNode.objects.get(pk=node.pk)
+        node = UrlNode.objects.with_page().get(pk=node.pk)
+        _eager_load_routing_chain(node)
 
     # ``is_public`` MUST be checked before honoring the canonical-form
     # redirect, otherwise the descriptor leaks the existence of non-public

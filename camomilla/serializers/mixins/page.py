@@ -43,6 +43,29 @@ class AbstractPageMixin(StructuredModelSerializer, serializers.ModelSerializer):
     # them off the default serializer prevents the public ``pages-router``
     # from revealing whether a page has pending edits.
 
+    # How many ancestor levels to eager-load for breadcrumbs (bounded so the
+    # join count stays constant). Override on a subclass if you nest deeper.
+    EAGER_BREADCRUMB_DEPTH = 5
+
+    @classmethod
+    def setup_eager_loading(cls, queryset, context=None):
+        """Eager-load the routing chain. Page list/detail reads otherwise fire
+        a ``url_node`` query per row (for routerlink/permalink/is_public) and a
+        ``parent_page`` + ``url_node`` query per breadcrumb ancestor. We
+        ``select_related`` the page's own ``url_node`` plus a bounded ancestor
+        chain (each with its ``url_node``) so those reads come from cache.
+
+        Hooked automatically by ``SetupEagerLoadingMixin.optimize_qs``, so every
+        page viewset (``PageViewSet`` and any downstream custom ``AbstractPage``
+        viewset) inherits it with no per-viewset wiring. Same fast path as
+        ``PageQuerySet.with_urls``.
+        """
+        from camomilla.managers.pages import page_routing_relations
+
+        return queryset.select_related(
+            *page_routing_relations(cls.EAGER_BREADCRUMB_DEPTH)
+        )
+
     def get_template_file(self, instance: "AbstractPage"):
         return instance.get_template_path()
 
