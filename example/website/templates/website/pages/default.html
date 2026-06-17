@@ -1,9 +1,12 @@
 {% extends "website/base.html" %}
 
 {% block content %}
-  <article>
-    <h1>{{ page.title }}</h1>
-    {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+  <article class="content-page">
+    <header class="page-header">
+      <p class="eyebrow">Camomilla demo</p>
+      <h1>{{ page.title }}</h1>
+      {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+    </header>
 
     {% if page.template_data.body %}
       {{ page.template_data.body|safe }}
@@ -27,7 +30,7 @@
         {% for member in page.template_data.team %}
           <div class="card feature-card">
             <h3>{{ member.name | safe }}</h3>
-            <p style="color:var(--fg-soft);font-size:.875rem;margin:0;">{{ member.role }}</p>
+            <p class="card-meta">{{ member.role }}</p>
             {% if member.bio %}<p>{{ member.bio }}</p>{% endif %}
           </div>
         {% endfor %}

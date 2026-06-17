@@ -1,57 +1,139 @@
 {% extends "website/base.html" %}
+{% load static %}
 
+{% block body_class %}page-home{% endblock %}
 {% block breadcrumbs %}{% endblock %}{# homepage doesn't need breadcrumbs #}
 
 {% block content %}
-  <section class="hero">
-    <h1>{{ page.template_data.hero.headline|default:page.title }}</h1>
-    {% if page.template_data.hero.subheadline %}
-      <p class="lead">{{ page.template_data.hero.subheadline }}</p>
-    {% endif %}
-    {% if page.template_data.hero.cta %}
-      <p>
-        <a href="{{ page.template_data.hero.cta.url }}" style="display:inline-block;padding:.75rem 1.5rem;background:var(--accent);color:var(--accent-fg);border-radius:6px;">
-          {{ page.template_data.hero.cta_label|default:"Learn more" }}
-        </a>
-      </p>
-    {% endif %}
+  <section class="home-hero">
+    <div class="hero-prism" aria-hidden="true">
+      <span class="hero-prism__face"></span>
+      <span class="hero-prism__face"></span>
+      <span class="hero-prism__face"></span>
+    </div>
+
+    <div class="home-hero__inner">
+      <div class="home-hero__copy">
+        <div class="hero-lockup">
+          <img src="{% static 'website/camomilla-short-logo.svg' %}" alt="" width="84" height="83" />
+          <span>Camomilla CMS</span>
+        </div>
+        <h1>{{ page.template_data.hero.headline|default:page.title }}</h1>
+        {% if page.template_data.hero.subheadline %}
+          <p class="lead">{{ page.template_data.hero.subheadline }}</p>
+        {% endif %}
+        <div class="hero-actions">
+          <a href="/api/camomilla/pages-router/about" class="button command-button">
+            <span>$</span>
+            <span>GET /api/camomilla/pages-router/about</span>
+          </a>
+          {% if page.template_data.hero.cta %}
+            <a href="{{ page.template_data.hero.cta.url }}" class="button button--ghost">
+              {{ page.template_data.hero.cta_label|default:"Learn more" }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </section>
 
   {% if page.template_data.features %}
-    <h2>Highlights</h2>
-    <div class="grid grid-3">
-      {% for feature in page.template_data.features %}
-        <div class="card feature-card">
-          {% if feature.icon %}<span class="feature-icon" aria-hidden="true">{{ feature.icon }}</span>{% endif %}
-          <h3>{{ feature.title }}</h3>
-          <p>{{ feature.description }}</p>
+    <section class="home-section">
+      <div class="home-section__header">
+        <p class="eyebrow">Content components</p>
+        <h2>Build faster with flexible primitives optimized for Django</h2>
+        <p>Typed pages, localized URLs, drafts, previews, menus and REST endpoints fit together as a compact content stack.</p>
+      </div>
+
+      <div class="component-stage">
+        <div class="storefront-shell" aria-label="Camomilla content interface preview">
+          <div class="storefront-shell__bar">
+            <span class="window-dots"><span></span><span></span><span></span></span>
+            <span>/camomilla</span>
+          </div>
+          <div class="storefront-shell__body">
+            <div class="cms-preview">
+              <div class="cms-preview__hero">
+                <img src="{% static 'website/camomilla-short-logo.svg' %}" alt="" width="84" height="83" />
+                <strong>Page router</strong>
+                <p>One published tree, localized links, draft overlays and API responses from the same model.</p>
+              </div>
+              <div class="cms-preview__sidebar">
+                <div class="cms-preview__tile">
+                  <span>&lt;Menu /&gt;</span>
+                  <p>Main navigation</p>
+                </div>
+                <div class="cms-preview__tile">
+                  <span>&lt;Draft /&gt;</span>
+                  <p>Preview overlay</p>
+                </div>
+                <div class="cms-preview__tile">
+                  <span>&lt;Media /&gt;</span>
+                  <p>Optimized assets</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      {% endfor %}
-    </div>
+
+        <div class="component-list">
+          {% for feature in page.template_data.features %}
+            <article class="component-card">
+              <span class="component-card__token">&lt;{{ feature.title }} /&gt;</span>
+              <h3>{{ feature.title }}</h3>
+              <p>{{ feature.description }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
   {% endif %}
+
+  <section class="home-section">
+    <div class="home-section__header">
+      <p class="eyebrow">From admin to URL</p>
+      <h2>Go from content model to rendered route in minutes</h2>
+    </div>
+    <div class="terminal">
+      <div class="terminal__bar">
+        <span>Terminal</span>
+        <span>camomilla demo</span>
+      </div>
+      <pre><span class="prompt">➜</span> uv run python manage.py seed_demo --reset
+<span class="answer">Demo seed complete.</span>
+<span class="prompt">➜</span> uv run python manage.py runserver
+<span class="muted">GET 200 render /</span>
+<span class="muted">GET 200 render /api/camomilla/pages-router/about</span></pre>
+    </div>
+  </section>
 
   {% if page.template_data.testimonial %}
     <blockquote class="testimonial">
-      “{{ page.template_data.testimonial.quote }}”
+      "{{ page.template_data.testimonial.quote }}"
       <cite>
-        — {{ page.template_data.testimonial.author }}
+        {{ page.template_data.testimonial.author }}
         {% if page.template_data.testimonial.role %}, {{ page.template_data.testimonial.role }}{% endif %}
       </cite>
     </blockquote>
   {% endif %}
 
   {% if featured_articles %}
-    <h2>Latest from the blog</h2>
-    <div class="grid grid-3">
-      {% for article in featured_articles %}
-        <article class="card">
-          <h3 style="margin-top:0;"><a href="{{ article.routerlink }}">{{ article.title }}</a></h3>
-          {% if article.description %}<p>{{ article.description }}</p>{% endif %}
-          <p>
-            {% for tag in article.tags.all %}<span class="tag">{{ tag.name }}</span>{% endfor %}
-          </p>
-        </article>
-      {% endfor %}
-    </div>
+    <section class="home-section">
+      <div class="home-section__header">
+        <p class="eyebrow">Updates</p>
+        <h2>Latest from the blog</h2>
+      </div>
+      <div class="grid grid-3">
+        {% for article in featured_articles %}
+          <article class="card">
+            <h3 class="card-title"><a href="{{ article.routerlink }}">{{ article.title }}</a></h3>
+            {% if article.description %}<p>{{ article.description }}</p>{% endif %}
+            <p class="card-meta">
+              {% for tag in article.tags.all %}<span class="tag">{{ tag.name }}</span>{% endfor %}
+            </p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
   {% endif %}
 {% endblock %}

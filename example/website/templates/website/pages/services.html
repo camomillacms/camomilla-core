@@ -1,16 +1,19 @@
 {% extends "website/base.html" %}
 
 {% block content %}
-  <h1>{{ page.title }}</h1>
-  {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
-  {% if page.template_data.intro %}<p>{{ page.template_data.intro }}</p>{% endif %}
+  <header class="page-header">
+    <p class="eyebrow">Services</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+    {% if page.template_data.intro %}<p class="intro">{{ page.template_data.intro }}</p>{% endif %}
+  </header>
 
   {% if child_pages %}
     <div class="grid grid-2">
       {% for child in child_pages %}
-        <a href="{{ child.routerlink }}" class="card" style="text-decoration:none;color:inherit;">
-          <h2 style="margin:0 0 .5rem;">{{ child.title }}</h2>
-          {% if child.description %}<p style="margin:0;">{{ child.description }}</p>{% endif %}
+        <a href="{{ child.routerlink }}" class="card link-card">
+          <h2 class="card-title">{{ child.title }}</h2>
+          {% if child.description %}<p>{{ child.description }}</p>{% endif %}
         </a>
       {% endfor %}
     </div>
