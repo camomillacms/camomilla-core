@@ -41,7 +41,16 @@ CAMOMILLA = {
         "CACHE_ENABLED": True # if True, the structured field will use a cache system to avoid multiple queries to the database
     }
     "API": {
-        "NESTING_DEPTH": 10 # default nesting depth for serializers
+        "NESTING_DEPTH": 10, # default nesting depth for serializers
+        "SAFE_NESTING": {
+            # Auth-user columns stripped when a FK to AUTH_USER_MODEL is auto-nested
+            # in API output. Fail-open blacklist: everything NOT listed (incl. your
+            # custom user columns) is exposed — add custom secret columns here.
+            "SENSITIVE_USER_FIELDS": (
+                "password", "last_login", "is_superuser", "is_staff",
+                "is_active", "email", "groups", "user_permissions",
+            )
+        }
     },
     "DEBUG": False # enable or disable debug mode
 }

@@ -137,6 +137,14 @@ Retrieve api just returns model data serialized in a json.
 The serialization goes through nested objects by default, creating on the fly nested serializers.
 You can modify this behaviour decreasing the value `depth` in Serializer Meta for a single serializer or change the default option in camomilla settings.
 
+> **Nested users are filtered.** When the auto-nesting reaches a foreign key to
+> `AUTH_USER_MODEL` (e.g. an article `author`), camomilla strips the sensitive
+> default columns (`password`, `is_superuser`, `email`, permissions, …) and
+> exposes everything else automatically — including your custom user columns.
+> This is a fail-open blacklist: if your custom user model has secret columns,
+> list them under `CAMOMILLA.API.SAFE_NESTING.SENSITIVE_USER_FIELDS` (see
+> [Use Settings](../Use%20Settings/index.md)) or they will appear in responses.
+
 ```python
 CAMOMILLA = {
     "MEDIA": {

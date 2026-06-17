@@ -370,9 +370,29 @@ Page.objects.scheduled()             # has scheduled Draft OR published_at > now
 Page.objects.due_for_publish()       # has Draft with scheduled_for <= now()
 Page.objects.first_publish_pending() # never-public with future published_at
 Page.objects.with_lifecycle()        # annotates computed_status for ORDER BY / .values()
+Page.objects.with_urls()             # eager-loads the routing chain (see below)
 ```
 
 All helpers respect the active language for `published_at`.
+
+**Reading URLs/breadcrumbs over many pages — use `with_urls()`.** Each page's
+`routerlink` / `permalink` / `breadcrumbs` reads its `UrlNode` (and one per
+ancestor). The intuitive loop is an N+1; `with_urls()` `select_related`s the
+whole routing chain so it's a single query:
+
+```python
+# N+1: one UrlNode query per page + per ancestor
+for p in Page.objects.public():
+    p.routerlink
+
+# 1 query — the canonical fast path for listing pages and rendering their URLs
+for p in Page.objects.public().with_urls():
+    p.routerlink          # cached, no query
+    p.breadcrumbs         # cached, no query
+```
+
+Page list/detail API endpoints already eager-load this automatically; reach for
+`with_urls()` in your own views, sitemaps, and template loops.
 
 ### Per-language dismiss (404 only one language)
 
@@ -1045,6 +1065,14 @@ CAMOMILLA = {
         "PAGES": {
             "ROUTER_CACHE": 900,  # pages-router cache in seconds (15 min)
         },
+        "SAFE_NESTING": {
+            # Auth-user columns stripped when a FK to AUTH_USER_MODEL is
+            # auto-nested in API output (e.g. an article `author`). See note.
+            "SENSITIVE_USER_FIELDS": (
+                "password", "last_login", "is_superuser", "is_staff",
+                "is_active", "email", "groups", "user_permissions",
+            ),
+        },
     },
     "STRUCTURED_FIELD": {
         "CACHE_ENABLED": True,
@@ -1052,6 +1080,16 @@ CAMOMILLA = {
     "DEBUG": False,
 }
 ```
+
+**Nested user data is filtered by a blacklist (custom user models — read this).**
+When a serializer auto-nests a FK to `AUTH_USER_MODEL` (the page router does this
+on a *public, unauthenticated* endpoint), camomilla strips the sensitive default
+columns above and exposes **everything else automatically** — including your own
+custom user columns. That's deliberate (your profile fields show with no wiring),
+but it **fails open**: if your custom `AUTH_USER_MODEL` has secret columns
+(`api_key`, `stripe_id`, `totp_secret`, …), add their names to
+`CAMOMILLA.API.SAFE_NESTING.SENSITIVE_USER_FIELDS` or they will appear in public
+API responses. The default Django user is fully covered out of the box.
 
 ## Essential commands
 

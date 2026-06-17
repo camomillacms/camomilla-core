@@ -107,6 +107,7 @@ Camomilla does NOT use deep inheritance. It uses **mixin composition** with unpa
 ```python
 # camomilla/serializers/base/__init__.py
 bases = (
+    SafeNestingMixin,        # first: strips sensitive auth-user columns from nested FKs
     SetupEagerLoadingMixin,
     NestMixin,
     FilterFieldsMixin,
@@ -120,6 +121,18 @@ if ENABLE_TRANSLATIONS:
 class BaseModelSerializer(*bases, serializers.ModelSerializer):
     pass
 ```
+
+`SafeNestingMixin` is first so its `build_nested_field` / `build_relational_field`
+overrides win the MRO over `NestMixin`'s auto-nesting. Any FK/O2O/M2M to
+`AUTH_USER_MODEL` is rendered through a *blacklist* serializer
+(`_user_nested_meta_attrs` strips `password`, `is_superuser`, `email`,
+permissions, … via `Meta.exclude`, keeping everything else) instead of dumping
+the row. It guards **both** DRF dispatch branches — `build_nested_field`
+(`depth > 0`) and `build_relational_field` (`depth = 0` / recursion boundary) —
+because `NestMixin` re-nests relations even at depth 0; guarding only one branch
+leaves the password hash exposed on the other. The sensitive set is configurable
+via `CAMOMILLA.API.SAFE_NESTING.SENSITIVE_USER_FIELDS` (it fails open for
+unlisted custom-user columns by design). `get_standard_bases()` lists it too.
 
 ```python
 # camomilla/views/base/__init__.py
