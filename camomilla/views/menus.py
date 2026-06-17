@@ -68,12 +68,11 @@ class MenuViewSet(GetUserLanguageMixin, BaseModelViewset):
                 {
                     "id": obj.pk,
                     "name": str(obj),
-                    "url_node_id": obj.url_node.pk,
+                    "url_node_id": obj.url_node_id,
                     "model": f"{content_type.app_label}.{content_type.model}",
                 }
-                for obj in content_type.model_class().objects.exclude(
-                    url_node__isnull=True
-                )
+                for obj in content_type.model_class()
+                .objects.exclude(url_node__isnull=True)
             ]
         )
 
@@ -81,5 +80,12 @@ class MenuViewSet(GetUserLanguageMixin, BaseModelViewset):
     @action(detail=False, methods=["get"], url_path="search_urlnode")
     def search_urlnode(self, request, *args, **kwargs):
         url_node = request.GET.get("q", "")
-        qs = UrlNode.objects.filter(permalink__icontains=url_node).order_by("permalink")
+        # with_lifecycle() annotates is_public/status/indexable so the serializer
+        # reads scalars (no per-node page fetch). @active_lang above guarantees the
+        # build-time annotation language matches the serialized language.
+        qs = (
+            UrlNode.objects.with_lifecycle()
+            .filter(permalink__icontains=url_node)
+            .order_by("permalink")
+        )
         return Response(UrlNodeSerializer(qs, many=True).data)

@@ -19,7 +19,6 @@ This module exposes:
                   ``.first_publish_pending()``
 """
 
-from typing import Sequence, Tuple
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
@@ -338,147 +337,143 @@ class PageQuerySet(QuerySet):
         )
 
 
-class UrlNodeManager(models.Manager):
+class UrlNodeQuerySet(models.QuerySet):
+    """QuerySet for :class:`~camomilla.models.page.UrlNode`.
 
-    def get_reverse_pages_relations(self):
-        """
-        Get all reverse relations coming from AbstractPages models.
-        This is used to annotate the UrlNode with the related page fields.
-        """
+    The default queryset is **lean** — no joins. ``UrlNode`` is the permalink
+    uniqueness table, and most lookups (uniqueness checks, redirect resolution,
+    simple permalink resolution) need only its own columns. Two opt-in,
+    chainable methods add page data when a caller actually needs it:
+
+    * :meth:`with_page` — ``select_related`` the concrete page row so
+      ``node.page`` is free (no per-node query).
+    * :meth:`with_lifecycle` — annotate ``is_public`` / ``status`` /
+      ``published_at`` / ``deleted_at`` / ``indexable`` / ``date_updated_at``
+      from the page, for SQL filtering / ordering and cheap scalar reads.
+
+    Historically the *default* manager annotated unconditionally, forcing a
+    LEFT JOIN to every concrete page table on every UrlNode query; these are
+    now opt-in so the hot permalink/uniqueness paths stay join-free.
+    """
+
+    # The per-language ``date_updated_at`` default uses ``Value(now)``; resolved
+    # once at build time, which is fine for an orphan-node fallback only.
+    _LIFECYCLE_FIELD_SPECS = (
+        ("indexable", BooleanField, None),
+        ("published_at", DateTimeField, None),
+        ("deleted_at", DateTimeField, None),
+        ("date_updated_at", DateTimeField, "now"),
+    )
+
+    def _reverse_pages_relations(self):
+        """Reverse one-to-one relations from each concrete ``AbstractPage``
+        model back to this ``UrlNode`` — one per concrete page model. Returns
+        ``[{"name": <accessor>, "model": <page model>}, ...]``."""
         from camomilla.models.page import AbstractPage
 
         relations = []
-
         for field in self.model._meta.get_fields():
             if not (hasattr(field, "related_model") and field.one_to_one):
                 continue
-
-            if not issubclass(field.related_model, AbstractPage):
+            if not (
+                field.related_model
+                and issubclass(field.related_model, AbstractPage)
+            ):
                 continue
-
             if field.remote_field.name != "url_node":
                 continue
-
-            related_name = field.get_accessor_name()
             relations.append(
-                {
-                    "name": related_name,
-                    "model": field.related_model,
-                    "field_name": field.remote_field.name,
-                    "field": field,
-                }
+                {"name": field.get_accessor_name(), "model": field.related_model}
             )
         return relations
 
-    @property
-    def related_names(self):
-        self._related_names = getattr(self, "_related_names", None)
-        if self._related_names is None:
-            self._related_names = list(
-                set([rel["name"] for rel in self.get_reverse_pages_relations()])
-            )
-        return self._related_names
+    def with_page(self):
+        """``select_related`` every concrete reverse one-to-one page relation so
+        ``node.page`` resolves from the relation cache. Reuses the joins
+        :meth:`with_lifecycle` already creates, so chaining the two adds no
+        joins — only the page columns. Use wherever ``node.page`` is read.
+        """
+        names = sorted({rel["name"] for rel in self._reverse_pages_relations()})
+        return self.select_related(*names) if names else self
 
-    def _annotate_fields(
-        self,
-        qs: models.QuerySet,
-        field_names: Sequence[Tuple[str, models.Field, models.Value]],
-    ):
-        """Annotate UrlNode rows with fields pulled from the related page.
+    def with_lifecycle(self):
+        """Annotate the page-derived lifecycle fields onto each UrlNode:
+        ``indexable`` / ``published_at`` / ``deleted_at`` / ``date_updated_at``
+        (pulled from the **active-language** page column via
+        ``localized_fieldname``), then the derived ``is_public`` / ``status``.
 
-        Each F-join target is resolved to the **active-language** column on
-        the related model (via ``localized_fieldname(target=model)``).
-        ``modeltranslation`` rewrites lookups on the page side automatically
-        but F expressions through a foreign-key join are NOT rewritten —
-        without this we'd read the base column (whose value bears no
-        per-language meaning when translations are enabled) and the
-        downstream ``is_public`` annotation would lie across languages.
+        Use this for SQL filtering/ordering (``.filter(is_public=True)``) and
+        for cheap scalar reads without hydrating the whole page row.
+
+        IMPORTANT — language: the active-language column is resolved at queryset
+        **build** time, so the annotated values are only correct when the
+        queryset is evaluated under the *same* active language it was built
+        with. Camomilla's callers satisfy this (they run inside ``@active_lang``
+        or activate the request language before building). For access-time,
+        per-instance-correct values, read the page property instead
+        (``node.page.is_public`` / ``node.page.status``).
         """
         relations_by_name = {
-            rel["name"]: rel["model"] for rel in self.get_reverse_pages_relations()
+            rel["name"]: rel["model"] for rel in self._reverse_pages_relations()
         }
-        for field_name, output_field, default in field_names:
-            whens = [
-                When(
-                    related_name=related_name,
-                    then=F(
-                        "__".join(
-                            [
-                                related_name,
-                                localized_fieldname(
-                                    field_name,
-                                    target=relations_by_name[related_name],
-                                ),
-                            ]
-                        )
-                    ),
-                )
-                for related_name in self.related_names
-            ]
-            qs = qs.annotate(
-                **{field_name: Case(*whens, output_field=output_field, default=default)}
-            )
-        return self._annotate_lifecycle(qs)
-
-    def _annotate_lifecycle(self, qs: models.QuerySet):
-        """Annotate ``is_public`` + ``status`` on UrlNodes.
-
-        Both are derived from the page's ``published_at`` / ``deleted_at``
-        timestamps (already surfaced onto the UrlNode by
-        ``_annotate_fields`` via per-concrete-model joins). ``status``
-        no longer consults ``publish_at`` — that column doesn't exist
-        anymore; scheduled content swaps live in the ``Draft`` table
-        and don't affect the UrlNode's visibility label.
-        """
-        now = timezone.now()
-        return qs.annotate(
-            is_public=Case(
-                When(
-                    deleted_at__isnull=True,
-                    published_at__lte=now,
-                    then=Value(True),
-                ),
-                default=Value(False),
-                output_field=BooleanField(),
-            ),
-            status=Case(
-                When(deleted_at__isnull=False, then=Value(PAGE_STATUS_TRASHED)),
-                When(published_at__lte=now, then=Value(PAGE_STATUS_PUBLISHED)),
-                When(
-                    published_at__isnull=False,
-                    then=Value(PAGE_STATUS_SCHEDULED),
-                ),
-                default=Value(PAGE_STATUS_DRAFT),
-                output_field=CharField(),
-            ),
-        )
-
-    def get_queryset(self):
+        names = sorted(relations_by_name)
+        if not names:
+            return self
         try:
-            return self._annotate_fields(
-                super().get_queryset(),
-                [
-                    (
-                        "indexable",
-                        BooleanField(),
-                        Value(None, BooleanField()),
+            qs = self
+            for field_name, output_cls, default_kind in self._LIFECYCLE_FIELD_SPECS:
+                output_field = output_cls()
+                default = (
+                    Value(timezone.now(), output_cls())
+                    if default_kind == "now"
+                    else Value(None, output_cls())
+                )
+                whens = [
+                    When(
+                        related_name=name,
+                        then=F(
+                            "__".join(
+                                [
+                                    name,
+                                    localized_fieldname(
+                                        field_name, target=relations_by_name[name]
+                                    ),
+                                ]
+                            )
+                        ),
+                    )
+                    for name in names
+                ]
+                qs = qs.annotate(
+                    **{
+                        field_name: Case(
+                            *whens, output_field=output_field, default=default
+                        )
+                    }
+                )
+            now = timezone.now()
+            return qs.annotate(
+                is_public=Case(
+                    When(
+                        deleted_at__isnull=True,
+                        published_at__lte=now,
+                        then=Value(True),
                     ),
-                    (
-                        "published_at",
-                        DateTimeField(),
-                        Value(None, DateTimeField()),
-                    ),
-                    (
-                        "deleted_at",
-                        DateTimeField(),
-                        Value(None, DateTimeField()),
-                    ),
-                    (
-                        "date_updated_at",
-                        DateTimeField(),
-                        Value(timezone.now(), DateTimeField()),
-                    ),
-                ],
+                    default=Value(False),
+                    output_field=BooleanField(),
+                ),
+                status=Case(
+                    When(deleted_at__isnull=False, then=Value(PAGE_STATUS_TRASHED)),
+                    When(published_at__lte=now, then=Value(PAGE_STATUS_PUBLISHED)),
+                    When(published_at__isnull=False, then=Value(PAGE_STATUS_SCHEDULED)),
+                    default=Value(PAGE_STATUS_DRAFT),
+                    output_field=CharField(),
+                ),
             )
         except (ProgrammingError, OperationalError):
-            return super().get_queryset()
+            return self
+
+
+class UrlNodeManager(models.Manager.from_queryset(UrlNodeQuerySet)):
+    """Lean default manager for ``UrlNode`` — no joins on the default queryset.
+    Opt into page data with ``.with_page()`` / ``.with_lifecycle()``."""

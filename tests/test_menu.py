@@ -1,12 +1,16 @@
 import pytest
 import html
+from django.contrib.contenttypes.models import ContentType
+from django.db import connection
 from django.test import TransactionTestCase, RequestFactory
+from django.test.utils import CaptureQueriesContext
 from django.template import Template, Context, RequestContext
 from rest_framework.test import APIClient
 from .utils.api import login_superuser
 from camomilla.models import Menu
 from camomilla.models.menu import LinkTypes, MenuNodeLink
 from camomilla.models.page import Page, UrlNode
+from camomilla.serializers.page import UrlNodeSerializer
 
 
 class MenuTestCase(TransactionTestCase):
@@ -97,18 +101,23 @@ class MenuTestCase(TransactionTestCase):
             format="json",
         )
         assert response.status_code == 201
+        page = Page.objects.get(pk=response.json()["id"])
 
         menu = Menu.objects.first()
         menu.nodes = [
             {
                 "title": "key_7_node_title",
-                "link": {"page": {"id": 1, "model": "camomilla.page"}},
+                "link": {
+                    "link_type": LinkTypes.relational.value,
+                    "url_node": page.url_node_id,
+                },
             }
         ]
         menu.save()
 
         rendered = html.unescape(self.renderTemplate('{% render_menu "key_7" %}'))
-        assert {'href="permalink_page_menu_en_1"' in rendered}
+        assert "<a " in rendered
+        assert "permalink_page_menu_en_1" in rendered
 
     def test_menu_node_link_relational_derives_page(self):
         response = self.client.post(
@@ -141,6 +150,101 @@ class MenuTestCase(TransactionTestCase):
         assert link_with_instance.get_url() == url_node.routerlink
         assert link_with_instance.url == url_node.routerlink
 
+    def test_menu_node_link_relational_metadata_is_lazy(self):
+        response = self.client.post(
+            "/api/camomilla/pages/",
+            {
+                "translations": {
+                    "en": {
+                        "title": "lazy_relational_page",
+                        "permalink": "lazy_relational_permalink_en",
+                        "autopermalink": False,
+                    }
+                }
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        page = Page.objects.get(pk=response.json()["id"])
+        url_node = page.url_node
+
+        ContentType.objects.clear_cache()
+        payload = {
+            "link_type": LinkTypes.relational.value,
+            "url_node": url_node.pk,
+            # Old stored payloads may still carry these derived fields. They
+            # must be ignored; relational links are keyed only by url_node.
+            "page": {"id": page.pk, "model": "camomilla.page"},
+            "content_type": {"id": 9999},
+        }
+        with CaptureQueriesContext(connection) as captured:
+            link = MenuNodeLink.model_validate(payload)
+            assert link.url == url_node.routerlink
+
+        sql = "\n".join(q["sql"] for q in captured.captured_queries)
+        assert 'FROM "camomilla_page"' not in sql
+        assert 'FROM "django_content_type"' not in sql
+
+        dumped = link.model_dump()
+        assert "page" not in dumped
+        assert "content_type" not in dumped
+        assert dumped["url"] == url_node.routerlink
+
+        assert link.page.pk == page.pk
+        assert link.content_type.model_class() is Page
+
+    def test_url_node_with_page_selects_page_relation(self):
+        response = self.client.post(
+            "/api/camomilla/pages/",
+            {
+                "translations": {
+                    "en": {
+                        "title": "with_page_relation",
+                        "permalink": "with_page_relation",
+                        "autopermalink": False,
+                    }
+                }
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        page = Page.objects.get(pk=response.json()["id"])
+        node = UrlNode.objects.with_page().get(pk=page.url_node_id)
+
+        with CaptureQueriesContext(connection) as captured:
+            assert node.page.pk == page.pk
+
+        assert len(captured) == 0
+
+    def test_url_node_serializer_uses_annotations_without_page_query(self):
+        response = self.client.post(
+            "/api/camomilla/pages/",
+            {
+                "translations": {
+                    "en": {
+                        "title": "serializer_annotations",
+                        "permalink": "serializer_annotations",
+                        "autopermalink": False,
+                    }
+                }
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        page = Page.objects.get(pk=response.json()["id"])
+        # with_lifecycle() annotates is_public/status/indexable; the serializer
+        # reads those scalars and never dereferences .page.
+        node = UrlNode.objects.with_lifecycle().get(pk=page.url_node_id)
+
+        with CaptureQueriesContext(connection) as captured:
+            data = UrlNodeSerializer(node).data
+
+        sql = "\n".join(q["sql"] for q in captured.captured_queries)
+        assert 'FROM "camomilla_page"' not in sql
+        assert data["indexable"] == page.indexable
+        assert data["is_public"] == page.is_public
+        assert data["status"] == page.status
+
     def test_menu_node_link_static_get_url(self):
         link = MenuNodeLink(link_type=LinkTypes.static, static="/about")
         assert link.get_url() == "/about"
@@ -148,16 +252,12 @@ class MenuTestCase(TransactionTestCase):
 
     def test_menu_render_with_request_context(self):
         menu, _ = Menu.objects.get_or_create(key="render_ctx_menu")
-        menu.nodes = [
-            {"title": "ctx_node", "link": {"static": "/ctx-url"}}
-        ]
+        menu.nodes = [{"title": "ctx_node", "link": {"static": "/ctx-url"}}]
         menu.save()
 
         request = RequestFactory().get("/?preview=true")
         ctx = RequestContext(request, {"extra": "value"})
-        rendered = menu.render(
-            "defaults/parts/menu.html", request=request, context=ctx
-        )
+        rendered = menu.render("defaults/parts/menu.html", request=request, context=ctx)
         assert "ctx_node" in rendered
         assert "/ctx-url" in rendered
 
@@ -169,21 +269,23 @@ class MenuTestCase(TransactionTestCase):
         assert isinstance(page_types, list)
         # Should include Page and Article at least
         assert len(page_types) >= 2
-        
+
         # Test page_type_instances action - need a content type id
         if page_types:
             content_type_id = page_types[0]["id"]
-            response = self.client.get(f"/api/camomilla/menus/page_types/{content_type_id}/")
+            response = self.client.get(
+                f"/api/camomilla/menus/page_types/{content_type_id}/"
+            )
             assert response.status_code == 200
             instances = response.json()
             assert isinstance(instances, list)
-        
+
         # Test search_urlnode action
         response = self.client.get("/api/camomilla/menus/search_urlnode/?q=test")
         assert response.status_code == 200
         results = response.json()
         assert isinstance(results, list)
-        
+
         # Test accessing menu by key
         content = self.renderTemplate('{% render_menu "api_test_menu" %}')
         assert content != ""

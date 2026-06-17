@@ -13,12 +13,10 @@ from enum import Enum
 from typing import Optional
 
 from django.contrib.contenttypes.models import ContentType
-from pydantic import ConfigDict, computed_field, model_validator
-from rest_framework import serializers
+from django.core.exceptions import ObjectDoesNotExist
+from pydantic import ConfigDict, computed_field
 from structured.pydantic.conditionals import When, conditional_schema
-from structured.pydantic.fields.serializer import FieldSerializer
 from structured.pydantic.models import BaseModel
-from typing_extensions import Annotated
 
 # Eager imports — ``camomilla.types`` is imported lazily from any consumer
 # (user models, the menu module, the seed). By the time any of those run,
@@ -28,20 +26,6 @@ from typing_extensions import Annotated
 # — no forward refs to rebuild — and makes the dependency direction
 # explicit: types builds on models, never the reverse.
 from camomilla.models.page import AbstractPage, UrlNode
-
-
-class _AbstractPageMinimalSerializer(serializers.Serializer):
-    """Compact representation for the ``page`` derived field on a
-    :class:`Permalink` — just enough for an editor or a frontend to
-    identify the target without dragging in the whole page payload.
-    """
-
-    def to_representation(self, instance):
-        return {
-            "id": instance.id,
-            "name": instance.__str__(),
-            "model": f"{instance._meta.app_label}.{instance._meta.model_name}",
-        }
 
 
 class LinkTypes(str, Enum):
@@ -79,6 +63,9 @@ class Permalink(BaseModel):
       Django's ``i18n_patterns`` + ``APPEND_SLASH``. On /it/ a link to
       the about page emits ``/it/about/`` without any consumer-side
       i18n logic.
+    * **One canonical relational value.** A relational link stores only
+      ``url_node``. ``page`` / ``content_type`` are Python-only properties
+      derived from that node when code explicitly asks for them.
     * **No round-trip corruption.** Storage is JSON shaped exactly as
       the editor entered it; ``url`` is *derived*, never persisted.
       Writing the response back as-is just stores the same struct
@@ -106,20 +93,13 @@ class Permalink(BaseModel):
     # Free-form URL string for non-camomilla targets (externals, mailto,
     # tel, anchors). Honored only when ``link_type == static``.
     static: Optional[str] = None
-    # Auto-derived from ``url_node`` for relational links — exposed so
-    # frontends can identify the target's model / app without a second
-    # API round-trip. Editors don't set these directly.
-    content_type: Optional[ContentType] = None
-    page: Annotated[
-        Optional[AbstractPage],
-        FieldSerializer(_AbstractPageMinimalSerializer),
-    ] = None
     # The foreign key. Stores the ``UrlNode`` PK; pydantic + structured
     # rehydrate it to a model instance on read so ``url_node.routerlink``
     # works without a manual lookup.
     url_node: Optional[UrlNode] = None
 
     model_config = ConfigDict(
+        extra="ignore",
         json_schema_extra=conditional_schema(
             When(
                 "link_type",
@@ -132,28 +112,28 @@ class Permalink(BaseModel):
                 equals=LinkTypes.relational.value,
                 controls=["url_node"],
             ),
-            # ``content_type`` / ``page`` are derived — hide from the editor.
-            When("link_type", equals="__auto__", controls=["content_type", "page"]),
-        )
+        ),
     )
 
-    @model_validator(mode="after")
-    def _derive_page_and_content_type(self):
-        """Populate the derived ``page`` / ``content_type`` from
-        ``url_node`` after validation. Editors only set ``url_node``;
-        the rest follows from it.
-        """
-        if self.link_type == LinkTypes.relational and self.url_node:
-            # Re-resolve via DB so an in-memory ``UrlNode(pk=...)`` placeholder
-            # (e.g. from a JSON payload) gets a fully-hydrated row.
-            url_node_id = getattr(self.url_node, "pk", self.url_node)
-            url_node = UrlNode.objects.filter(pk=url_node_id).first()
-            if url_node and url_node.page:
-                self.page = url_node.page
-                self.content_type = ContentType.objects.get_for_model(
-                    self.page.__class__
-                )
-        return self
+    @property
+    def page(self) -> Optional[AbstractPage]:
+        """Target page, derived from ``url_node`` on demand."""
+        if self.link_type != LinkTypes.relational or not isinstance(
+            self.url_node, UrlNode
+        ):
+            return None
+        try:
+            return self.url_node.page
+        except (AttributeError, ObjectDoesNotExist):
+            return None
+
+    @property
+    def content_type(self) -> Optional[ContentType]:
+        """Target content type, derived from ``url_node`` on demand."""
+        page = self.page
+        if not page:
+            return None
+        return ContentType.objects.get_for_model(page.__class__)
 
     def get_url(self, request=None) -> Optional[str]:
         """Resolve to an output URL. Relational links go through

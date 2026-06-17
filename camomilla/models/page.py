@@ -774,9 +774,11 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
             path = request.path
             if getattr(django_settings, "APPEND_SLASH", True):
                 path = path.rstrip("/")
-            node = UrlNode.objects.filter(
-                permalink=url_lang_decompose(path)["permalink"]
-            ).first()
+            node = (
+                UrlNode.objects.with_page()
+                .filter(permalink=url_lang_decompose(path)["permalink"])
+                .first()
+            )
             page = node and node.page
         type_error = not bypass_type_check and not isinstance(page, cls)
         public_error = not bypass_public_check and not getattr(
@@ -823,9 +825,11 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         """
         try:
             if settings.ENABLE_TRANSLATIONS:
-                node = UrlNode.objects.get(lang_fallback_query(permalink="/"))
+                node = UrlNode.objects.with_page().get(
+                    lang_fallback_query(permalink="/")
+                )
             else:
-                node = UrlNode.objects.get(permalink="/")
+                node = UrlNode.objects.with_page().get(permalink="/")
             return node.page, False
         except UrlNode.DoesNotExist:
             page, created = cls.get_or_create(None, permalink="/")
