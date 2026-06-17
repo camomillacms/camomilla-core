@@ -2,6 +2,121 @@
 
 <!-- version list -->
 
+## v6.5.0 (2026-06-17)
+
+### Bug Fixes
+
+- Add related_name to ForeignKey and ManyToManyField in AbstractArticle
+  ([`c202c41`](https://github.com/camomillacms/camomilla-core/commit/c202c4178a3bf789618813e519fa916fe0843f81))
+
+- Reduce ambiguity of migration process by introducing model-specific data migration operations
+  ([`a71cfac`](https://github.com/camomillacms/camomilla-core/commit/a71cfac50c335d0ed9ac976ce7faf5cf61f32f02))
+
+- **migration**: Update camomilla dependency to use __first__ for dynamic migrations
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- **migration**: Update camomilla dependency to use __first__ for dynamic migrations
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- **reverse_url**: Improve reverse url handling in various places
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- **reverse_url**: Improve reverse url handling in various places
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+### Chores
+
+- Update example app theme 💅
+  ([`7584c1f`](https://github.com/camomillacms/camomilla-core/commit/7584c1f89baafb103988168100e6c43b7885b2a4))
+
+### Documentation
+
+- Update docs with detailed explanations for menu node links, page lifecycle, and structured JSON
+  field usage ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Update docs with detailed explanations for menu node links, page lifecycle, and structured JSON
+  field usage ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- Update index and pages documentation to include lifecycle information
+  ([`2070887`](https://github.com/camomillacms/camomilla-core/commit/2070887c74009fa39a68879513f22a4acc7db0ac))
+
+- **refactor**: Move from vuepress to vitepress with llm.txt configuration and native skills for
+  contributing and using Camomilla. ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- **refactor**: Move from vuepress to vitepress with llm.txt configuration and native skills for
+  contributing and using Camomilla. ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+### Features
+
+- Add management command to regenerate media renditions and corresponding tests
+  ([`7bc8394`](https://github.com/camomillacms/camomilla-core/commit/7bc83943f45aef11da159efd9e4bdcd7edf3660d))
+
+- Add method to get structured search display for media
+  ([`eacef26`](https://github.com/camomillacms/camomilla-core/commit/eacef26d7c6188c54b79464ea1e968f12083e174))
+
+- Add pages_router_preview for authenticated editor previews
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Add pages_router_preview for authenticated editor previews
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- Added query rewrite to make .filter(status=xxx) work like before.
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Added query rewrite to make .filter(status=xxx) work like before.
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- Implement camomilla_makemigrations command with auto-injection for data migrations
+  ([`eee5d3c`](https://github.com/camomillacms/camomilla-core/commit/eee5d3c09ee1b1bfee0f6b7b0942df767acee769))
+
+- Implement data migration for status-based publication to timestamp-derived lifecycle
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Page lifecycle (drafts, preview, scheduling, revisions) + typed links, docs & agent setup
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- Page lifecycle with per-language drafts, scheduling, and revisions
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Page lifecycle with per-language drafts, scheduling, and revisions
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+### Refactoring
+
+- Enhance migration operations and documentation for lifecycle column updates
+  ([`6ab82ac`](https://github.com/camomillacms/camomilla-core/commit/6ab82acd21d86b634b517439f9d9a772bd7383ad))
+
+- Extract Draft model and derive page lifecycle from timestamps
+  ([#49](https://github.com/camomillacms/camomilla-core/pull/49),
+  [`70c3cbe`](https://github.com/camomillacms/camomilla-core/commit/70c3cbe38bfe5fcf47725c3abb7fd0253f50f68f))
+
+- Extract Draft model and derive page lifecycle from timestamps
+  ([#48](https://github.com/camomillacms/camomilla-core/pull/48),
+  [`eadc842`](https://github.com/camomillacms/camomilla-core/commit/eadc842dd216a70316a9c1adcdde4973d4f77d2b))
+
+- Remove unnecessary whitespace in image_thumb_preview method
+  ([`b4623a3`](https://github.com/camomillacms/camomilla-core/commit/b4623a37ece38bfa3877b1e113ffd628e8f8d886))
+
+- Reorganize migration operations and update import paths for MigrateStatusToLifecycle
+  ([`34c7ec8`](https://github.com/camomillacms/camomilla-core/commit/34c7ec8917aba9db51e3c9dcfe2c4f43b6ceeabe))
+
+
 ## v6.4.0 (2026-04-22)
 
 ### Bug Fixes
