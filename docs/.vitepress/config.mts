@@ -54,6 +54,7 @@ export default defineConfig({
         ],
       },
       { text: 'Upgrading', link: '/Upgrading/' },
+      { text: 'Presentations', link: '/presentations/' },
       { text: 'Contribute', link: '/Contribute/' },
       { text: 'Changelog', link: '/Changelog/' },
       { text: 'License', link: '/License/' },

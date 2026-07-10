@@ -2,11 +2,11 @@
 name: camomilla-usage
 description: >-
   Use when building a Django project ON TOP OF camomilla (consuming
-  django-camomilla-cms as a dependency): installation and INSTALLED_APPS/URL
-  wiring, the REST API surface and authentication, adding custom pages, the
-  page lifecycle / drafts / preview / scheduling, media, menus, translations,
-  Meta models, StructuredJSONField and the typed Permalink link, settings.
-  NOT for editing camomilla's own source code — use the
+  django-camomilla-cms as a dependency): installing and wiring camomilla into a
+  Django project from scratch (INSTALLED_APPS / URLs / settings), the REST API
+  surface and authentication, adding custom pages, the page lifecycle / drafts /
+  preview / scheduling, media, menus, translations, Meta models, StructuredJSONField
+  and the typed Permalink link. NOT for editing camomilla's own source code — use the
   camomilla-internal-architecture skill for that.
 ---
 
