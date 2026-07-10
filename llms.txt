@@ -26,4 +26,5 @@ A powerful and flexible content management system built with Django. Perfect for
 - [🚀 Bootstrap your project](/camomilla-core/QuickStart.md)
 - [CHANGELOG](/camomilla-core/Changelog.md)
 - [How to contribute 🤝](/camomilla-core/Contribute.md)
+- [Presentations](/camomilla-core/presentations.md)
 - [Untitled](/camomilla-core/License.md)

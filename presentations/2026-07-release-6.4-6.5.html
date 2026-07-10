@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Camomilla 6.4 → 6.5 — Release Update</title>
+<style>
+  :root{
+    color-scheme: light; /* the camomilla theme deliberately commits to warm cream */
+    --ground:#f4efea;
+    --panel:#ece4d7;
+    --paper:#ffffff;
+    --ink:#1d2a1e;
+    --muted:rgba(29,42,30,.62);
+    --leaf:#6ab946;
+    --leaf-ink:#3c7d24;   /* deeper leaf for small text on cream */
+    --camomilla:#3eaf7c;
+    --mint:#b9edca;
+    --gold:#fcb92c;
+    --gold-ink:#7c5a12;
+    --gold-bg:#fbf1d8;
+    --code-bg:#173327;    /* canopy */
+    --code-ink:#e2ede6;
+    --code-cm:#8aa695;
+    --code-st:#fcd77f;
+    --code-kw:#8fdc74;
+    --code-nu:#9ecbff;
+    --line:rgba(29,42,30,.14);
+    --radius:3px;
+    --shadow-hard:6px 6px 0 var(--ink);
+    --shadow-hard-sm:4px 4px 0 var(--ink);
+    --display:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,"Cascadia Code",Consolas,monospace;
+    --body-face:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:var(--body-face);font-size:16px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* warm camomilla wash bleeding from the top (from the example app theme) */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(58rem 30rem at 12% -12%, rgba(106,185,70,.14), transparent 60%),
+      radial-gradient(52rem 28rem at 96% -8%, rgba(252,185,44,.16), transparent 60%);
+  }
+  /* faint graph-paper grid, fading out down the page */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.6;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:linear-gradient(180deg, black 0%, transparent 72%);
+    mask-image:linear-gradient(180deg, black 0%, transparent 72%);
+  }
+  .deck,.hud{position:relative;z-index:1;}
+  a{color:inherit;text-decoration-color:var(--leaf);text-decoration-thickness:.09em;text-underline-offset:.18em;}
+  a:hover{text-decoration-color:var(--camomilla);text-decoration-thickness:.14em;}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--leaf-ink);outline-offset:2px;border-radius:var(--radius);}
+
+  .deck{height:100dvh;}
+  .slide{display:none;height:100dvh;overflow-y:auto;box-sizing:border-box;}
+  .slide.active{display:block;}
+  .wrap{
+    max-width:1160px;margin:0 auto;box-sizing:border-box;
+    min-height:100dvh;padding:40px 64px 78px;
+    display:flex;flex-direction:column;justify-content:center;gap:18px;
+  }
+
+  .eyebrow{
+    display:flex;align-items:center;gap:12px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;
+  }
+  .chip{
+    display:inline-block;padding:2px 10px;border-radius:var(--radius);
+    border:1.5px solid var(--ink);background:var(--mint);color:var(--ink);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;font-weight:700;
+    text-transform:none;box-shadow:2px 2px 0 var(--ink);
+  }
+  .chip.gold{background:var(--gold);}
+  .chip.solid{background:var(--ink);color:var(--ground);}
+
+  h1,h2,h3{margin:0;font-family:var(--display);text-wrap:balance;line-height:1.16;}
+  h1{font-size:clamp(34px,4.5vw,54px);font-weight:700;letter-spacing:-.03em;}
+  h2{font-size:clamp(21px,2.35vw,30px);font-weight:700;letter-spacing:-.02em;}
+  h3{font-size:15px;font-weight:700;}
+  .lede{font-size:clamp(15.5px,1.4vw,18px);max-width:64ch;color:rgba(29,42,30,.8);margin:0;}
+  .lede strong{color:var(--ink);}
+  p{margin:0;}
+  .muted{color:var(--muted);}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;}
+  .cols.wide-r{grid-template-columns:5fr 6fr;}
+  .cols.wide-l{grid-template-columns:6fr 5fr;}
+  .stack{display:flex;flex-direction:column;gap:16px;min-width:0;}
+
+  .prose{display:flex;flex-direction:column;gap:12px;max-width:56ch;}
+  .prose p{color:rgba(29,42,30,.8);}
+  .prose .pt{position:relative;padding-left:17px;}
+  .prose .pt::before{content:"";position:absolute;left:0;top:.5em;width:7px;height:7px;border-radius:50%;background:var(--leaf);border:1px solid var(--ink);box-sizing:border-box;}
+
+  figure.code{
+    margin:0;min-width:0;background:var(--code-bg);border-radius:var(--radius);overflow:hidden;
+    border:2px solid var(--ink);box-shadow:var(--shadow-hard-sm);
+  }
+  figure.code figcaption{
+    display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+    padding:9px 16px 8px;font-size:12px;color:#b9cbbf;background:rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(255,255,255,.14);font-family:var(--body-face);
+  }
+  figure.code figcaption b{color:#eef5f0;font-weight:600;}
+  figure.code figcaption .lang{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--code-cm);flex:none;}
+  pre{
+    margin:0;padding:12px 16px;overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.52;color:var(--code-ink);
+    font-variant-ligatures:none;
+  }
+  .tk-cm{color:var(--code-cm);font-style:italic;}
+  .tk-st{color:var(--code-st);}
+  .tk-kw{color:var(--code-kw);font-weight:600;}
+  .tk-nu{color:var(--code-nu);}
+  .tk-tag{color:var(--code-st);}
+
+  .gotchas{
+    background:var(--gold-bg);border:2px solid var(--ink);border-radius:var(--radius);
+    box-shadow:4px 4px 0 var(--gold);
+    padding:12px 18px;display:flex;flex-direction:column;gap:7px;
+  }
+  .gotchas .glabel{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold-ink);display:flex;align-items:center;gap:8px;
+  }
+  .gotchas .glabel::before{content:"";width:10px;height:10px;background:var(--gold);border:1.5px solid var(--ink);border-radius:1px;transform:rotate(45deg) scale(.8);box-sizing:border-box;}
+  .gotchas ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;}
+  .gotchas li{font-size:13px;color:rgba(29,42,30,.85);padding-left:16px;position:relative;}
+  .gotchas li::before{content:"—";position:absolute;left:0;color:var(--gold-ink);}
+  .gotchas code, .prose code, .lede code, li code, td code, .cardlist code{
+    font-family:var(--mono);font-size:.85em;font-weight:500;
+    background:var(--mint);border:1.5px solid var(--ink);border-radius:var(--radius);
+    padding:0 4px;color:var(--ink);white-space:nowrap;
+  }
+
+  .foot{
+    margin-top:2px;padding-top:12px;border-top:2px solid var(--ink);
+    display:flex;flex-wrap:wrap;gap:10px 22px;align-items:baseline;font-size:13.5px;
+  }
+  .foot .flabel{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .foot a{white-space:nowrap;color:var(--leaf-ink);}
+
+  /* title + dividers */
+  .titleslide .wrap{gap:26px;}
+  .brandmark{flex:none;}
+  .kbdhint{font-size:13px;color:var(--muted);}
+  .kbdhint kbd{
+    font-family:var(--mono);font-size:11px;border:1.5px solid var(--ink);border-bottom-width:3px;
+    border-radius:var(--radius);padding:1px 7px;background:var(--paper);color:var(--ink);
+  }
+  .metaline{display:flex;flex-wrap:wrap;gap:8px 26px;font-family:var(--mono);font-size:13px;color:var(--muted);}
+  .metaline a{color:var(--leaf-ink);}
+  .divider .wrap{gap:24px;}
+  .divider .big{
+    font-family:var(--mono);font-weight:700;letter-spacing:-.05em;
+    font-size:clamp(80px,13vw,170px);line-height:.95;color:var(--ink);
+  }
+  .divider .big small{display:block;font-family:var(--body-face);font-size:clamp(17px,1.9vw,25px);line-height:1.3;letter-spacing:0;color:var(--muted);font-weight:500;margin-top:10px;}
+  .cardlist{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0;margin:0;list-style:none;}
+  .cardlist li{
+    background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius);
+    box-shadow:var(--shadow-hard-sm);padding:16px 18px;
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .cardlist li b{font-size:15.5px;}
+  .cardlist li span{font-size:13.5px;color:var(--muted);}
+
+  .glance{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+  .glance .relcol{display:flex;flex-direction:column;gap:14px;}
+  .glance .relhead{display:flex;align-items:baseline;gap:12px;}
+  .glance .relhead .v{font-family:var(--mono);font-weight:700;font-size:26px;color:var(--ink);}
+  .glance .relhead .v.v64{text-decoration:underline;text-decoration-color:var(--leaf);text-decoration-thickness:4px;text-underline-offset:5px;}
+  .glance .relhead .v.v65{text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:4px;text-underline-offset:5px;}
+  .glance .relhead .d{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .glance ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;}
+  .glance li{
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:var(--radius);padding:11px 15px;
+    font-size:14.5px;display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+  }
+  .glance li .go{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--leaf-ink);text-decoration:none;flex:none;cursor:pointer;}
+  .glance li .go:hover{text-decoration:underline;text-decoration-color:var(--camomilla);}
+  .glance li small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;}
+
+  table.states{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--paper);border-radius:var(--radius);overflow:hidden;border:2px solid var(--ink);box-shadow:var(--shadow-hard-sm);}
+  table.states th,table.states td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--line);}
+  table.states tr:last-child td{border-bottom:none;}
+  table.states th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--panel);border-bottom:2px solid var(--ink);}
+  table.states td:first-child{font-family:var(--mono);font-weight:700;font-size:12.5px;}
+  .st-pub{color:var(--leaf-ink);} .st-drf{color:var(--gold-ink);} .st-pla{color:#3d5c9e;} .st-trs{color:#a04b3c;}
+
+  /* HUD */
+  .hud{
+    position:fixed;left:0;right:0;bottom:0;z-index:10;pointer-events:none;
+  }
+  .hud .bar{height:4px;background:rgba(29,42,30,.1);border-top:2px solid var(--ink);}
+  .hud .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--leaf) 0%,var(--gold) 100%);width:0;transition:width .25s ease;}
+  .hud .row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:7px 20px 9px;font-size:12.5px;color:var(--muted);
+    background:rgba(244,239,234,.88);backdrop-filter:blur(12px);
+  }
+  .hud .counter{font-family:var(--mono);font-variant-numeric:tabular-nums;pointer-events:auto;color:var(--ink);}
+  .hud .navbtns{display:flex;gap:8px;pointer-events:auto;}
+  .hud button{
+    font:inherit;font-family:var(--mono);border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);
+    border-radius:var(--radius);padding:2px 13px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);
+  }
+  .hud button:hover{background:var(--mint);}
+  .hud button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
+  .hud .deckname{
+    display:flex;align-items:center;gap:8px;pointer-events:auto;
+    font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;font-weight:700;color:var(--ink);
+  }
+
+  @media (max-width:900px){
+    .wrap{padding:34px 26px 90px;justify-content:flex-start;}
+    .cols,.cols.wide-r,.cols.wide-l,.glance,.cardlist{grid-template-columns:1fr;}
+    .slide{height:auto;min-height:100dvh;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hud .bar i{transition:none;}
+    .hud button:active{transform:none;}
+  }
+  @media print{
+    .slide{display:block;height:auto;page-break-after:always;}
+    .wrap{min-height:0;padding:40px;}
+    .hud{display:none;}
+    body::before,body::after{display:none;}
+  }
+</style>
+
+<div class="deck" id="deck">
+
+<!-- 1 · TITLE ─────────────────────────────────────────── -->
+<section class="slide titleslide">
+  <div class="wrap">
+    <svg class="brandmark" width="340" height="125" viewBox="0 0 280 103" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Camomilla logo">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M221.305 79.6326L230.134 75.5301C230.134 75.5301 225.86 70.8764 225.86 64.4183C225.86 58.34 230.039 53.7812 237.922 53.7812C246.659 53.7812 250.363 59.2897 250.363 65.368C250.363 70.6865 246.469 75.1502 246.469 75.1502L256.152 79.633L238.729 87.8898L221.305 79.6326Z" fill="#FCB92C"/>
+      <path d="M235.646 0.726561C213.533 0.72656 195.599 17.616 195.599 45.3007C195.599 66.5431 205.697 75.5972 205.697 75.5972L222.935 67.5878C222.935 67.5878 215.1 59.056 215.1 47.216C215.1 36.0725 222.761 27.7148 237.213 27.7148C253.232 27.7148 260.022 37.8136 260.022 48.9572C260.022 58.7078 252.883 66.8913 252.883 66.8913L271.688 75.5972C271.688 75.5972 279.523 64.1054 279.523 45.8231C279.523 19.183 258.978 0.726562 235.646 0.726561Z" fill="#6AB946"/>
+      <path d="M75.9216 39.6066L78.1616 29.7666C73.9216 30.7266 73.7616 28.6466 73.7616 24.5666V15.7666C73.7616 5.44656 69.5216 0.726562 58.0816 0.726562C45.9216 0.726562 40.1616 6.00656 40.9616 12.4866L53.3616 14.8066C52.9616 11.2066 54.3216 9.84656 57.2016 9.84656C60.2416 9.84656 61.2816 11.3666 61.2816 15.6066V16.7266C48.2416 16.8066 39.6816 20.7266 39.6816 29.3666C39.6816 36.4866 45.5216 40.3266 52.3216 40.3266C58.1616 40.3266 61.0416 37.4466 62.9616 34.7266C64.0016 37.5266 67.3616 40.9666 75.9216 39.6066ZM61.2816 26.7266C60.9616 30.1666 58.0816 31.4466 55.6816 31.4466C53.6016 31.4466 52.2416 30.4866 52.2416 28.4066C52.2416 24.7266 56.4016 23.8466 61.2816 23.7666V26.7266Z" fill="#0D0302"/>
+      <path d="M167.065 40.3266C181.785 40.3266 186.345 31.3666 186.345 20.4066C186.345 10.0866 182.265 0.726562 166.825 0.726562C151.705 0.726562 147.385 9.76656 147.385 20.2466C147.385 30.9666 151.945 40.3266 167.065 40.3266ZM166.905 31.0466C161.385 31.0466 160.345 25.7666 160.345 20.4066C160.345 15.1266 161.385 10.0066 166.825 10.0066C172.345 10.0066 173.385 15.1266 173.385 20.5666C173.385 26.0066 172.345 31.0466 166.905 31.0466Z" fill="#0D0302"/>
+      <path d="M23.76 25.9266C23.76 29.1266 21.92 31.0466 18.88 31.0466C14.56 31.0466 12.96 27.7666 12.96 21.1266C12.96 15.7666 13.52 10.0066 18.88 10.0066C21.12 10.0066 23.6 11.5266 22.88 16.5666L35.12 14.0866C36 5.60656 29.28 0.726562 19.04 0.726562C8.16 0.726562 0 5.60656 0 20.4066C0 33.0466 5.76 40.3266 18.72 40.3266C29.04 40.3266 33.2 35.3666 35.36 28.2466L23.76 25.9266Z" fill="#0D0302"/>
+      <path d="M184.105 84.1495L186.345 74.3095C182.105 75.2695 181.945 73.1895 181.945 69.1095V60.3095C181.945 49.9895 177.705 45.2695 166.265 45.2695C154.105 45.2695 148.345 50.5495 149.145 57.0295L161.545 59.3495C161.145 55.7495 162.505 54.3895 165.385 54.3895C168.425 54.3895 169.465 55.9095 169.465 60.1495V61.2695C156.425 61.3495 147.865 65.2695 147.865 73.9095C147.865 81.0295 153.705 84.8695 160.505 84.8695C166.345 84.8695 169.225 81.9895 171.145 79.2695C172.185 82.0695 175.545 85.5095 184.105 84.1495ZM169.465 71.2695C169.145 74.7095 166.265 75.9895 163.865 75.9895C161.785 75.9895 160.425 75.0295 160.425 72.9495C160.425 69.2695 164.585 68.3895 169.465 68.3095V71.2695Z" fill="#0D0302"/>
+      <path d="M82.5605 83.7467H95.0405V46.3867H82.5605V83.7467Z" fill="#0D0302"/>
+      <path d="M88.7998 102.316C84.9598 102.316 81.7598 99.1164 81.7598 95.2764C81.7598 91.4364 84.9598 88.3164 88.7998 88.3164C92.7198 88.3164 95.8398 91.4364 95.8398 95.2764C95.8398 99.1164 92.7198 102.316 88.7998 102.316Z" fill="#0D0302"/>
+      <path d="M60.6027 83.7495H73.0827V59.1895C73.0827 47.5095 66.6827 45.2695 61.1627 45.2695C52.5227 45.2695 49.4827 50.5495 48.6027 52.5495C47.0027 47.1095 42.4427 45.2695 37.6427 45.2695C29.5627 45.2695 26.4427 50.0695 25.4027 52.3095V46.3895H13.8027V83.7495H26.2827V65.1095C26.9227 62.6295 29.1627 55.8295 33.6427 55.8295C36.2027 55.8295 37.2427 58.0695 37.2427 62.3895V83.7495H49.7227V64.8695C50.4427 62.0695 52.6827 55.8295 57.0027 55.8295C59.5627 55.8295 60.6027 57.9895 60.6027 62.3895V83.7495Z" fill="#0D0302"/>
+      <path d="M129.284 32.0273H141.764V14.6466C141.764 2.96656 135.364 0.726562 129.844 0.726562C121.204 0.726562 118.164 6.00656 117.284 8.00656C115.684 2.56656 111.124 0.726562 106.324 0.726562C98.2444 0.726562 95.1244 5.52656 94.0844 7.76656V1.84656H82.4844V39.2066H94.9644V20.5666C95.6044 18.0866 97.8444 11.2866 102.324 11.2866C104.884 11.2866 105.924 13.5266 105.924 17.8466V32.0273H118.404V20.3266C119.124 17.5266 121.364 11.2866 125.684 11.2866C128.244 11.2866 129.284 13.4466 129.284 17.8466V32.0273Z" fill="#0D0302"/>
+      <path d="M105.959 39.207V83.7492H118.439V39.207H105.959Z" fill="#0D0302"/>
+      <path d="M129.285 39.207V83.7492H141.765V39.207H129.285Z" fill="#0D0302"/>
+    </svg>
+    <div>
+      <div class="eyebrow">Dev teams briefing · July 2026</div>
+      <h1>Release update<br>6.4.0 → 6.5.0</h1>
+    </div>
+    <p class="lede">Media renditions, Meta Models, typed links, the new page lifecycle with drafts &amp; preview — and the one command that upgrades your project safely.</p>
+    <div class="metaline">
+      <span>camomillacms / camomilla-core</span>
+      <span>Django 4.2–5.2 · Python 3.10–3.14</span>
+      <span><a href="https://camomillacms.github.io/camomilla-core/">camomillacms.github.io/camomilla-core</a></span>
+    </div>
+    <p class="kbdhint"><kbd>←</kbd> <kbd>→</kbd> to navigate · <kbd>Home</kbd>/<kbd>End</kbd> jump · works when printed too</p>
+  </div>
+</section>
+
+<!-- 2 · AT A GLANCE ───────────────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow">The two releases at a glance</div>
+    <h2>Eight headlines, two themes:<br>faster media &amp; a real editorial workflow</h2>
+    <div class="glance">
+      <div class="relcol">
+        <div class="relhead"><span class="v v64">6.4.0</span><span class="d">April 22, 2026</span></div>
+        <ul>
+          <li><span><b>Media sourceset renditions</b><small>responsive <code>srcset</code> out of the box, zero runtime image work</small></span><a class="go" data-go="4">→ 4</a></li>
+          <li><span><b>Meta Models</b><small>runtime-defined content types — no migrations, no deploy</small></span><a class="go" data-go="6">→ 6</a></li>
+          <li><span><b>MenuNodeLink revamp</b><small>validator-driven links — the groundwork for typed links</small></span><a class="go" data-go="8">→ 8</a></li>
+        </ul>
+      </div>
+      <div class="relcol">
+        <div class="relhead"><span class="v v65">6.5.0</span><span class="d">June 17, 2026</span></div>
+        <ul>
+          <li><span><b>Page lifecycle</b><small>derived status, per-language drafts, scheduling, revisions</small></span><a class="go" data-go="11">→ 11</a></li>
+          <li><span><b>pages-router-preview</b><small>editor preview for headless frontends</small></span><a class="go" data-go="14">→ 14</a></li>
+          <li><span><b><code>camomilla.types.Permalink</code></b><small>typed, localized links in any <code>template_data</code></small></span><a class="go" data-go="8">→ 8</a></li>
+          <li><span><b><code>camomilla_makemigrations</code></b><small>safe upgrade — data migrations auto-injected</small></span><a class="go" data-go="15">→ 15</a></li>
+          <li><span><b>Docs &amp; AI tooling</b><small>VitePress + <code>llms.txt</code> + repo skills</small></span><a class="go" data-go="16">→ 16</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="flabel">Full list</span><a href="https://camomillacms.github.io/camomilla-core/Changelog/">…/Changelog/</a></div>
+  </div>
+</section>
+
+<!-- 3 · DIVIDER 6.4.0 ─────────────────────────────────── -->
+<section class="slide divider">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip solid">release</span> April 22, 2026</div>
+    <svg width="64" height="63" viewBox="0 0 84 83" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M25.7051 74.1717L34.5343 70.0692C34.5343 70.0692 30.2605 65.4155 30.2605 58.9573C30.2605 52.879 34.4393 48.3203 42.3221 48.3203C51.0596 48.3203 54.7636 53.8288 54.7636 59.9071C54.7636 65.2256 50.8697 69.6893 50.8697 69.6893L60.5524 74.1721L43.1292 82.4288L25.7051 74.1717Z" fill="#FCB92C"/>
+      <path d="M40.0461 -1.91795e-06C17.9332 -2.88454e-06 -0.000931524 16.8894 -0.000932735 44.5741C-0.000933663 65.8165 10.0979 74.8706 10.0979 74.8706L27.3355 66.8612C27.3355 66.8612 19.5002 58.3294 19.5002 46.4894C19.5003 35.3459 27.1614 26.9882 41.6132 26.9882C57.632 26.9882 64.4226 37.0871 64.4226 48.2306C64.4226 57.9812 57.2838 66.1647 57.2838 66.1647L76.0885 74.8706C76.0885 74.8706 83.9238 63.3789 83.9238 45.0965C83.9238 18.4565 63.3779 -8.9809e-07 40.0461 -1.91795e-06Z" fill="#6AB946"/>
+    </svg>
+    <div class="big">6.4.0<small>media &amp; content types</small></div>
+    <ul class="cardlist">
+      <li><b>Media sourceset renditions</b><span>Every upload pre-generates WebP/AVIF variants; the API hands you a ready-made <code>srcset</code>.</span></li>
+      <li><b>Meta Models</b><span>Editors define validated content types at runtime via <code>django-structured-metaobjects</code>.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4 · RENDITIONS: WHY + CONFIG ──────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> media renditions · 1/2</div>
+    <h2>Renditions: responsive images with zero runtime work</h2>
+    <div class="cols wide-r">
+      <div class="prose">
+        <p><strong>Before:</strong> one optimized original (max 1980×1400) plus a 50×50 thumbnail — every device downloaded the full-size image.</p>
+        <p><strong>Now:</strong> each uploaded image is encoded <em>once, at upload time</em>, into width-based variants (default: 400/800/1600&nbsp;px × WebP/AVIF/original = 9 files). Their metadata — url, width, height, format, size — is denormalized into a JSONField on the <code>Media</code> row.</p>
+        <p class="pt">Serving a page needs no Pillow work and no extra queries.</p>
+        <p class="pt">The serializer pre-formats the <code>srcset</code> string per format — drop it straight into a <code>&lt;picture&gt;</code> source.</p>
+        <p class="pt">Per-media override: <code>Media.renditions_config</code> beats the global config when set.</p>
+      </div>
+      <figure class="code">
+        <figcaption><b>settings.py — all knobs in one place</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python">CAMOMILLA = {
+    "MEDIA": {
+        "RENDITIONS": {
+            "ENABLE": True,          # default: on
+            "FOLDER": "renditions",
+            "VARIANTS": [
+                {"name": "sm-webp", "width": 400,  "format": "webp"},
+                {"name": "md-webp", "width": 800,  "format": "webp"},
+                {"name": "lg-webp", "width": 1600, "format": "webp"},
+                {"name": "lg-avif", "width": 1600, "format": "avif"},
+                {"name": "lg-orig", "width": 1600, "format": "original"},
+            ],
+            "WEBP_QUALITY": 82,
+            "AVIF_QUALITY": 60,
+            "PREVENT_INFLATE": True,  # skip outputs bigger than source
+        },
+    },
+}</code></pre>
+      </figure>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Media/">…/How to/Use Media/</a></div>
+  </div>
+</section>
+
+<!-- 5 · RENDITIONS: CONSUMING ─────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> media renditions · 2/2</div>
+    <h2>Consuming renditions: API, templates, regeneration</h2>
+    <div class="cols">
+      <figure class="code">
+        <figcaption><b>API — two new read-only fields</b><span class="lang">http</span></figcaption>
+        <pre><code class="lang-http">GET /api/camomilla/media/6/
+
+{
+  "file": "https://mysite.it/media/hero.jpg",
+  "renditions": {
+    "sm-webp": {"url": "…/renditions/hero/sm-webp.webp",
+                "width": 400, "height": 267,
+                "format": "webp", "size": 18432},
+    "md-webp": {…}
+  },
+  "srcset": {
+    "webp": "…/sm-webp.webp 400w, …/md-webp.webp 800w",
+    "avif": "…/sm-avif.avif 400w, …"
+  }
+}</code></pre>
+      </figure>
+      <div class="stack">
+        <figure class="code">
+          <figcaption><b>Server-rendered templates</b><span class="lang">django</span></figcaption>
+          <pre><code class="lang-jinja">{% load media_extras %}
+
+&lt;img src="{{ media.file.url }}"
+     srcset="{{ media|srcset:'webp' }}"
+     sizes="(min-width: 1024px) 1600px, 100vw"&gt;
+
+{% media_picture media alt="Hero" sizes="100vw" loading="lazy" %}</code></pre>
+        </figure>
+        <figure class="code">
+          <figcaption><b>After changing VARIANTS</b><span class="lang">bash</span></figcaption>
+          <pre><code class="lang-bash"># all image media — management command, 6.5.0+
+python manage.py regenerate_renditions
+
+# a single media, via the API
+POST /api/camomilla/media/6/regenerate-renditions/</code></pre>
+        </figure>
+      </div>
+    </div>
+    <div class="gotchas">
+      <div class="glabel">Gotchas</div>
+      <ul>
+        <li>Generation is <b>eager and synchronous</b> in <code>post_save</code> — 9 encodes per upload by default. Trim <code>VARIANTS</code> if upload latency matters.</li>
+        <li>AVIF needs the extra: <code>pip install "django-camomilla-cms[avif]"</code> — without it AVIF variants are <b>silently skipped</b>.</li>
+        <li>Small images can end up with zero renditions (upscale + inflate guards) — always fall back to <code>file</code>; the shipped tags already degrade gracefully.</li>
+        <li>Changing config never touches existing files — run <code>regenerate_renditions</code> after.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Media/">…/How to/Use Media/</a></div>
+  </div>
+</section>
+
+<!-- 6 · META MODELS: WHY + DEFINE ─────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> meta models · 1/2</div>
+    <h2>Meta Models: content types defined at runtime</h2>
+    <div class="cols wide-r">
+      <div class="prose">
+        <p>Small structured content — FAQs, testimonials, team members — normally costs a Django model, a migration and a release for every schema tweak. Meta Models turn <strong>the schema into data</strong>.</p>
+        <p class="pt">A <code>MetaType</code> declares typed fields; every <code>MetaInstance</code> is validated against a <strong>Pydantic model compiled on the fly</strong>. Saving a type invalidates the cache — no restart.</p>
+        <p class="pt">Field kinds: <code>string</code>, <code>html</code>, <code>number</code>, <code>boolean</code>, <code>date</code>, <code>datetime</code>, <code>select</code>, <code>ref</code>, <code>queryset</code>, <code>group</code>, <code>list</code> — plus per-field translation.</p>
+        <p class="pt"><code>ref</code>/<code>queryset</code> point at <em>any</em> installed Django model (pages, media, …).</p>
+        <p>Lives in the external <code>django-structured-metaobjects</code> package (hard dependency since 6.4.0); camomilla mounts its two viewsets on the API router.</p>
+      </div>
+      <figure class="code">
+        <figcaption><b>Create a content type — one POST, no migration</b><span class="lang">http</span></figcaption>
+        <pre><code class="lang-http">POST /api/camomilla/meta-types/
+
+{
+  "name": "FAQ",
+  "schema": [
+    {"name": "question", "kind": "string",
+     "required": true, "translated": true},
+    {"name": "answer", "kind": "html",
+     "required": true, "translated": true},
+    {"name": "weight", "kind": "number",
+     "integer": true, "minimum": 0},
+    {"name": "related_page", "kind": "ref",
+     "target_model": "camomilla.Page"}
+  ]
+}</code></pre>
+      </figure>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Meta%20Models/">…/How to/Use Meta Models/</a></div>
+  </div>
+</section>
+
+<!-- 7 · META MODELS: CONSUMING ────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> meta models · 2/2</div>
+    <h2>Validated writes, typed reads, auto-generated forms</h2>
+    <div class="cols">
+      <figure class="code">
+        <figcaption><b>Instances are validated server-side</b><span class="lang">http</span></figcaption>
+        <pre><code class="lang-http">POST /api/camomilla/meta-instances/
+
+{
+  "meta_type": 1,
+  "data": {
+    "question": {"en": "What is camomilla?",
+                 "it": "Cos'è camomilla?"},
+    "answer": {"en": "&lt;p&gt;A headless CMS.&lt;/p&gt;",
+               "it": "&lt;p&gt;Un CMS headless.&lt;/p&gt;"},
+    "weight": 10,
+    "related_page": 42
+  }
+}
+# wrong types / missing required → 400 with details
+
+# JSON Schema for auto-rendering the editing form:
+GET /api/camomilla/meta-types/1/schema/</code></pre>
+      </figure>
+      <figure class="code">
+        <figcaption><b>Typed access from Python</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python">from structured_metaobjects.models import MetaInstance
+
+faq = (MetaInstance.objects
+       .select_related("meta_type").get(pk=1))
+
+obj = faq.obj              # cached runtime Pydantic instance
+obj.question["en"]         # translated → per-language dict
+obj.weight                 # int (number + integer=True)
+obj.related_page.title     # ref → a real camomilla Page</code></pre>
+      </figure>
+    </div>
+    <div class="gotchas">
+      <div class="glabel">Gotchas</div>
+      <ul>
+        <li>Add <code>"structured"</code> and <code>"structured_metaobjects"</code> to <code>INSTALLED_APPS</code> and run <code>migrate</code> — the endpoints are always mounted, but without the apps their tables don't exist.</li>
+        <li>Both viewsets are <b>staff-only by default</b> (<code>IsAdminUser</code>) — public frontends fetch through your backend, or you register subclasses with relaxed permissions.</li>
+        <li>Validation runs in the serializer and <code>clean()</code> — plain <code>objects.create(...)</code> skips it unless you call <code>full_clean()</code>.</li>
+        <li><code>meta_type</code> is <code>on_delete=PROTECT</code> — you can't delete a type that still has instances.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Meta%20Models/">…/How to/Use Meta Models/</a><span class="muted">note: the docs page lags the released package slightly — the field kinds on the previous slide are source-verified</span></div>
+  </div>
+</section>
+
+<!-- 8 · TYPED LINKS: WHY + DECLARE ────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> + <span class="chip gold">6.5.0</span> typed links · 1/2</div>
+    <h2><code style="font-family:var(--mono);font-size:.9em">Permalink</code>: links that survive renames and speak every language</h2>
+    <div class="cols wide-r">
+      <div class="prose">
+        <p>Bare-string URL fields break silently: rename or translate a page and every stored <code>"/about"</code> is stale.</p>
+        <p class="pt">A relational <code>Permalink</code> stores the <strong><code>UrlNode</code> reference</strong> — the row, not the URL.</p>
+        <p class="pt">A read-only <code>url</code> field is computed at serialization time in the active language: <code>/about/</code> on EN, <code>/it/about/</code> on IT — honoring <code>i18n_patterns</code> and <code>APPEND_SLASH</code>.</p>
+        <p class="pt">Two kinds: <code>relational</code> (a page) and <code>static</code> (external URL) — validated conditionally, derived fields hidden from editors.</p>
+        <p>6.4.0 rebuilt <code>MenuNodeLink</code> this way; 6.5.0 promoted it to <code>camomilla.types.Permalink</code> so <em>any</em> <code>template_data</code> schema can use it.</p>
+      </div>
+      <figure class="code">
+        <figcaption><b>A typed CTA in your page's template_data</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python">from typing import Optional
+from camomilla.models import AbstractPage
+from camomilla.types import Permalink, LinkTypes
+from structured.fields import StructuredJSONField
+from structured.pydantic.models import BaseModel
+
+class HeroBlock(BaseModel):
+    headline: str = ""
+    cta_label: str = ""
+    cta: Optional[Permalink] = None   # the typed link
+
+class HomePageData(BaseModel):
+    hero: HeroBlock = HeroBlock()
+
+def _default(): return HomePageData()
+
+class HomePage(AbstractPage):
+    template_data = StructuredJSONField(
+        schema=HomePageData, default=_default)
+
+# building links in code / fixtures:
+Permalink(link_type=LinkTypes.relational,
+          url_node=about_page.url_node)
+Permalink(link_type=LinkTypes.static,
+          static="https://example.com")</code></pre>
+      </figure>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20StructuredJSONField/">…/How to/Use StructuredJSONField/</a><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Menu/">…/How to/Use Menu/</a></div>
+  </div>
+</section>
+
+<!-- 9 · TYPED LINKS: OUTPUT ───────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip">6.4.0</span> + <span class="chip gold">6.5.0</span> typed links · 2/2</div>
+    <h2>One stored reference, a localized URL per language</h2>
+    <div class="cols">
+      <figure class="code">
+        <figcaption><b>Same page, two languages</b><span class="lang">http</span></figcaption>
+        <pre><code class="lang-http">GET /api/camomilla/pages-router/it/
+
+{
+  "template_data": {
+    "hero": {
+      "cta_label": "Esplora la documentazione",
+      "cta": {
+        "link_type": "RE",
+        "url_node": {"id": 36, "permalink": "/about", …},
+        "url": "/it/about/"
+      }
+    }
+  }
+}
+
+# default-language path → same link, localized:
+GET /api/camomilla/pages-router/
+#   … "cta": { …, "url": "/about/" }</code></pre>
+      </figure>
+      <div class="stack">
+        <figure class="code">
+          <figcaption><b>Menus use the same primitive</b><span class="lang">django</span></figcaption>
+          <pre><code class="lang-jinja">{% load menus %}
+{% for item in menu.nodes %}
+  {% if item.link.url %}
+    &lt;a href="{{ item|node_url:request }}"&gt;{{ item.title }}&lt;/a&gt;
+  {% endif %}
+{% endfor %}</code></pre>
+        </figure>
+        <div class="gotchas">
+          <div class="glabel">Gotchas</div>
+          <ul>
+            <li>Bind hrefs to <code>url</code>, never to <code>static</code> — <code>url</code> handles both kinds; relational links omit <code>static</code> entirely.</li>
+            <li><code>url</code> is always root-relative. For absolute URLs (sitemaps, emails) call <code>link.get_url(request=request)</code> (6.5.0) or <code>node_url:request</code>.</li>
+            <li>Deleted target → <code>url</code> comes back <code>null</code>: guard with <code>{% if item.link.url %}</code>.</li>
+            <li>Migration-free: <code>MenuNodeLink</code> is now an alias of <code>Permalink</code>; stored JSON shape unchanged.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20StructuredJSONField/">…/How to/Use StructuredJSONField/</a><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Menu/">…/How to/Use Menu/</a></div>
+  </div>
+</section>
+
+<!-- 10 · DIVIDER 6.5.0 ────────────────────────────────── -->
+<section class="slide divider">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip solid">release</span> June 17, 2026</div>
+    <svg width="64" height="63" viewBox="0 0 84 83" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M25.7051 74.1717L34.5343 70.0692C34.5343 70.0692 30.2605 65.4155 30.2605 58.9573C30.2605 52.879 34.4393 48.3203 42.3221 48.3203C51.0596 48.3203 54.7636 53.8288 54.7636 59.9071C54.7636 65.2256 50.8697 69.6893 50.8697 69.6893L60.5524 74.1721L43.1292 82.4288L25.7051 74.1717Z" fill="#FCB92C"/>
+      <path d="M40.0461 -1.91795e-06C17.9332 -2.88454e-06 -0.000931524 16.8894 -0.000932735 44.5741C-0.000933663 65.8165 10.0979 74.8706 10.0979 74.8706L27.3355 66.8612C27.3355 66.8612 19.5002 58.3294 19.5002 46.4894C19.5003 35.3459 27.1614 26.9882 41.6132 26.9882C57.632 26.9882 64.4226 37.0871 64.4226 48.2306C64.4226 57.9812 57.2838 66.1647 57.2838 66.1647L76.0885 74.8706C76.0885 74.8706 83.9238 63.3789 83.9238 45.0965C83.9238 18.4565 63.3779 -8.9809e-07 40.0461 -1.91795e-06Z" fill="#6AB946"/>
+    </svg>
+    <div class="big">6.5.0<small>the page-lifecycle release</small></div>
+    <ul class="cardlist">
+      <li><b>Derived status</b><span>No more <code>status</code> column — publication state is computed from timestamps. It can't disagree with reality.</span></li>
+      <li><b>Per-language drafts</b><span>Stage edits without touching the live site; publish or schedule the swap.</span></li>
+      <li><b>Editor preview</b><span><code>pages-router-preview</code>: the headless frontend renders drafts with the same payload shape.</span></li>
+      <li><b>Safe upgrade</b><span><code>camomilla_makemigrations</code> auto-injects the data backfill for camomilla's models <em>and yours</em>.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 11 · LIFECYCLE: DERIVED STATUS ────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">6.5.0</span> page lifecycle · 1/3</div>
+    <h2>Status is derived, not stored</h2>
+    <div class="cols wide-l">
+      <div class="stack">
+        <p class="lede">Two timestamps + a separate <code>Draft</code> table replace the old <code>status</code>/<code>publication_date</code> columns. State and visibility can never disagree, and draft metadata stops leaking into every page subclass schema.</p>
+        <table class="states">
+          <tr><th>State</th><th>Derivation</th><th>Scope</th></tr>
+          <tr><td class="st-pub">PUB</td><td><code>deleted_at IS NULL</code> and <code>published_at &lt;= now()</code></td><td>per language</td></tr>
+          <tr><td class="st-drf">DRF</td><td><code>deleted_at IS NULL</code> and <code>published_at IS NULL</code></td><td>per language</td></tr>
+          <tr><td class="st-pla">PLA</td><td><code>deleted_at IS NULL</code> and <code>published_at &gt; now()</code></td><td>per language</td></tr>
+          <tr><td class="st-trs">TRS</td><td><code>deleted_at IS NOT NULL</code></td><td>global</td></tr>
+        </table>
+        <p class="muted" style="font-size:13.5px">A pending draft never changes the label: a published page with staged edits is still <b>PUB</b> — observe drafts via <code>has_draft</code> / <code>draft_data</code>.</p>
+      </div>
+      <figure class="code">
+        <figcaption><b>The page object, day to day</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python">page.status      # "PUB" / "DRF" / "PLA" / "TRS"
+                 # (for the active language)
+page.is_public   # True only when status == "PUB"
+
+page.has_draft   # pending Draft, active language
+page.draft_data  # the staged payload (dict), or {}
+
+# One Draft row per page per language:
+# UNIQUE(content_type, object_id, language)</code></pre>
+      </figure>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Page%20Lifecycle/">…/How to/Use Page Lifecycle/</a></div>
+  </div>
+</section>
+
+<!-- 12 · LIFECYCLE: WORKFLOW ──────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">6.5.0</span> page lifecycle · 2/3</div>
+    <h2>The editor workflow: stage → preview → publish (or schedule)</h2>
+    <div class="cols">
+      <figure class="code">
+        <figcaption><b>Python</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python">from datetime import timedelta
+from django.utils import timezone
+from camomilla.models import Page
+
+page = Page.objects.get(permalink="/about")
+# stage a draft for the active language
+page.save_draft({"translations":
+    {"en": {"title": "New title"}}})
+page.publish(comment="Editor approved")
+# → applies the draft + published_at = now()
+
+# …or stage a new draft and schedule the swap —
+# live content stays up until the date:
+page.save_draft({"translations":
+    {"en": {"title": "Summer sale"}}})
+page.schedule(timezone.now() + timedelta(days=7))
+page.trash()    # global soft-delete → TRS everywhere
+page.restore()  # back to what the timestamps say</code></pre>
+      </figure>
+      <figure class="code">
+        <figcaption><b>REST — same flow (auth + model permissions)</b><span class="lang">http</span></figcaption>
+        <pre><code class="lang-http">PATCH /api/camomilla/pages/12/draft/
+{"translations": {"en": {"title": "New hero title"}}}
+
+GET  /api/camomilla/pages/12/preview/
+     # live page + draft overlay (JSON)
+
+POST /api/camomilla/pages/12/publish/
+{"comment": "Editor approved"}
+
+POST /api/camomilla/pages/12/schedule/
+{"publish_at": "2026-08-01T09:00:00Z"}
+
+GET  /api/camomilla/pages/12/revisions/
+POST /api/camomilla/pages/12/revert/34/
+     # django-reversion snapshots (501 without it)</code></pre>
+      </figure>
+    </div>
+    <div class="gotchas">
+      <div class="glabel">Gotchas</div>
+      <ul>
+        <li>Draft endpoints act on the <b>active language</b> — one Draft row per page per language; publishing a language applies only what its row carries.</li>
+        <li><code>schedule()</code> on an already-public language attaches to the <b>existing</b> draft — save it first via <code>/draft/</code>, or the call is a no-op with a warning.</li>
+        <li>Revisions need <code>"reversion"</code> in <code>INSTALLED_APPS</code> — everything else works without it.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Page%20Lifecycle/">…/How to/Use Page Lifecycle/</a></div>
+  </div>
+</section>
+
+<!-- 13 · LIFECYCLE: QUERIES ───────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">6.5.0</span> page lifecycle · 3/3</div>
+    <h2>Your existing queries keep working</h2>
+    <div class="cols wide-l">
+      <figure class="code">
+        <figcaption><b>Compat rewrite + the canonical helpers</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python"># Old-style lookups still work — the manager rewrites
+# them into timestamp SQL:
+Page.objects.filter(status="PUB")
+Page.objects.exclude(status="TRS")
+Page.objects.filter(is_public=True)
+
+# Canonical helpers (preferred in new code):
+Page.objects.public()      # live right now
+Page.objects.draft()       # has a pending Draft row
+Page.objects.scheduled()   # future swap or first publish
+Page.objects.trashed()     # deleted_at IS NOT NULL
+
+# order_by / values need the explicit annotation:
+Page.objects.with_lifecycle().order_by("computed_status")</code></pre>
+      </figure>
+      <div class="stack">
+        <div class="prose">
+          <p class="pt">The rewrite covers <strong>keyword lookups only</strong>: <code>filter</code> / <code>exclude</code> / <code>get</code> with <code>status=</code>, <code>status__in=</code>, <code>is_public=</code>.</p>
+          <p class="pt">Not covered: <code>status</code> inside a positional <code>Q()</code>, <code>order_by("status")</code>, <code>values("status")</code> — those need <code>.with_lifecycle()</code> and its <code>computed_status</code> annotation.</p>
+          <p class="pt">Scheduled swaps materialize <strong>lazily on the first public read</strong> — for pages nobody visits, run <code>manage.py camomilla_publish_scheduled</code> on cron.</p>
+          <p class="pt">A subclass that defines its own real <code>status</code> column is left alone — the rewrite only kicks in when the field doesn't exist.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Page%20Lifecycle/">…/How to/Use Page Lifecycle/</a></div>
+  </div>
+</section>
+
+<!-- 14 · PREVIEW ──────────────────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">6.5.0</span> editor preview</div>
+    <h2><code style="font-family:var(--mono);font-size:.9em">pages-router-preview</code>: drafts in your headless frontend</h2>
+    <div class="cols wide-r">
+      <div class="prose">
+        <p>6.5.0 finally gates the public <code>pages-router</code> on <code>is_public</code> — <strong>before, it served unpublished pages to anyone</strong>. The preview router is the sanctioned replacement for editors.</p>
+        <p class="pt">Authenticated mirror of the public router: <strong>same payload shape, same canonical redirects</strong> — your frontend reuses its rendering path, just adds auth.</p>
+        <p class="pt">Bypasses <code>is_public</code>: drafts, scheduled and trashed pages return 200, with the pending draft <strong>overlaid per active language</strong>.</p>
+        <p class="pt">Never calls <code>publish_if_due</code> — looking at a due scheduled draft doesn't consume it. Exactly the semantics a preview needs.</p>
+        <p>The Astro integration already uses it on <code>?preview=true</code>, forwarding the editor's session cookies.</p>
+      </div>
+      <figure class="code">
+        <figcaption><b>Same page, two routers</b><span class="lang">bash</span></figcaption>
+        <pre><code class="lang-bash"># Public router: a draft page 404s
+curl -i https://cms.example.com/api/camomilla/pages-router/about/
+# HTTP/1.1 404 Not Found
+
+# Preview mirror: 200 for an authenticated editor
+TOKEN=$(curl -s -X POST \
+  https://cms.example.com/api/camomilla/token-auth/ \
+  -d 'username=editor&password=secret' | jq -r .token)
+
+curl -H "Authorization: Token $TOKEN" \
+  https://cms.example.com/api/camomilla/pages-router-preview/about/
+# 200 {"status": "DRF", "has_draft": true,
+#      "translations": {…draft content…}}</code></pre>
+      </figure>
+    </div>
+    <div class="gotchas">
+      <div class="glabel">Gotchas</div>
+      <ul>
+        <li>Auth is <code>IsAuthenticated</code>, <b>not staff-gated</b> — any logged-in user can read unpublished content. Projects with non-staff accounts must gate preview at the frontend.</li>
+        <li>Never cache preview responses in your frontend — the public router is server-cached (<code>ROUTER_CACHE</code>, 900&nbsp;s default), preview must be no-cache.</li>
+        <li>Both routers return canonical redirects as a 200 body: <code>{"redirect": "/about/", "status": 301}</code> — detect and follow them.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Page%20Lifecycle/">…/How to/Use Page Lifecycle/</a><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Astro%20Integration/">…/How to/Use Astro Integration/</a></div>
+  </div>
+</section>
+
+<!-- 15 · UPGRADE ──────────────────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow"><span class="chip gold">6.5.0</span> upgrading a project</div>
+    <h2>One command upgrades you — don't run plain <code style="font-family:var(--mono);font-size:.85em">makemigrations</code></h2>
+    <div class="cols">
+      <figure class="code">
+        <figcaption><b>Exact steps, in order (back up the DB first)</b><span class="lang">bash</span></figcaption>
+        <pre><code class="lang-bash">pip install -U django-camomilla-cms
+# settings.py: add "reversion" to INSTALLED_APPS
+
+# preview (accepts the usual makemigrations flags)
+python manage.py camomilla_makemigrations --dry-run
+
+# run WITHOUT an app argument → covers YOUR
+# AbstractPage subclasses too
+python manage.py camomilla_makemigrations
+
+python manage.py migrate</code></pre>
+      </figure>
+      <figure class="code">
+        <figcaption><b>What gets auto-injected, per page model</b><span class="lang">python</span></figcaption>
+        <pre><code class="lang-python"># myapp/migrations/00XX_… — generated for you
+from camomilla.upgrades.migrations import (
+    MigrateStatusToLifecycle)
+
+operations = [
+    migrations.AddField("customblog",
+                        "published_at", …),
+    MigrateStatusToLifecycle("customblog"),
+    #   ↑ the data backfill, placed between
+    #     AddField and RemoveField
+    migrations.RemoveField("customblog",
+                           "status"), …
+]</code></pre>
+      </figure>
+    </div>
+    <div class="prose">
+      <p><strong>Why it exists:</strong> 6.5 drops the <code>status</code>/<code>publication_date</code> columns. Plain <code>makemigrations</code> would generate a migration that <strong>silently wipes publication state</strong> — and camomilla can't ship migrations for <em>your</em> apps. The wrapper detects the breaking change per model and injects the ready-made backfill (PUB→<code>published_at=now</code>, PLA carries its date, TRS→<code>deleted_at</code> when every language was trashed).</p>
+    </div>
+    <div class="gotchas">
+      <div class="glabel">Gotchas</div>
+      <ul>
+        <li><b>Back up first</b> — the data step is forward-only (reversing restores columns, not values).</li>
+        <li>Already ran plain <code>makemigrations</code>? Delete that migration and regenerate with <code>camomilla_makemigrations</code>.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="flabel">Docs</span><a href="https://camomillacms.github.io/camomilla-core/Upgrading/">…/Upgrading/</a></div>
+  </div>
+</section>
+
+<!-- 16 · RESOURCES ────────────────────────────────────── -->
+<section class="slide">
+  <div class="wrap">
+    <div class="eyebrow">go deeper</div>
+    <h2>Resources for the team</h2>
+    <div class="glance">
+      <div class="relcol">
+        <div class="relhead"><span class="v" style="font-size:17px">Documentation</span></div>
+        <ul>
+          <li><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Media/">Use Media</a> — renditions &amp; srcset</li>
+          <li><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Meta%20Models/">Use Meta Models</a> — runtime content types</li>
+          <li><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Page%20Lifecycle/">Use Page Lifecycle</a> — drafts, preview, scheduling, revisions</li>
+          <li><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20StructuredJSONField/">Use StructuredJSONField</a> — typed <code>template_data</code> + <code>Permalink</code></li>
+          <li><a href="https://camomillacms.github.io/camomilla-core/Upgrading/">Upgrading</a> — the 6.5 migration, step by step</li>
+          <li><a href="https://camomillacms.github.io/camomilla-core/Changelog/">Changelog</a> — every commit, linked</li>
+        </ul>
+      </div>
+      <div class="relcol">
+        <div class="relhead"><span class="v" style="font-size:17px">Tooling &amp; hands-on</span></div>
+        <ul>
+          <li><span><b>AI tools</b><small>docs publish <a href="https://camomillacms.github.io/camomilla-core/llms.txt">llms.txt</a>; the repo ships <code>AGENTS.md</code> + two skills (<code>camomilla-usage</code>, <code>camomilla-internal-architecture</code>) — point Claude Code / Cursor at them</small></span></li>
+          <li><span><b>Demo playground</b><small><code>uv run python manage.py migrate&nbsp;&amp;&amp;&nbsp;uv run python manage.py seed_demo --reset</code> then <code>runserver</code> — demo pages, drafts and menus with an <code>admin/admin</code> user</small></span></li>
+          <li><span><b>Headless frontends</b><small><a href="https://camomillacms.github.io/camomilla-core/How%20to/Use%20Astro%20Integration/">Astro integration</a> with built-in <code>?preview=true</code> support</small></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="flabel">Questions</span><span class="muted">grab the docs URL from any slide — every claim in this deck is source-verified against v6.4.0 / v6.5.0</span></div>
+  </div>
+</section>
+
+</div>
+
+<div class="hud">
+  <div class="bar"><i id="bar"></i></div>
+  <div class="row">
+    <span class="deckname">
+      <svg width="18" height="18" viewBox="0 0 84 83" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M25.7051 74.1717L34.5343 70.0692C34.5343 70.0692 30.2605 65.4155 30.2605 58.9573C30.2605 52.879 34.4393 48.3203 42.3221 48.3203C51.0596 48.3203 54.7636 53.8288 54.7636 59.9071C54.7636 65.2256 50.8697 69.6893 50.8697 69.6893L60.5524 74.1721L43.1292 82.4288L25.7051 74.1717Z" fill="#FCB92C"/>
+        <path d="M40.0461 -1.91795e-06C17.9332 -2.88454e-06 -0.000931524 16.8894 -0.000932735 44.5741C-0.000933663 65.8165 10.0979 74.8706 10.0979 74.8706L27.3355 66.8612C27.3355 66.8612 19.5002 58.3294 19.5002 46.4894C19.5003 35.3459 27.1614 26.9882 41.6132 26.9882C57.632 26.9882 64.4226 37.0871 64.4226 48.2306C64.4226 57.9812 57.2838 66.1647 57.2838 66.1647L76.0885 74.8706C76.0885 74.8706 83.9238 63.3789 83.9238 45.0965C83.9238 18.4565 63.3779 -8.9809e-07 40.0461 -1.91795e-06Z" fill="#6AB946"/>
+      </svg>
+      camomilla 6.4 → 6.5
+    </span>
+    <span class="counter" id="counter">1 / 16</span>
+    <span class="navbtns">
+      <button id="prev" aria-label="Previous slide">←</button>
+      <button id="next" aria-label="Next slide">→</button>
+    </span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, cur = 0;
+  var bar = document.getElementById('bar');
+  var counter = document.getElementById('counter');
+
+  function show(i){
+    cur = Math.max(0, Math.min(n-1, i));
+    slides.forEach(function(s, k){ s.classList.toggle('active', k===cur); });
+    counter.textContent = (cur+1) + ' / ' + n;
+    bar.style.width = ((cur+1)/n*100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#'+(cur+1));
+    slides[cur].scrollTop = 0;
+  }
+  window.go = show;
+
+  document.getElementById('prev').addEventListener('click', function(){ show(cur-1); });
+  document.getElementById('next').addEventListener('click', function(){ show(cur+1); });
+  document.addEventListener('keydown', function(e){
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key==='ArrowRight' || e.key==='PageDown' || e.key===' ') { e.preventDefault(); show(cur+1); }
+    else if (e.key==='ArrowLeft' || e.key==='PageUp') { e.preventDefault(); show(cur-1); }
+    else if (e.key==='Home') { e.preventDefault(); show(0); }
+    else if (e.key==='End') { e.preventDefault(); show(n-1); }
+  });
+  document.querySelectorAll('[data-go]').forEach(function(el){
+    el.addEventListener('click', function(){ show(parseInt(el.getAttribute('data-go'),10)-1); });
+  });
+
+  /* --- tiny syntax highlighter --- */
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var GRAMMAR = {
+    python: [
+      ['cm', /#[^\n]*/],
+      ['st', /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/],
+      ['kw', /\b(?:from|import|class|def|return|assert|None|True|False|not|is|in|for|if|else|lambda|Optional)\b/],
+      ['nu', /\b\d+\b/]
+    ],
+    bash: [
+      ['cm', /#[^\n]*/],
+      ['st', /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/],
+      ['kw', /\b(?:curl|python|pip|jq|manage\.py|POST|GET)\b/]
+    ],
+    http: [
+      ['cm', /#[^\n]*/],
+      ['kw', /^(?:GET|POST|PUT|PATCH|DELETE)\b/m],
+      ['st', /"(?:[^"\\\n]|\\.)*"/],
+      ['nu', /\b\d{3}\b/]
+    ],
+    jinja: [
+      ['tag', /\{%[^%]*%\}|\{\{[^}]*\}\}/],
+      ['st', /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/]
+    ]
+  };
+  document.querySelectorAll('pre > code').forEach(function(code){
+    var lang = (code.className.match(/lang-(\w+)/)||[])[1];
+    var rules = GRAMMAR[lang];
+    if (!rules) return;
+    var src = code.textContent, out = '', pos = 0;
+    while (pos < src.length){
+      var best = null, bestIdx = Infinity, bestCls = '';
+      for (var r=0; r<rules.length; r++){
+        var re = new RegExp(rules[r][1].source, 'g' + (rules[r][1].flags.indexOf('m')>=0?'m':''));
+        re.lastIndex = pos;
+        var m = re.exec(src);
+        if (m && m.index < bestIdx){ bestIdx = m.index; best = m; bestCls = rules[r][0]; }
+      }
+      if (!best){ out += esc(src.slice(pos)); break; }
+      out += esc(src.slice(pos, bestIdx));
+      out += '<span class="tk-'+bestCls+'">' + esc(best[0]) + '</span>';
+      pos = bestIdx + best[0].length;
+    }
+    code.innerHTML = out;
+  });
+
+  var h = parseInt((location.hash||'').slice(1),10);
+  show(isNaN(h) ? 0 : h-1);
+})();
+</script>
+</body>
+</html>
