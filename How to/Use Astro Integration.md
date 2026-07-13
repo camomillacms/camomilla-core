@@ -5,6 +5,9 @@ url: /camomilla-core/How to/Use Astro Integration.md
 
 Camomilla ships with a first-class frontend integration for [Astro](https://astro.build/): **[@camomillacms/astro-integration](https://github.com/camomillacms/astro-camomilla-integration)**. It turns Camomilla into a fully headless CMS backend for an Astro site with zero boilerplate — auto-routing, SSR, SEO meta, template registration, caching, and ready-made components all handled by the integration.
 
+> \[!IMPORTANT]
+> **Version compatibility** — Camomilla **6.5** requires **`@camomillacms/astro-integration` ≥ 0.7**. The 6.5 release moves page-visibility gating server-side and adds the authenticated preview router and the public menus resolver; integration 0.7 is the first version that speaks this API. On camomilla 6.5, an older (0.6.x) integration would render non-public pages publicly. Conversely, integration 0.7 targets 6.5+ — see [Use Page Lifecycle](../Use%20Page%20Lifecycle/) for the details.
+
 ## Install
 
 ```bash

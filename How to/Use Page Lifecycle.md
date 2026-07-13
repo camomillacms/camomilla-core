@@ -41,7 +41,7 @@ To look at unpublished content, authenticated editors use the **preview** surfac
 | `GET /api/camomilla/pages/{id}/render/` | HTML, by id — renders the page template with `draft_data` in context |
 
 ::: tip Headless preview
-`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly.
+`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly — use **`@camomillacms/astro-integration` ≥ 0.7** with camomilla 6.5.
 :::
 
 ## ✏️ Drafts
