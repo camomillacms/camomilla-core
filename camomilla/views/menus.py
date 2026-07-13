@@ -2,7 +2,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import action
+from rest_framework import permissions
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
 from camomilla.models import AbstractPage, Menu
@@ -83,3 +84,24 @@ class MenuViewSet(GetUserLanguageMixin, BaseModelViewset):
         url_node = request.GET.get("q", "")
         qs = UrlNode.objects.filter(permalink__icontains=url_node).order_by("permalink")
         return Response(UrlNodeSerializer(qs, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+@active_lang()
+def menus_router(request, key=""):
+    """Public, read-only menu resolver keyed by ``Menu.key``.
+
+    Standalone from :class:`MenuViewSet` (which is auth-gated for the admin
+    panel) so a headless frontend can fetch site navigation anonymously —
+    the same split as ``pages_router`` vs ``PageViewSet``.
+
+    Language-aware via ``?language=<code>`` (or ``?lang=``), falling back to
+    the default language. Returns the full ``MenuSerializer`` payload; the
+    ``action`` context is forced off ``"list"`` so ``nodes`` are included.
+    """
+    # ponytail: resolves by key only, disabled menus included. Add
+    # ``enabled=True`` to the lookup if disabled menus must 404 publicly.
+    menu = get_object_or_404(Menu, key=key)
+    data = MenuSerializer(menu, context={"request": request, "action": "retrieve"}).data
+    return Response(data)

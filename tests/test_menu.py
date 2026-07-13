@@ -191,3 +191,21 @@ class MenuTestCase(TransactionTestCase):
         assert response.status_code == 200
         menu_data = response.json()
         assert menu_data["key"] == "api_test_menu"
+
+    def test_menus_router_public_read_by_key(self):
+        # The public menus-router resolves by key for anonymous clients and
+        # includes nodes; the admin MenuViewSet stays auth-gated.
+        menu, _ = Menu.objects.get_or_create(key="public_menu")
+        menu.nodes = [{"title": "Home", "link": {"static": "/"}}]
+        menu.save()
+
+        anon = APIClient()  # no credentials
+        response = anon.get("/api/camomilla/menus-router/public_menu")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["key"] == "public_menu"
+        assert data["nodes"][0]["title"] == "Home"
+
+        # Unknown key 404s; the admin viewset still denies anonymous access.
+        assert anon.get("/api/camomilla/menus-router/nope").status_code == 404
+        assert anon.get("/api/camomilla/menus/public_menu/").status_code in (401, 403)
