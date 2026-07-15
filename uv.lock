@@ -412,7 +412,7 @@ requires-dist = [
     { name = "django-structured-metaobjects", specifier = ">=1.0.0" },
     { name = "django-tinymce", specifier = ">=4.1.0,<5.0.0" },
     { name = "djangorestframework", specifier = ">=3.10,<3.17" },
-    { name = "djsuperadmin", specifier = ">=0.11,<1.0.0" },
+    { name = "djsuperadmin", specifier = ">=1.0.0" },
     { name = "inflection", specifier = ">=0.5.1" },
     { name = "pillow", specifier = ">=9.1.0,<12.0.0" },
     { name = "pillow-avif-plugin", marker = "extra == 'avif'", specifier = ">=1.4" },
@@ -590,11 +590,15 @@ wheels = [
 
 [[package]]
 name = "djsuperadmin"
-version = "0.11.3"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ea/34/56c02e64ab5329be358a481f5fa55f2f373ffed3f07c1c8f525bea43de0c/djsuperadmin-0.11.3.tar.gz", hash = "sha256:ad4879ff1d9b2b933c60877f6a2ff4a770533e521f4e2b7c7224692e783889e2", size = 12258 }
+dependencies = [
+    { name = "django", version = "5.2.10", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/30/60868833f07bb5476200012be6287c3eb36ff98fa7abdfd6e71c2ff0d039/djsuperadmin-1.0.1.tar.gz", hash = "sha256:289c24a11bf1148e6e12f75d076ec4133741813e68c742c12907d5a3b54eed72", size = 18509 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/4e/2ef5853c06f9f837e17ef41b55cd8592245075e37150c94b6807cc6b1913/djsuperadmin-0.11.3-py2.py3-none-any.whl", hash = "sha256:6496f9720de78f2ece57949131dc02b143a78b5b8dd1ec73ca87de78129a05af", size = 12476 },
+    { url = "https://files.pythonhosted.org/packages/ac/11/6949827a5b1b80fec3dbb42a88a15d523a63ee51407d064923fa92f310df/djsuperadmin-1.0.1-py3-none-any.whl", hash = "sha256:ac16a5947fc5f5150c04b2261057fee3a0ce0da0b16181d3e571c6ca06da986a", size = 16423 },
 ]
 
 [[package]]
