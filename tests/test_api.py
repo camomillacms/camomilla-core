@@ -204,6 +204,59 @@ def test_content_djsuperadmin_action():
 
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True)
+def test_content_djsuperadmin_history():
+    """Each djsuperadmin PATCH snapshots a revertible version; the history
+    endpoint returns prior states (newest-first), excluding the current value."""
+    token = login_superuser()
+    client.credentials(HTTP_AUTHORIZATION="Token " + token)
+
+    response = client.post(
+        "/api/camomilla/contents/",
+        {"identifier": "hist", "content_en": "v1"},
+        format="json",
+    )
+    assert response.status_code == 201
+    content_id = response.json()["id"]
+    url = f"/api/camomilla/contents/{content_id}/djsuperadmin/"
+
+    # No edits yet -> no history.
+    assert client.get(url + "history/").json()["versions"] == []
+
+    client.patch(url, {"content": "v2"}, format="json")
+    client.patch(url, {"content": "v3"}, format="json")
+
+    versions = client.get(url + "history/").json()["versions"]
+    # Prior states only, newest-first; current ("v3") excluded.
+    assert [v["data"] for v in versions] == ["v2", "v1"]
+    assert all("created_at" in v for v in versions)
+
+
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
+def test_content_get_or_create_seeds_fallback():
+    """get-or-create seeds ``content`` on creation only; existing blocks are kept."""
+    token = login_superuser()
+    client.credentials(HTTP_AUTHORIZATION="Token " + token)
+
+    # First call creates the block seeded with the fallback markup.
+    response = client.post(
+        "/api/camomilla/contents/get-or-create/",
+        {"identifier": "seed-block", "content": "<p>fallback</p>"},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["content"] == "<p>fallback</p>"
+
+    # Second call with different content must NOT overwrite the existing block.
+    response = client.post(
+        "/api/camomilla/contents/get-or-create/",
+        {"identifier": "seed-block", "content": "<p>changed</p>"},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["content"] == "<p>fallback</p>"
+
+
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_languages_endpoint():
     """Test the languages endpoint to cover LanguageViewSet"""
     token = login_superuser()

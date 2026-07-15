@@ -2,6 +2,7 @@ import logging
 from typing import Sequence, Tuple, Optional
 from uuid import uuid4
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -281,6 +282,12 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
     deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
     indexable = models.BooleanField(default=True)
     autopermalink = models.BooleanField(default=True)
+    contents = GenericRelation(
+        "camomilla.Content",
+        content_type_field="content_type",
+        object_id_field="object_id",
+        related_query_name="page",
+    )
 
     objects = PageQuerySet.as_manager()
 
