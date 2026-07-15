@@ -30,5 +30,5 @@ class OrderingMixin:
             isinstance(model_field, ORDERING_ACCEPTED_FIELDS)
             and field_name == self._get_ordering_field_name()
         ):
-            field_kwargs["default"] = self.get_max_order(field_name) + 1
+            field_kwargs["default"] = lambda: self.get_max_order(field_name) + 1
         return field_class, field_kwargs
