@@ -38,7 +38,6 @@ class ContentViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
             content.save()
         return JsonResponse({"content": content.content})
 
-
     @action(detail=True, methods=["get"], url_path="djsuperadmin/history")
     def djsuperadmin_history(self, request, pk):
         content = get_object_or_404(Content, pk=pk)
