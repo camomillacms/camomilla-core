@@ -338,6 +338,11 @@ class PageQuerySet(QuerySet):
         )
 
 
+# How many ancestor levels ``prefetch_pages`` preloads for breadcrumbs. Deeper
+# ancestors still resolve, just with one extra query apiece.
+PAGE_ANCESTOR_DEPTH = 4
+
+
 class UrlNodeManager(models.Manager):
 
     def get_reverse_pages_relations(self):
@@ -378,6 +383,33 @@ class UrlNodeManager(models.Manager):
                 set([rel["name"] for rel in self.get_reverse_pages_relations()])
             )
         return self._related_names
+
+    def prefetch_pages(self):
+        """Preload ``node.page``, its ancestor pages and their contents.
+
+        Serializing a list of UrlNodes touches, per row, the concrete page,
+        that page's ``contents`` and the whole ancestor chain (breadcrumbs).
+        Left alone that is a textbook N+1 — the cost grows with the number of
+        pages. This makes the query count bounded instead.
+
+        The split between join and batch is deliberate:
+
+        * The page and its ancestor **pages** are ``select_related`` (joins).
+        * The ancestors' ``url_node`` and each page's ``contents`` are
+          ``prefetch_related`` (separate batched queries). Joining those too
+          would multiply out as (subclass x depth x url_node) and blow
+          SQLite's 64-table join limit on projects with several page types.
+        """
+        select, prefetch = [], []
+        for accessor in self.related_names:
+            select.append(accessor)
+            prefetch.append(f"{accessor}__contents")
+            chain = accessor
+            for _ in range(PAGE_ANCESTOR_DEPTH):
+                chain = f"{chain}__parent_page"
+                select.append(chain)
+                prefetch.append(f"{chain}__url_node")
+        return self.get_queryset().select_related(*select).prefetch_related(*prefetch)
 
     def _annotate_fields(
         self,

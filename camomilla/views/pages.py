@@ -1,8 +1,13 @@
+import hashlib
+import json
 from datetime import datetime
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.translation import get_language
 from django.utils.translation.trans_real import activate as activate_language
 from rest_framework import permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
@@ -10,11 +15,17 @@ from rest_framework.response import Response
 
 from camomilla.models import Page
 from camomilla.models.page import UrlNode, UrlRedirect
+from camomilla.models.site import SiteEpoch
 from camomilla.preview import reversion_available
 from camomilla.serializers import PageSerializer
 from camomilla.serializers.page import RouteSerializer
 from camomilla.settings import API_TRANSLATION_ACCESSOR, PAGE_ROUTER_CACHE
-from camomilla.utils.translation import url_lang_decompose
+from camomilla.utils.pages import public_path
+from camomilla.utils.translation import (
+    activate_languages,
+    get_nofallbacks,
+    url_lang_decompose,
+)
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import staff_excluded_cache
 from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
@@ -291,3 +302,83 @@ def pages_router_preview(request, permalink=""):
         return Response(canonical)
     data = RouteSerializer(node, context={"request": request}).data
     return Response(_draft_overlay(node.page, data))
+
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def pages_router_changes(request):
+    nodes = list(UrlNode.objects.prefetch_pages())
+    urls = []
+    for language_code in activate_languages():
+        for node in nodes:
+            try:
+                page = node.page
+            except ObjectDoesNotExist:
+                continue  # orphaned UrlNode (no page)
+            page.url_node = node
+            if not page.is_public:
+                continue
+            permalink = get_nofallbacks(node, "permalink")
+            if not permalink:
+                continue
+            payload = RouteSerializer(node, context={"request": request}).data
+            blob = json.dumps(payload, sort_keys=True, default=str)
+            urls.append(
+                {
+                    "path": public_path(language_code, permalink),
+                    "permalink": permalink,
+                    "language_code": language_code,
+                    "hash": hashlib.sha1(blob.encode("utf-8")).hexdigest(),
+                }
+            )
+
+    redirects = [
+        {
+            "from": public_path(r.language_code, r.from_url),
+            "to": r.redirect_to,
+            "status": 301 if r.permanent else 302,
+        }
+        for r in UrlRedirect.objects.all()
+    ]
+
+    return Response(
+        {
+            "server_time": timezone.now(),
+            "epoch": SiteEpoch.current(),
+            "urls": urls,
+            "redirects": redirects,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAdminUser])
+def pages_router_publish_due(request):
+    """Apply any due scheduled Drafts, then report how many were published.
+
+    On a static/CDN deploy nobody hits the SSR route, so the lazy
+    ``publish_if_due`` that normally fires on first read never runs. The
+    incremental build calls this first (step 0) so scheduled content that has
+    come due is materialised before the manifest is computed. Staff-only
+    (``IsAdminUser``) — satisfied by a session cookie or a DRF token, so a
+    headless build authenticates with ``Authorization: Token <...>``.
+
+    Idempotent: re-running with nothing due publishes zero and is a no-op.
+    Mirrors the ``camomilla_publish_scheduled`` management command (both walk
+    the same :func:`resolve_scheduled_pages`) for the manual-trigger flow
+    that has no cron.
+    """
+    from camomilla.preview import resolve_scheduled_pages
+
+    published = 0
+    for page, lang in resolve_scheduled_pages():
+        original = get_language()
+        try:
+            if lang:
+                activate_language(lang)
+            page.publish(comment="Scheduled publish (static build)")
+            published += 1
+        finally:
+            if original:
+                activate_language(original)
+    return Response({"published": published})
