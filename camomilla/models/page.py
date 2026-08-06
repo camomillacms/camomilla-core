@@ -85,7 +85,8 @@ class UrlRedirect(models.Model):
         if getattr(django_settings, "APPEND_SLASH", True) and not url_to.endswith("/"):
             url_to += "/"
         if (
-            self.language_code != settings.DEFAULT_LANGUAGE
+            self.language_code
+            and self.language_code != settings.DEFAULT_LANGUAGE
             and settings.ENABLE_TRANSLATIONS
         ):
             url_to = "/" + self.language_code + url_to
