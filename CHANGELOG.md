@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v6.6.0 (2026-08-31)
+
+### Bug Fixes
+
+- Add public menus router for anonymous access and update documentation
+  ([`5f54f7c`](https://github.com/camomillacms/camomilla-core/commit/5f54f7cdab052f313a8537d06b163d64eca0e1b2))
+
+- Ensure language code is checked before appending to URL in UrlRedirect
+  ([`55f0387`](https://github.com/camomillacms/camomilla-core/commit/55f038765ad8a2a647ea879626416a14db41ecdb))
+
+- Improve the djsuperadmin implementation and update deps
+  ([`142df46`](https://github.com/camomillacms/camomilla-core/commit/142df46e65a9d005e06b0e9271a31d64c6c6b9ab))
+
+### Chores
+
+- Added camomilla 4.5 / 4.6 presentation to docs
+  ([`c941e06`](https://github.com/camomillacms/camomilla-core/commit/c941e064c1d335b60d8514cfce43e2e7bde5dcf6))
+
+### Features
+
+- Implement pages-router changes and publish due endpoints with associated tests
+  ([#50](https://github.com/camomillacms/camomilla-core/pull/50),
+  [`ae80103`](https://github.com/camomillacms/camomilla-core/commit/ae80103c729f5beb55fc7d9ddcab82d215316684))
+
+### Performance Improvements
+
+- Improve ordering api query performances
+  ([`231e34d`](https://github.com/camomillacms/camomilla-core/commit/231e34d6021a777877904ab8d49323861ed8a87c))
+
+### Refactoring
+
+- Remove unnecessary blank line in ContentViewSet
+  ([`62200b8`](https://github.com/camomillacms/camomilla-core/commit/62200b8074f215140cc11bc5a8c62a0fbd7d9640))
+
+
 ## v6.5.0 (2026-06-17)
 
 ### Bug Fixes
