@@ -20,7 +20,12 @@ from camomilla.views import (
     MenuViewSet,
 )
 from structured_metaobjects.views import MetaInstanceViewSet, MetaTypeViewSet
-from camomilla.views.pages import pages_router, pages_router_preview
+from camomilla.views.pages import (
+    pages_router,
+    pages_router_changes,
+    pages_router_preview,
+    pages_router_publish_due,
+)
 from camomilla.views.menus import menus_router
 from camomilla.redirects import url_patterns as old_redirects
 
@@ -41,6 +46,10 @@ router.register(r"meta-instances", MetaInstanceViewSet, "structured_metaobjects-
 urlpatterns = [
     *old_redirects,
     path("", include(router.urls)),
+    # Specific routes MUST precede the ``<path:permalink>`` catch-all, or
+    # ``changes`` / ``publish-due`` would resolve as a page permalink.
+    path("pages-router/changes", pages_router_changes),
+    path("pages-router/publish-due", pages_router_publish_due),
     path("pages-router/", pages_router),
     path("pages-router/<path:permalink>", pages_router),
     path("pages-router-preview/", pages_router_preview),
