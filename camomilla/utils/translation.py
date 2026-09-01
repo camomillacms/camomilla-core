@@ -116,6 +116,58 @@ def is_translatable(model: Model) -> bool:
     return model in translator.get_registered_models()
 
 
+def get_lang_info(model: Model, translation_fields=None) -> dict:
+    """
+    Describe the language situation OF A MODEL.
+
+    Served on ``OPTIONS`` only. It describes a model, not an instance, so
+    repeating it on every retrieved record was duplicating metadata into data —
+    and OPTIONS is the only source a "create new" form can consult, since there
+    is no record to fetch yet. Clients read it once per endpoint.
+
+    ``languages`` is empty for a model nobody registered for translation, even
+    on a multilingual site: a client that rendered a switcher there would be
+    collecting values the backend drops on save.
+
+    ``translation_fields`` should be the SERIALIZER's list whenever the caller
+    has one. The modeltranslation registry is not authoritative: serializers add
+    to it — ``AbstractPageMixin.translation_fields`` appends ``permalink``, which
+    the registry has never heard of. A client that trusted the registry would
+    write ``permalink`` at the top level, ``nest_to_plain`` would pop it as a
+    translated field, and the edit would vanish with no error on the single most
+    important field of a CMS page.
+    """
+    from django.conf import settings as django_settings
+    from django.utils import translation as dj_translation
+    from modeltranslation.translator import NotRegistered, translator
+
+    from camomilla.settings import ENABLE_TRANSLATIONS
+
+    # ENABLE_TRANSLATIONS off means the API serves no translations at all,
+    # whatever the modeltranslation registry happens to contain.
+    translatable = bool(ENABLE_TRANSLATIONS) and is_translatable(model)
+    site_languages = [code for code, _ in django_settings.LANGUAGES]
+
+    fields = []
+    if translatable:
+        if translation_fields is not None:
+            fields = list(translation_fields)
+        else:
+            try:
+                fields = list(translator.get_options_for_model(model).get_field_names())
+            except NotRegistered:  # pragma: no cover - guarded by is_translatable
+                fields = []
+
+    return {
+        "default": django_settings.LANGUAGE_CODE,
+        "active": dj_translation.get_language(),
+        "translatable": translatable,
+        "languages": site_languages if translatable else [],
+        "translatable_fields": fields,
+        "site_languages": site_languages,
+    }
+
+
 def plain_to_nest(data, fields, accessor="translations"):
     """
     This function transforms a plain dictionary with translations fields (es. {"title_en": "Hello"})

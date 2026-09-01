@@ -5,7 +5,9 @@ from ..mixins import (
     CamomillaBasePermissionMixin,
 )
 from camomilla.serializers.mixins import TranslationsMixin
-from camomilla.utils.translation import plain_to_nest
+from camomilla.openapi.schema import FormAutoSchema
+from camomilla.settings import API_TRANSLATION_ACCESSOR
+from camomilla.utils.translation import get_lang_info, plain_to_nest
 from rest_framework import viewsets
 from rest_framework.metadata import SimpleMetadata
 from structured.contrib.restframework import StructuredJSONField
@@ -34,6 +36,53 @@ class BaseViewMetadata(SimpleMetadata):
         if isinstance(serializer, TranslationsMixin) and serializer.is_translatable:
             info.update(plain_to_nest(info, serializer.translation_fields))
         return info
+
+    def determine_metadata(self, request, view):
+        """
+        Publish `lang_info` and a flat, form-oriented `schema` on OPTIONS.
+
+        OPTIONS is the authoritative source for both: they describe the model
+        rather than an instance, they are unaffected by a serializer that lists
+        Meta.fields explicitly, and they are the only thing a "create new" form
+        can consult — there is no record to retrieve yet.
+        """
+        metadata = super().determine_metadata(request, view)
+
+        serializer = self._get_serializer(view)
+        model = getattr(view, "model", None) or getattr(
+            getattr(view, "queryset", None), "model", None
+        )
+
+        if model is not None:
+            metadata["lang_info"] = get_lang_info(
+                model,
+                translation_fields=getattr(serializer, "translation_fields", None),
+            )
+            # Where a client must WRITE per-language values. Published rather
+            # than assumed: the accessor is configurable, and a client that
+            # hardcoded "translations" would write to a key nest_to_plain never
+            # reads — dropping every translation on save, undetectably.
+            metadata["lang_info"]["accessor"] = API_TRANSLATION_ACCESSOR
+
+        if serializer is not None:
+            metadata["schema"] = FormAutoSchema().map_serializer(serializer)
+
+        return metadata
+
+    def _get_serializer(self, view):
+        """
+        The view's serializer, or None.
+
+        Its ``translation_fields`` is a superset of the modeltranslation registry
+        — page serializers append ``permalink`` — so the registry alone would
+        report permalink as untranslatable and a client's edits to it would be
+        silently dropped.
+        """
+        try:
+            return view.get_serializer()
+        except Exception:
+            # Metadata must never be the thing that 500s an OPTIONS call.
+            return None
 
 
 class BaseModelViewset(*base_viewset_classes):
