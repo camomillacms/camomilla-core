@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v6.7.0 (2026-09-01)
+
+### Features
+
+- Added lang descriptions on OPTION method on api, and updated openapi schema
+  ([#51](https://github.com/camomillacms/camomilla-core/pull/51),
+  [`650e4a3`](https://github.com/camomillacms/camomilla-core/commit/650e4a34870280468ac1ffe4ed3ad41562372cb6))
+
+
 ## v6.6.0 (2026-08-31)
 
 ### Bug Fixes
