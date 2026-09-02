@@ -28,6 +28,7 @@ from camomilla.utils import (
     url_lang_decompose,
 )
 from camomilla.utils.getters import pointed_getter
+from camomilla.utils.pages import public_path
 from camomilla import settings
 from camomilla.templates_context.rendering import ctx_registry
 from django.conf import settings as django_settings
@@ -130,13 +131,19 @@ class UrlNode(models.Model):
                 url = reverse("camomilla-permalink", args=(permalink.lstrip("/"),))
                 if append_slash and not url.endswith("/"):
                     url += "/"
-            # Both branches funnel through here so an absolute URI is built
-            # for the homepage too — not only for sub-paths.
-            if request:
-                url = request.build_absolute_uri(url)
-            return url
         except NoReverseMatch:
-            return None
+            # Headless install: ``dynamic_pages_urls`` is not mounted because the
+            # frontend owns the routing, so there is no view to reverse. Returning
+            # None here made every caller degrade — ``alternate_urls`` emitted a
+            # null per language, and ``routerlink`` fell back to the bare
+            # permalink, dropping the language prefix. ``public_path`` builds the
+            # same shape ``i18n_patterns`` would have produced.
+            url = public_path(get_language(), permalink)
+        # Every branch funnels through here so an absolute URI is built for the
+        # homepage and for the headless fallback too — not only for sub-paths.
+        if request:
+            url = request.build_absolute_uri(url)
+        return url
 
     @property
     def routerlink(self) -> str:

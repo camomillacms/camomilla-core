@@ -34,7 +34,15 @@ class BaseViewMetadata(SimpleMetadata):
     def get_serializer_info(self, serializer):
         info = super().get_serializer_info(serializer)
         if isinstance(serializer, TranslationsMixin) and serializer.is_translatable:
-            info.update(plain_to_nest(info, serializer.translation_fields))
+            # Same accessor the serializer reads on write (TranslationsMixin
+            # passes API_TRANSLATION_ACCESSOR to nest_to_plain), otherwise this
+            # block advertises "translations" on a project that customised the
+            # setting — the exact hardcoding lang_info.accessor exists to prevent.
+            info.update(
+                plain_to_nest(
+                    info, serializer.translation_fields, API_TRANSLATION_ACCESSOR
+                )
+            )
         return info
 
     def determine_metadata(self, request, view):
