@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v6.7.1 (2026-09-02)
+
+### Bug Fixes
+
+- Fix page urls for headles navigation
+  ([`cdd2468`](https://github.com/camomillacms/camomilla-core/commit/cdd2468206750295d568885cba600c49fa7cd485))
+
+
 ## v6.7.0 (2026-09-01)
 
 ### Features
