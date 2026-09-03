@@ -778,6 +778,33 @@ class PagePreviewTestCase(TransactionTestCase):
         assert body.get("has_draft") is True
         translations = body.get("translations") or {}
         assert (translations.get("en") or {}).get("title") == "drafted title"
+        # And on the FLAT field too: every consumer of this payload — the astro
+        # integration, a Django template — reads ``page.title``, not
+        # ``page.translations.en.title``. Overlaying only the map made the
+        # draft visible in the JSON and invisible in the rendered preview.
+        assert body.get("title") == "drafted title"
+
+    def test_preview_flattens_only_the_active_language(self):
+        """The flat fields are the ACTIVE language's view of the record.
+
+        An EN draft must not leak into the flat fields of an IT preview —
+        that would show the wrong language's pending text as the page body.
+        """
+        page_id = self._create_published_page("live en")
+        Page.objects.filter(pk=page_id).update(
+            title_it="live it",
+            published_at_it=timezone.now(),
+        )
+        self.client.patch(
+            f"/api/camomilla/pages/{page_id}/draft/?language=en",
+            {"translations": {"en": {"title": "draft en"}}},
+            format="json",
+        )
+        en = self.client.get(f"/api/camomilla/pages/{page_id}/preview/?language=en")
+        assert en.json()["title"] == "draft en"
+
+        it = self.client.get(f"/api/camomilla/pages/{page_id}/preview/?language=it")
+        assert it.json()["title"] == "live it"
 
     def test_pages_router_preview_does_not_consume_due_draft(self):
         """``publish_if_due`` would apply + delete a due Draft as a side

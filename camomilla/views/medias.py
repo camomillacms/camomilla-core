@@ -12,14 +12,11 @@ from camomilla.serializers import (
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.mixins import (
     BulkDeleteMixin,
-    GetUserLanguageMixin,
     TrigramSearchMixin,
 )
 
 
-class MediaFolderViewSet(
-    GetUserLanguageMixin, TrigramSearchMixin, BaseModelViewset
-):
+class MediaFolderViewSet(TrigramSearchMixin, BaseModelViewset):
     model = MediaFolder
     serializer_class = MediaFolderSerializer
     items_per_page = 18
@@ -65,7 +62,6 @@ class MediaFolderViewSet(
 
 
 class MediaViewSet(
-    GetUserLanguageMixin,
     BulkDeleteMixin,
     TrigramSearchMixin,
     BaseModelViewset,

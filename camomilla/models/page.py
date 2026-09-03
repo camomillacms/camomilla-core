@@ -454,6 +454,17 @@ class AbstractPage(SeoMixin, MetaMixin, models.Model, metaclass=PageBase):
         draft = self._drafts(language=self._draft_language()).first()
         return dict(draft.serialized) if draft else {}
 
+    @property
+    def draft_scheduled_for(self):
+        """When the active language's pending draft swaps itself in (or ``None``).
+
+        Companion to :attr:`draft_data`: the payload and the moment it goes
+        live are both on the Draft row, and an editor UI needs the moment to
+        say more than "a draft exists".
+        """
+        draft = self._drafts(language=self._draft_language()).first()
+        return draft.scheduled_for if draft else None
+
     # ------------------------------------------------------------------
     # Draft write surface — every mutation goes through the Draft model
     # ------------------------------------------------------------------

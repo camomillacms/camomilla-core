@@ -1,4 +1,5 @@
 from ..mixins import (
+    GetUserLanguageMixin,
     OptimViewMixin,
     PaginateStackMixin,
     OrderingMixin,
@@ -14,6 +15,12 @@ from structured.contrib.restframework import StructuredJSONField
 
 
 base_viewset_classes = [
+    # First: it activates the request language in ``initialize_request``, before
+    # any queryset or serializer reads a translated column. Listed here rather
+    # than on each viewset so ``?language=`` is a property of the whole API —
+    # model_api-registered project models included, which previously ignored it
+    # and could only be addressed through Accept-Language.
+    GetUserLanguageMixin,
     CamomillaBasePermissionMixin,
     OptimViewMixin,
     OrderingMixin,

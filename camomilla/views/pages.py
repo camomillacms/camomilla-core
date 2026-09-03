@@ -1,25 +1,22 @@
 import hashlib
 import json
-from datetime import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 from django.utils.translation import get_language
 from django.utils.translation.trans_real import activate as activate_language
-from rest_framework import permissions, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework import permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from camomilla.models import Page
 from camomilla.models.page import UrlNode, UrlRedirect
 from camomilla.models.site import SiteEpoch
-from camomilla.preview import reversion_available
 from camomilla.serializers import PageSerializer
 from camomilla.serializers.page import RouteSerializer
-from camomilla.settings import API_TRANSLATION_ACCESSOR, PAGE_ROUTER_CACHE
+from camomilla.settings import PAGE_ROUTER_CACHE
 from camomilla.utils.pages import public_path
 from camomilla.utils.translation import (
     activate_languages,
@@ -28,158 +25,17 @@ from camomilla.utils.translation import (
 )
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import staff_excluded_cache
-from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
+from camomilla.views.mixins import (
+    BulkDeleteMixin,
+    PageLifecycleMixin,
+    draft_overlay,
+)
 
 
-def _draft_overlay(page, serialized: dict) -> dict:
-    """Merge the active-language Draft on top of ``serialized``.
-
-    Looks up the Draft row for ``(page, active_language)``. When found,
-    merges its ``serialized`` payload into the response — translatable
-    fields by language key, non-translatable top-level fields directly.
-
-    The merge is language-aware: a flat ``overlay.update(draft)`` would
-    clobber the response's full ``translations: {en, it, …}`` map with
-    the draft's one-language map, dropping every other language's live
-    content from the preview response. We merge by language instead so
-    the preview reflects "live IT + drafted EN" correctly.
-    """
-    draft_payload = page.draft_data
-    if not draft_payload:
-        return serialized
-    overlay = dict(serialized)
-    draft_translations = draft_payload.get(API_TRANSLATION_ACCESSOR) or {}
-    if draft_translations:
-        merged = dict(overlay.get(API_TRANSLATION_ACCESSOR) or {})
-        for lang, lang_payload in draft_translations.items():
-            merged[lang] = {**(merged.get(lang) or {}), **(lang_payload or {})}
-        overlay[API_TRANSLATION_ACCESSOR] = merged
-    for key, value in draft_payload.items():
-        if key != API_TRANSLATION_ACCESSOR:
-            overlay[key] = value
-    overlay["has_draft"] = True
-    return overlay
-
-
-class PageViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
+class PageViewSet(PageLifecycleMixin, BulkDeleteMixin, BaseModelViewset):
     queryset = Page.objects.all()
     serializer_class = PageSerializer
     model = Page
-
-    @action(detail=True, methods=["patch", "put"], url_path="draft")
-    def draft(self, request, pk=None):
-        """Save the request body as the active language's pending Draft.
-
-        The body shape mirrors a regular PATCH on the page — the publish
-        serializer will replay it later. Cross-language scoping is no
-        longer required at the view layer: the Draft model writes to the
-        active language by construction, so a payload that includes both
-        ``translations[en]`` and ``translations[it]`` lands wholesale in
-        the active language's Draft row, and an EN publish only applies
-        what that row carries.
-        """
-        page = self.get_object()
-        merge = request.method.lower() == "patch"
-        page.save_draft(request.data, merge=merge)
-        return Response(self.get_serializer(page).data)
-
-    @action(detail=True, methods=["post"], url_path="discard-draft")
-    def discard_draft(self, request, pk=None):
-        page = self.get_object()
-        page.discard_draft()
-        return Response(self.get_serializer(page).data)
-
-    @action(detail=True, methods=["post"], url_path="publish")
-    def publish(self, request, pk=None):
-        page = self.get_object()
-        comment = (
-            request.data.get("comment", "") if isinstance(request.data, dict) else ""
-        )
-        page.publish(comment=comment)
-        return Response(self.get_serializer(page).data)
-
-    @action(detail=True, methods=["post"], url_path="schedule")
-    def schedule(self, request, pk=None):
-        """Schedule the next publish moment.
-
-        Body: ``{"publish_at": "<ISO 8601 datetime>"}``.
-
-        Semantics depend on the page's current state (see
-        :meth:`AbstractPage.schedule`): for a never-public language the
-        moment becomes the first-appearance ``published_at``; for a
-        currently-public language the moment is attached to the pending
-        Draft (must be saved first via ``/draft/``).
-        """
-        page = self.get_object()
-        body = request.data if isinstance(request.data, dict) else {}
-        raw = body.get("publish_at")
-        if not raw:
-            return Response(
-                {"publish_at": "This field is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        dt = parse_datetime(raw) if isinstance(raw, str) else raw
-        if not isinstance(dt, datetime):
-            return Response(
-                {"publish_at": "Invalid datetime."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        page.schedule(dt)
-        return Response(self.get_serializer(page).data)
-
-    @action(detail=True, methods=["get"], url_path="preview")
-    def preview(self, request, pk=None):
-        """Author/admin-only JSON preview: live page + draft overlay.
-
-        Permission to call this action comes from the viewset's regular
-        model permissions — only authenticated users with edit rights see it.
-        """
-        page = self.get_object()
-        data = self.get_serializer(page).data
-        return Response(_draft_overlay(page, data))
-
-    @action(detail=True, methods=["get"], url_path="render")
-    def render_preview(self, request, pk=None):
-        """Author/admin-only HTML preview: render the page template with
-        the draft payload exposed in the template context."""
-        page = self.get_object()
-        context = page.get_context(request)
-        draft_payload = page.draft_data
-        if draft_payload:
-            context["draft_data"] = draft_payload
-        return render(request, page.get_template_path(request), context)
-
-    @action(detail=True, methods=["get"], url_path="revisions")
-    def revisions(self, request, pk=None):
-        if not reversion_available():
-            return Response(
-                {"detail": "django-reversion not installed"},
-                status=status.HTTP_501_NOT_IMPLEMENTED,
-            )
-        page = self.get_object()
-        versions = page.list_revisions()
-        data = [
-            {
-                "id": v.pk,
-                "revision_id": v.revision_id,
-                "date_created": v.revision.date_created,
-                "comment": v.revision.get_comment(),
-                "user": getattr(v.revision.user, "username", None),
-            }
-            for v in versions
-        ]
-        return Response(data)
-
-    @action(detail=True, methods=["post"], url_path=r"revert/(?P<version_id>\d+)")
-    def revert(self, request, pk=None, version_id=None):
-        if not reversion_available():
-            return Response(
-                {"detail": "django-reversion not installed"},
-                status=status.HTTP_501_NOT_IMPLEMENTED,
-            )
-        page = self.get_object()
-        page.revert_to_revision(int(version_id))
-        return Response(self.get_serializer(page).data)
 
 
 def _resolve_route_request(permalink: str) -> tuple[UrlNode, dict | None]:
@@ -285,7 +141,7 @@ def pages_router_preview(request, permalink=""):
 
     * The ``is_public`` gate is bypassed — trashed, draft, and scheduled
       rows return their content here so editors can preview every state.
-    * The active-language Draft is overlaid via ``_draft_overlay`` and the
+    * The active-language Draft is overlaid via ``draft_overlay`` and the
       response carries ``has_draft: true`` when one exists.
 
     Crucially does **not** call :meth:`AbstractPage.publish_if_due`. A
@@ -301,7 +157,7 @@ def pages_router_preview(request, permalink=""):
     if canonical is not None:
         return Response(canonical)
     data = RouteSerializer(node, context={"request": request}).data
-    return Response(_draft_overlay(node.page, data))
+    return Response(draft_overlay(node.page, data))
 
 
 @api_view(["GET"])

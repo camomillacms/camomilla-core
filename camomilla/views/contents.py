@@ -8,10 +8,10 @@ from camomilla.models import Content, ContentVersion
 from camomilla.permissions import CamomillaBasePermissions
 from camomilla.serializers import ContentSerializer
 from camomilla.views.base import BaseModelViewset
-from camomilla.views.mixins import BulkDeleteMixin, GetUserLanguageMixin
+from camomilla.views.mixins import BulkDeleteMixin
 
 
-class ContentViewSet(GetUserLanguageMixin, BulkDeleteMixin, BaseModelViewset):
+class ContentViewSet(BulkDeleteMixin, BaseModelViewset):
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
     model = Content

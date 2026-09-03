@@ -12,10 +12,9 @@ from camomilla.serializers import ContentTypeSerializer, MenuSerializer
 from camomilla.serializers.page import UrlNodeSerializer
 from camomilla.views.base import BaseModelViewset
 from camomilla.views.decorators import active_lang
-from camomilla.views.mixins import GetUserLanguageMixin
 
 
-class MenuViewSet(GetUserLanguageMixin, BaseModelViewset):
+class MenuViewSet(BaseModelViewset):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
     model = Menu
