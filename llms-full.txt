@@ -428,6 +428,40 @@ But if you need also some other language you can specify the `included_translati
 
 The `included_translations` parameter accepts a comma separated list of languages or the value `all` to include all the translations.
 
+### The changes manifest
+
+Besides the per-page route, the router exposes a manifest of every public page and its content hash:
+
+* `GET /api/camomilla/pages-router/changes`
+
+It is **unauthenticated** and lists **public pages only** — trashed, draft and scheduled pages never appear in it. Static builders use it to work out which pages need re-rendering.
+
+```json
+{
+  "server_time": "2026-03-04T09:12:44.881204Z",
+  "epoch": "2026-03-03T18:02:11.043921Z",
+  "urls": [
+    {
+      "path": "/it/about/",
+      "permalink": "/about",
+      "language_code": "it",
+      "hash": "9f2c1b0e4d7a3c85b1f06e2d4a97c3115be0d8f2"
+    }
+  ],
+  "redirects": [
+    { "from": "/it/chi-siamo/", "to": "/it/about/", "status": 301 }
+  ]
+}
+```
+
+There is one `urls` entry per page **for every language in which it is public** — the public gate is re-evaluated per language, so a page live only in `it` yields a single entry, not one per site language: `path` is the public URL a visitor would type, `permalink` the language-specific permalink, and `hash` a digest of the serialized page payload. The hash — **not a timestamp** — is what tells you a page changed: editing an attached Content block changes the payload and therefore the hash, while no page timestamp moves. `epoch` covers the global render inputs that belong to no single page (menus, page-less Content) and moves whenever one of them changes; it is `null` until the first of those inputs is saved, so a fresh database answers `"epoch": null`. `redirects` mirrors the configured redirects, with `status` `301` for the permanent ones and `302` otherwise.
+
+::: warning `changes` and `publish-due` are reserved
+`GET pages-router/changes` and `POST pages-router/publish-due` are registered **before** the `<path:permalink>` catch-all, so for a page whose permalink is `changes` or `publish-due` only the **slash-less** API URL is shadowed: `pages-router/changes` returns the manifest instead of the page's canonical redirect descriptor, and `pages-router/publish-due` lands on the admin-only publish endpoint, which rejects an anonymous `GET` rather than answering with the page.
+
+Everything else behaves normally. The catch-all captures the trailing slash, so the canonical `pages-router/changes/` serves the page at exactly the URL the **Canonical redirects** tip tells clients to use, and language-prefixed forms (`pages-router/it/changes`) return the usual canonical redirect descriptor. The page also keeps its regular `/changes/` entry in the manifest's own `urls`, so a static build of it is unaffected — rename those permalinks only if some client really does call the slash-less form.
+:::
+
 ---
 
 ---
@@ -473,7 +507,7 @@ To look at unpublished content, authenticated editors use the **preview** surfac
 | `GET /api/camomilla/pages/{id}/render/` | HTML, by id — renders the page template with `draft_data` in context |
 
 ::: tip Headless preview
-`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly — use **`@camomillacms/astro-integration` ≥ 0.7** with camomilla 6.5.
+`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly — use **`@camomillacms/astro-integration` ≥ 0.7** with camomilla ≥ 6.5; static-build deployments need integration ≥ 0.9 with camomilla ≥ 6.6.
 :::
 
 ## ✏️ Drafts
@@ -530,6 +564,18 @@ python manage.py camomilla_publish_scheduled --dry-run
 ```
 
 It applies every draft whose `scheduled_for` moment has passed, activating the right language for each so the `published_at` stamp lands in the correct per-language column. Idempotent and safe to run frequently.
+
+### HTTP sweep — `POST /api/camomilla/pages-router/publish-due`
+
+For deployments with no cron — static or CDN builds, where no public visitor ever arrives to trigger the lazy swap — the same sweep is available over HTTP:
+
+```bash
+curl -X POST https://example.com/api/camomilla/pages-router/publish-due \
+  -H "Authorization: Token <staff token>"
+# {"published": 2}
+```
+
+Staff-only (`IsAdminUser` — session cookie or `Authorization: Token …`). It applies every due draft in the correct per-language context and returns `{"published": n}`. Idempotent, so it is safe to call before each build: it is the same sweep as `camomilla_publish_scheduled`, reachable without a scheduler.
 
 ## 🗑️ Trashing and per-language dismiss
 
@@ -1652,6 +1698,51 @@ class MyModelViewSet(BaseModelViewset):
 
 This will provide to your endpoint all the features of standard camomilla api.
 
+## 🧭 OPTIONS / endpoint metadata
+
+Every viewset based on `BaseModelViewset` answers to `OPTIONS` with the metadata needed to build a form: `lang_info` describes the language situation of the model, `schema` describes its fields.
+
+**URL Structure:**
+
+* `api/camomilla/<model_name>`
+
+**Simple Response:**
+
+```json
+{
+    "name": "My Model List",
+    // ... plus the standard DRF metadata keys: description, renders, parses, actions ...
+    "lang_info": {
+        "default": "it", // default language of the site
+        "active": "it", // language of the current request
+        "translatable": true, // the model is registered for translation
+        "languages": ["it", "en"], // the site languages if the model is translatable, empty otherwise
+        "translatable_fields": ["title", "permalink"],
+        "site_languages": ["it", "en"], // languages of the site, always filled
+        "accessor": "translations" // where to write per language values
+    },
+    "schema": {
+        "type": "object",
+        "properties": {
+            "id": { "type": "integer", "readOnly": true },
+            "title": { "type": "string", "title": "Title", "translatable": true },
+            "author": {
+                "type": "relation",
+                "model": "auth.User",
+                "multiple": false,
+                "endpoint": "/api/camomilla/users/"
+            }
+        }
+    }
+}
+```
+
+`OPTIONS` is the authoritative source to build a create form: it describes the model and not a single record, and a create form has no record to retrieve yet.
+
+The `schema` block is flat: every translatable field appears once with `"translatable": true` and no `translations` envelope. Flatness stops there, the envelope is still the wire contract: DRF's own `actions` block nests it, and so does `api/camomilla/openapi`. To write per language values always use the key published in `lang_info.accessor`: hardcoding `"translations"` silently drops every translation when `CAMOMILLA.API.TRANSLATION_ACCESSOR` is customized.
+
+Relations are not plain integers, they are emitted as `{"type": "relation", "model": "app.Model", "multiple": bool, "endpoint": "/api/…"}`, so a client knows what the field points to and where to fetch the selectable options.
+
 ## 🖲️ The model\_api.register decorator
 
 If you need to create a standard api endpoint  you can take advantage of model\_api register decorator.
@@ -1778,10 +1869,10 @@ url: /camomilla-core/How to/Use Astro Integration.md
 ---
 # 🚀 Use Astro Integration
 
-Camomilla ships with a first-class frontend integration for [Astro](https://astro.build/): **[@camomillacms/astro-integration](https://github.com/camomillacms/astro-camomilla-integration)**. It turns Camomilla into a fully headless CMS backend for an Astro site with zero boilerplate — auto-routing, SSR, SEO meta, template registration, caching, and ready-made components all handled by the integration.
+Camomilla ships with a first-class frontend integration for [Astro](https://astro.build/): **[@camomillacms/astro-integration](https://github.com/camomillacms/astro-camomilla-integration)**. It turns Camomilla into a fully headless CMS backend for an Astro site with zero boilerplate — auto-routing, SSR *or* prerendered static output, SEO meta, template registration, caching, and ready-made components all handled by the integration.
 
 > \[!IMPORTANT]
-> **Version compatibility** — Camomilla **6.5** requires **`@camomillacms/astro-integration` ≥ 0.7**. The 6.5 release moves page-visibility gating server-side and adds the authenticated preview router and the public menus resolver; integration 0.7 is the first version that speaks this API. On camomilla 6.5, an older (0.6.x) integration would render non-public pages publicly. Conversely, integration 0.7 targets 6.5+ — see [Use Page Lifecycle](../Use%20Page%20Lifecycle/) for the details.
+> **Version compatibility** — Camomilla **6.5** requires **`@camomillacms/astro-integration` ≥ 0.7**. The 6.5 release moves page-visibility gating server-side and adds the authenticated preview router and the public menus resolver; integration 0.7 is the first version that speaks this API. On camomilla 6.5, an older (0.6.x) integration would render non-public pages publicly. Conversely, integration 0.7 targets 6.5+ — see [Use Page Lifecycle](../Use%20Page%20Lifecycle/) for the details. Camomilla **6.6** adds the `pages-router/changes` and `pages-router/publish-due` endpoints; **integration 0.9** is the first version that speaks them (0.10.0 at the time of writing), so [static mode](#static-build) requires camomilla **6.6+** — an older backend 404s `changes` and rejects `publish-due` with `405`.
 
 ## Install
 
@@ -1811,8 +1902,8 @@ export default {
 };
 ```
 
-> \[!WARNING]
-> The integration runs in **SSR mode only** — set `output: "server"` and use the `@astrojs/node` adapter.
+> \[!NOTE]
+> The integration supports two modes. **SSR** (`mode: "server"`, the default) — set `output: "server"` and use the `@astrojs/node` adapter, as above. **Static / incremental build** (`mode: "static"`, integration ≥ 0.9 with camomilla ≥ 6.6) — build-time prerendering, no adapter and no Node runtime; see [Static build](#static-build) below.
 
 ## Key Features
 
@@ -1824,6 +1915,7 @@ export default {
 * **Forwarded headers** — configurable request-header forwarding so Camomilla knows the real host/proto.
 * **Cache** — optional response cache with `memory`, `redis`, `valkey`, or `memcache` backends and `varyOnHeaders` support.
 * **Transitions** — works with Astro's view-transitions engine.
+* **Static mode** — `mode: "static"` prerenders the auto-routing catch-all for CDN hosting, rebuilt page-by-page by the `incremental-build` CLI (see [Static build](#static-build)).
 * **Components** — ready-made Astro components that consume Camomilla API shapes (see below).
 
 ## Components
@@ -1931,6 +2023,37 @@ camomilla({
 
 `varyOnHeaders` is the recommended knob for splitting the cache between authenticated and anonymous users (or per-locale via `Accept-Language`).
 
+## Static build
+
+With `mode: "static"` the auto-routing catch-all is prerendered, so the build output is plain HTML that any CDN or static web server can serve. There is no runtime, so the SSR middleware, the response cache and its `/api/cache-flush` endpoint, `/api/templates`, the djsuperadmin proxy routes and the `/static/` proxy are not registered — keep inline editing and previews on a separate `mode: "server"` instance pointed at the same Camomilla server.
+
+Switch the mode **and drop `output: "server"` and the adapter** from the [Install](#install) config: left in place they make Astro emit its server layout (`dist/client/**` + `dist/server/**`), which the build CLI copies wholesale into the publish tree — every page ends up under `client/` and the deploy is broken with no error.
+
+```javascript
+camomilla({
+  server: "http://localhost:8000",
+  mode: "static",
+})
+```
+
+Builds are driven by the `incremental-build` CLI shipped with the package:
+
+```bash
+CAMOMILLA_SERVER=http://localhost:8000 \
+  node node_modules/@camomillacms/astro-integration/bin/incremental-build.mjs
+```
+
+Pass `--full` to force a rebuild of every page; everything else is configured by environment variables (`CAMOMILLA_DIST_DIR`, `CAMOMILLA_PUBLISH_DIR`, `CAMOMILLA_DEPLOY_TARGET`, `CAMOMILLA_BUILD_TOKEN`, …).
+
+The CLI consumes two Camomilla endpoints:
+
+| Endpoint | Auth | Role |
+|---|---|---|
+| `POST /api/camomilla/pages-router/publish-due` | Admin token, from `CAMOMILLA_BUILD_TOKEN` | Step 0 — materialises the scheduled publishes that are due, so the build renders them. Skipped when no token is set. See [Use Page Lifecycle](../Use%20Page%20Lifecycle/). |
+| `GET /api/camomilla/pages-router/changes` | Public | The content-hash manifest (`urls`, `redirects`, `epoch`), diffed against the previous build state to select the pages to re-render. See [Use Pages](../Use%20Pages/). |
+
+The rebuild authority is the per-URL content hash, never a page timestamp — an inline edit that bumps no page timestamp still changes the hash — while a changed frontend fingerprint (git HEAD plus the lockfile) or a changed `epoch` (menus, global content) forces a full rebuild instead.
+
 ## More
 
 Full documentation, source code, and issue tracker: **[github.com/camomillacms/astro-camomilla-integration](https://github.com/camomillacms/astro-camomilla-integration)**.
@@ -1983,7 +2106,8 @@ CAMOMILLA = {
         "CACHE_ENABLED": True # if True, the structured field will use a cache system to avoid multiple queries to the database
     }
     "API": {
-        "NESTING_DEPTH": 10 # default nesting depth for serializers
+        "NESTING_DEPTH": 10, # default nesting depth for serializers
+        "TRANSLATION_ACCESSOR": "translations" # key under which per language values are read and written
     },
     "DEBUG": False # enable or disable debug mode
 }
@@ -1998,6 +2122,10 @@ url: /camomilla-core/Upgrading.md
 ---
 # ⬆️ Upgrading from status-based publication
 
+One section per version jump — read the one(s) you're crossing.
+
+## Upgrading ≤ 6.4 → 6.5
+
 Older camomilla releases (**≤ 6.4**) stored a page's publication state in two columns:
 
 * `status` — a translatable `CharField` (`PUB` / `DRF` / `PLA` / `TRS`)
@@ -2009,13 +2137,13 @@ The new lifecycle **derives** that state from timestamps instead:
 * `deleted_at` — global soft-delete marker
 * a separate [`Draft`](../How%20to/Use%20Page%20Lifecycle/) table (no old equivalent — drafts simply start empty)
 
-This page is **only** relevant if you're upgrading an existing project that already has data in the old `status` / `publication_date` columns. New installs need nothing here.
+This section is **only** relevant if you're upgrading an existing project that already has data in the old `status` / `publication_date` columns. New installs need nothing here.
 
 ::: danger Back up your database first
 This migration drops the old columns. Take a full backup (or snapshot) before you start. The data step is **forward-only** — to roll back you restore the backup.
 :::
 
-## What the data step does
+### What the data step does
 
 For every concrete page model (`Page`, `Article`, and any custom `AbstractPage` subclass), per language:
 
@@ -2028,9 +2156,9 @@ For every concrete page model (`Page`, `Article`, and any custom `AbstractPage` 
 
 `deleted_at` is **global** now, so it's set only when **every** language of a page is `TRS`. A page trashed in one language but live in another keeps its live languages; the trashed language just becomes "not published". The mapping preserves the old `is_public` result exactly for every combination (there's a test pinning this).
 
-## Procedure
+### Procedure
 
-### 1. Upgrade the package
+#### 1. Upgrade the package
 
 ```bash
 pip install -U django-camomilla-cms
@@ -2045,7 +2173,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-### 2. Generate the migration — with the data step already inserted
+#### 2. Generate the migration — with the data step already inserted
 
 Use camomilla's `camomilla_makemigrations` command instead of `makemigrations`:
 
@@ -2089,13 +2217,13 @@ operations = [
 Each op migrates only its own model, so the same operation appears safely in several apps' migrations (yours, for custom page models, plus camomilla's) without overlapping.
 :::
 
-### 3. Apply it
+#### 3. Apply it
 
 ```bash
 python manage.py migrate
 ```
 
-### 4. Verify
+#### 4. Verify
 
 ```python
 from camomilla.models import Page
@@ -2106,11 +2234,74 @@ Page.objects.draft().count()     # (drafts start empty — this counts pending D
 
 `Page.objects.filter(status="PUB")` still works too — the manager rewrites derived-status lookups into timestamp conditions, so most existing query code keeps running unchanged. See [Use Page Lifecycle](../How%20to/Use%20Page%20Lifecycle/).
 
-## Notes
+### Notes
 
 * **Drafts start empty.** The old system had no draft storage, so there's nothing to backfill into the `Draft` table. The draft / preview / scheduling workflow is available immediately for new edits.
 * **One-way.** The data step's reverse is a no-op (`migrations.RunPython.noop`) — rolling the migration back restores the columns but not their values. Restore from your backup if you need to revert.
 * **Custom page models** are handled automatically — the transform runs against every model that carries both the old `status` and new `published_at` columns at migration time.
+
+## Upgrading 6.5 → 6.6
+
+::: danger Back up your database first
+6.6 is **not** purely additive. It rewrites `Content.page` from a `ForeignKey` into a
+`GenericForeignKey`, which drops the `page_id` column — and unlike the 6.5 lifecycle change,
+**camomilla ships no injector for it**. `camomilla_makemigrations` will happily write a migration
+that removes the column with no backfill, and every page-scoped `Content` block loses the page it
+belonged to. Take a full backup before you start, and read the data step below.
+:::
+
+6.6 changes three things:
+
+* **`Content.page` becomes generic.** `page = models.ForeignKey(...)` is replaced by
+  `content_type` + `object_id` with `page = GenericForeignKey("content_type", "object_id")`, and
+  `unique_together` moves off `["identifier", "page"]`. Content can now hang off any model, not
+  just pages.
+* **Two new tables.** `SiteEpoch` — the marker bumped whenever a menu or a page-less (global)
+  `Content` block changes — and `ContentVersion` (with its `AbstractContentVersion` base).
+* **New endpoints**: `pages-router/changes` and `pages-router/publish-due`.
+
+### The data step camomilla does not write for you
+
+`camomilla/upgrades/migrations/` registers exactly one injector, `status_to_lifecycle` (the 6.5
+change). There is **no** injector for the `Content.page` rewrite, so nothing populates
+`content_type` / `object_id` from the old `page_id`.
+
+On a project with existing content you must write that migration yourself, between the
+`AddField`s and the `RemoveField`. In outline:
+
+```python
+def forward(apps, schema_editor):
+    Content = apps.get_model("camomilla", "Content")
+    ContentType = apps.get_model("contenttypes", "ContentType")
+    page_ct = ContentType.objects.get(app_label="camomilla", model="page")
+    Content.objects.filter(page_id__isnull=False).update(
+        content_type=page_ct, object_id=models.F("page_id")
+    )
+```
+
+Generate the migration, **inspect it**, insert the data step, then apply:
+
+```bash
+pip install -U django-camomilla-cms
+python manage.py camomilla_makemigrations --dry-run   # read it first
+python manage.py camomilla_makemigrations
+# edit camomilla_migrations/ — add the data step before the page_id RemoveField
+python manage.py migrate
+```
+
+A fresh install has no rows to migrate and needs none of this.
+
+### Why the migration is mandatory even on a fresh install
+
+Camomilla's migrations are generated project-side (`camomilla_migrations/`), so the new tables do
+not exist until you generate and apply them. Skip it and the next save **or delete** of a `Menu`
+— or of a global `Content` block — fails with a database error about the missing
+`camomilla_siteepoch` table: the `post_save` / `post_delete` receivers bump the epoch on every
+such write.
+
+::: tip Astro frontend? Check the integration version too
+6.6 also adds the `pages-router/changes` and `pages-router/publish-due` endpoints. A site built in **static mode** needs `@camomillacms/astro-integration` **≥ 0.9** paired with camomilla **6.6+** — see [Use Astro Integration](../How%20to/Use%20Astro%20Integration/#static-build).
+:::
 
 ---
 

@@ -41,7 +41,7 @@ To look at unpublished content, authenticated editors use the **preview** surfac
 | `GET /api/camomilla/pages/{id}/render/` | HTML, by id — renders the page template with `draft_data` in context |
 
 ::: tip Headless preview
-`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly — use **`@camomillacms/astro-integration` ≥ 0.7** with camomilla 6.5.
+`pages-router-preview` returns the same payload shape as `pages-router`, so a headless frontend can resolve a page by URL for preview with a single request — no list-then-detail round trip. The [Astro integration](../Use%20Astro%20Integration/README.md) speaks this endpoint directly — use **`@camomillacms/astro-integration` ≥ 0.7** with camomilla ≥ 6.5; static-build deployments need integration ≥ 0.9 with camomilla ≥ 6.6.
 :::
 
 ## ✏️ Drafts
@@ -98,6 +98,18 @@ python manage.py camomilla_publish_scheduled --dry-run
 ```
 
 It applies every draft whose `scheduled_for` moment has passed, activating the right language for each so the `published_at` stamp lands in the correct per-language column. Idempotent and safe to run frequently.
+
+### HTTP sweep — `POST /api/camomilla/pages-router/publish-due`
+
+For deployments with no cron — static or CDN builds, where no public visitor ever arrives to trigger the lazy swap — the same sweep is available over HTTP:
+
+```bash
+curl -X POST https://example.com/api/camomilla/pages-router/publish-due \
+  -H "Authorization: Token <staff token>"
+# {"published": 2}
+```
+
+Staff-only (`IsAdminUser` — session cookie or `Authorization: Token …`). It applies every due draft in the correct per-language context and returns `{"published": n}`. Idempotent, so it is safe to call before each build: it is the same sweep as `camomilla_publish_scheduled`, reachable without a scheduler.
 
 ## 🗑️ Trashing and per-language dismiss
 

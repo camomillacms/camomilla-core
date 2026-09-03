@@ -3,6 +3,10 @@ url: /camomilla-core/Upgrading.md
 ---
 # ⬆️ Upgrading from status-based publication
 
+One section per version jump — read the one(s) you're crossing.
+
+## Upgrading ≤ 6.4 → 6.5
+
 Older camomilla releases (**≤ 6.4**) stored a page's publication state in two columns:
 
 * `status` — a translatable `CharField` (`PUB` / `DRF` / `PLA` / `TRS`)
@@ -14,13 +18,13 @@ The new lifecycle **derives** that state from timestamps instead:
 * `deleted_at` — global soft-delete marker
 * a separate [`Draft`](../How%20to/Use%20Page%20Lifecycle/) table (no old equivalent — drafts simply start empty)
 
-This page is **only** relevant if you're upgrading an existing project that already has data in the old `status` / `publication_date` columns. New installs need nothing here.
+This section is **only** relevant if you're upgrading an existing project that already has data in the old `status` / `publication_date` columns. New installs need nothing here.
 
 ::: danger Back up your database first
 This migration drops the old columns. Take a full backup (or snapshot) before you start. The data step is **forward-only** — to roll back you restore the backup.
 :::
 
-## What the data step does
+### What the data step does
 
 For every concrete page model (`Page`, `Article`, and any custom `AbstractPage` subclass), per language:
 
@@ -33,9 +37,9 @@ For every concrete page model (`Page`, `Article`, and any custom `AbstractPage` 
 
 `deleted_at` is **global** now, so it's set only when **every** language of a page is `TRS`. A page trashed in one language but live in another keeps its live languages; the trashed language just becomes "not published". The mapping preserves the old `is_public` result exactly for every combination (there's a test pinning this).
 
-## Procedure
+### Procedure
 
-### 1. Upgrade the package
+#### 1. Upgrade the package
 
 ```bash
 pip install -U django-camomilla-cms
@@ -50,7 +54,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-### 2. Generate the migration — with the data step already inserted
+#### 2. Generate the migration — with the data step already inserted
 
 Use camomilla's `camomilla_makemigrations` command instead of `makemigrations`:
 
@@ -94,13 +98,13 @@ operations = [
 Each op migrates only its own model, so the same operation appears safely in several apps' migrations (yours, for custom page models, plus camomilla's) without overlapping.
 :::
 
-### 3. Apply it
+#### 3. Apply it
 
 ```bash
 python manage.py migrate
 ```
 
-### 4. Verify
+#### 4. Verify
 
 ```python
 from camomilla.models import Page
@@ -111,8 +115,71 @@ Page.objects.draft().count()     # (drafts start empty — this counts pending D
 
 `Page.objects.filter(status="PUB")` still works too — the manager rewrites derived-status lookups into timestamp conditions, so most existing query code keeps running unchanged. See [Use Page Lifecycle](../How%20to/Use%20Page%20Lifecycle/).
 
-## Notes
+### Notes
 
 * **Drafts start empty.** The old system had no draft storage, so there's nothing to backfill into the `Draft` table. The draft / preview / scheduling workflow is available immediately for new edits.
 * **One-way.** The data step's reverse is a no-op (`migrations.RunPython.noop`) — rolling the migration back restores the columns but not their values. Restore from your backup if you need to revert.
 * **Custom page models** are handled automatically — the transform runs against every model that carries both the old `status` and new `published_at` columns at migration time.
+
+## Upgrading 6.5 → 6.6
+
+::: danger Back up your database first
+6.6 is **not** purely additive. It rewrites `Content.page` from a `ForeignKey` into a
+`GenericForeignKey`, which drops the `page_id` column — and unlike the 6.5 lifecycle change,
+**camomilla ships no injector for it**. `camomilla_makemigrations` will happily write a migration
+that removes the column with no backfill, and every page-scoped `Content` block loses the page it
+belonged to. Take a full backup before you start, and read the data step below.
+:::
+
+6.6 changes three things:
+
+* **`Content.page` becomes generic.** `page = models.ForeignKey(...)` is replaced by
+  `content_type` + `object_id` with `page = GenericForeignKey("content_type", "object_id")`, and
+  `unique_together` moves off `["identifier", "page"]`. Content can now hang off any model, not
+  just pages.
+* **Two new tables.** `SiteEpoch` — the marker bumped whenever a menu or a page-less (global)
+  `Content` block changes — and `ContentVersion` (with its `AbstractContentVersion` base).
+* **New endpoints**: `pages-router/changes` and `pages-router/publish-due`.
+
+### The data step camomilla does not write for you
+
+`camomilla/upgrades/migrations/` registers exactly one injector, `status_to_lifecycle` (the 6.5
+change). There is **no** injector for the `Content.page` rewrite, so nothing populates
+`content_type` / `object_id` from the old `page_id`.
+
+On a project with existing content you must write that migration yourself, between the
+`AddField`s and the `RemoveField`. In outline:
+
+```python
+def forward(apps, schema_editor):
+    Content = apps.get_model("camomilla", "Content")
+    ContentType = apps.get_model("contenttypes", "ContentType")
+    page_ct = ContentType.objects.get(app_label="camomilla", model="page")
+    Content.objects.filter(page_id__isnull=False).update(
+        content_type=page_ct, object_id=models.F("page_id")
+    )
+```
+
+Generate the migration, **inspect it**, insert the data step, then apply:
+
+```bash
+pip install -U django-camomilla-cms
+python manage.py camomilla_makemigrations --dry-run   # read it first
+python manage.py camomilla_makemigrations
+# edit camomilla_migrations/ — add the data step before the page_id RemoveField
+python manage.py migrate
+```
+
+A fresh install has no rows to migrate and needs none of this.
+
+### Why the migration is mandatory even on a fresh install
+
+Camomilla's migrations are generated project-side (`camomilla_migrations/`), so the new tables do
+not exist until you generate and apply them. Skip it and the next save **or delete** of a `Menu`
+— or of a global `Content` block — fails with a database error about the missing
+`camomilla_siteepoch` table: the `post_save` / `post_delete` receivers bump the epoch on every
+such write.
+
+::: tip Astro frontend? Check the integration version too
+6.6 also adds the `pages-router/changes` and `pages-router/publish-due` endpoints. A site built in **static mode** needs `@camomillacms/astro-integration` **≥ 0.9** paired with camomilla **6.6+** — see [Use Astro Integration](../How%20to/Use%20Astro%20Integration/#static-build).
+:::
