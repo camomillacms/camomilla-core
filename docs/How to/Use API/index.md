@@ -39,6 +39,50 @@ class MyModelViewSet(BaseModelViewset):
 This will provide to your endpoint all the features of standard camomilla api.
 
 
+## 🧭 OPTIONS / endpoint metadata
+
+Every viewset based on `BaseModelViewset` answers to `OPTIONS` with the metadata needed to build a form: `lang_info` describes the language situation of the model, `schema` describes its fields.
+
+__URL Structure:__
+ - `api/camomilla/<model_name>`
+
+__Simple Response:__
+```json
+{
+    "name": "My Model List",
+    // ... plus the standard DRF metadata keys: description, renders, parses, actions ...
+    "lang_info": {
+        "default": "it", // default language of the site
+        "active": "it", // language of the current request
+        "translatable": true, // the model is registered for translation
+        "languages": ["it", "en"], // the site languages if the model is translatable, empty otherwise
+        "translatable_fields": ["title", "permalink"],
+        "site_languages": ["it", "en"], // languages of the site, always filled
+        "accessor": "translations" // where to write per language values
+    },
+    "schema": {
+        "type": "object",
+        "properties": {
+            "id": { "type": "integer", "readOnly": true },
+            "title": { "type": "string", "title": "Title", "translatable": true },
+            "author": {
+                "type": "relation",
+                "model": "auth.User",
+                "multiple": false,
+                "endpoint": "/api/camomilla/users/"
+            }
+        }
+    }
+}
+```
+
+`OPTIONS` is the authoritative source to build a create form: it describes the model and not a single record, and a create form has no record to retrieve yet.
+
+The `schema` block is flat: every translatable field appears once with `"translatable": true` and no `translations` envelope. Flatness stops there, the envelope is still the wire contract: DRF's own `actions` block nests it, and so does `api/camomilla/openapi`. To write per language values always use the key published in `lang_info.accessor`: hardcoding `"translations"` silently drops every translation when `CAMOMILLA.API.TRANSLATION_ACCESSOR` is customized.
+
+Relations are not plain integers, they are emitted as `{"type": "relation", "model": "app.Model", "multiple": bool, "endpoint": "/api/…"}`, so a client knows what the field points to and where to fetch the selectable options.
+
+
 ## 🖲️ The model_api.register decorator
 If you need to create a standard api endpoint  you can take advantage of model_api register decorator. 
 To use this aproach you need to add the model_api handler to your project urls.py

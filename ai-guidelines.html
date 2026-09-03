@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Usage Guidelines — Lotrek Dev Team</title>
+<style>
+  :root {
+    --paper: #fafcf8;
+    --ink: #1b2a21;
+    --muted: #56685d;
+    --brand: #379b6e;
+    --brand-deep: #2c7d59;
+    --sun: #fcb92c;
+    --sun-ink: #7a5a0e;
+    --danger: #b04437;
+    --soft: rgba(62, 175, 124, 0.09);
+    --sun-soft: rgba(252, 185, 44, 0.16);
+    --danger-soft: rgba(176, 68, 55, 0.08);
+    --line: rgba(43, 90, 66, 0.16);
+    --card: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0f1a14;
+      --ink: #e8f1ea;
+      --muted: #93a79a;
+      --brand: #4cbd8c;
+      --brand-deep: #6fd3a7;
+      --sun: #f7be4a;
+      --sun-ink: #f2cd7e;
+      --danger: #e0796b;
+      --soft: rgba(76, 189, 140, 0.12);
+      --sun-soft: rgba(247, 190, 74, 0.13);
+      --danger-soft: rgba(224, 121, 107, 0.12);
+      --line: rgba(140, 200, 168, 0.2);
+      --card: #16241c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1a14;
+    --ink: #e8f1ea;
+    --muted: #93a79a;
+    --brand: #4cbd8c;
+    --brand-deep: #6fd3a7;
+    --sun: #f7be4a;
+    --sun-ink: #f2cd7e;
+    --danger: #e0796b;
+    --soft: rgba(76, 189, 140, 0.12);
+    --sun-soft: rgba(247, 190, 74, 0.13);
+    --danger-soft: rgba(224, 121, 107, 0.12);
+    --line: rgba(140, 200, 168, 0.2);
+    --card: #16241c;
+  }
+  :root[data-theme="light"] {
+    --paper: #fafcf8;
+    --ink: #1b2a21;
+    --muted: #56685d;
+    --brand: #379b6e;
+    --brand-deep: #2c7d59;
+    --sun: #fcb92c;
+    --sun-ink: #7a5a0e;
+    --danger: #b04437;
+    --soft: rgba(62, 175, 124, 0.09);
+    --sun-soft: rgba(252, 185, 44, 0.16);
+    --danger-soft: rgba(176, 68, 55, 0.08);
+    --line: rgba(43, 90, 66, 0.16);
+    --card: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Avenir Next", "Avenir", "Seravek", -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.4rem 5rem;
+  }
+  code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--soft);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+  }
+  a { color: var(--brand-deep); text-decoration-color: var(--line); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--brand); }
+
+  header.doc {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 5vw, 2.4rem);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  h2 {
+    margin: 2.8rem 0 0.9rem;
+    font-size: 1.45rem;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+    text-wrap: balance;
+  }
+  h2 a.anchor { color: inherit; text-decoration: none; }
+  h2 a.anchor:hover::after { content: " #"; color: var(--brand); font-weight: 400; }
+  p, ul, ol { margin: 0.85rem 0; }
+  li { margin: 0.45rem 0; text-wrap: pretty; }
+  strong { color: var(--ink); }
+
+  #theme-toggle {
+    flex: none;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.35rem 0.7rem;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  #theme-toggle:hover { border-color: var(--brand); color: var(--brand-deep); }
+  #theme-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .meta {
+    background: var(--soft);
+    border-left: 4px solid var(--brand);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    margin: 1.2rem 0 1.6rem;
+    color: var(--muted);
+  }
+  .meta p { margin: 0.35rem 0; }
+  .meta strong { color: var(--ink); }
+
+  nav.toc {
+    font-size: 0.92rem;
+    columns: 2;
+    column-gap: 2rem;
+    margin: 1.2rem 0 2rem;
+  }
+  @media (max-width: 560px) { nav.toc { columns: 1; } }
+  nav.toc a { display: block; padding: 0.18rem 0; text-decoration: none; color: var(--muted); break-inside: avoid; }
+  nav.toc a:hover { color: var(--brand-deep); }
+
+  .callout {
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    margin: 1rem 0;
+    text-wrap: pretty;
+  }
+  .callout.warn { background: var(--sun-soft); border-left: 4px solid var(--sun); }
+  .callout.bad { background: var(--danger-soft); border-left: 4px solid var(--danger); }
+  .callout.good { background: var(--soft); border-left: 4px solid var(--brand); }
+
+  .tablewrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; color: inherit; font-size: 0.95rem; }
+  th {
+    text-align: left;
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    padding: 0.45em 1em 0.45em 0;
+  }
+  td { padding: 0.55em 1em 0.55em 0; border-top: 1px solid var(--line); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.num { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.9em; }
+  .ok { color: var(--brand-deep); font-weight: 700; white-space: nowrap; }
+  .no { color: var(--danger); font-weight: 700; white-space: nowrap; }
+
+  footer.doc {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  @media print {
+    #theme-toggle { display: none; }
+    body { font-size: 12px; }
+    .tablewrap { overflow: visible; }
+    h2 { break-after: avoid; }
+    .callout, tr { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header class="doc">
+  <h1>AI Usage Guidelines — Lotrek Dev Team</h1>
+  <button id="theme-toggle" type="button" aria-label="Toggle color theme">🌗 Theme</button>
+</header>
+
+<div class="meta">
+  <p><strong>Living document:</strong> model list &amp; prices are updated in the Friday Copilot review; full pass quarterly.</p>
+  <p><strong>Scope:</strong> GitHub Copilot Business (IDE completions, chat, agent mode), Gemini via our Google Workspace (Business Standard), and personal AI accounts. Quality and privacy rules apply to any AI tool.</p>
+</div>
+
+<nav class="toc" aria-label="Table of contents">
+  <a href="#tldr">🧭 TL;DR — right tool for the job</a>
+  <a href="#billing">1. 💳 How Copilot billing works</a>
+  <a href="#cost">2. 💸 Cost discipline</a>
+  <a href="#gemini">3. ✨ Gemini — already paid for</a>
+  <a href="#friday">4. 📅 The Friday review</a>
+  <a href="#prices">5. 🏷️ Model prices — examples only</a>
+  <a href="#privacy">6. 🔒 Privacy &amp; client code</a>
+  <a href="#quality">7. ✅ Quality gates</a>
+  <a href="#repos">8. 🗂️ Repo setup standard</a>
+  <a href="#sources">📚 Sources</a>
+</nav>
+
+<h2 id="tldr"><a class="anchor" href="#tldr">🧭 TL;DR — right tool for the job</a></h2>
+
+<div class="tablewrap">
+<table>
+  <tr><th>Task</th><th>Use</th><th>Cost</th></tr>
+  <tr><td>Routine code while typing</td><td>Copilot <strong>completions / next edit suggestions</strong></td><td>Free, unlimited</td></tr>
+  <tr><td>Quick code question, small edit</td><td>Copilot <strong>chat</strong> on a cheap model</td><td>Credits (small)</td></tr>
+  <tr><td>Multi-file implementation</td><td>Copilot <strong>agent mode</strong>, tightly scoped</td><td>Credits (can be large)</td></tr>
+  <tr><td>Research, comparing libraries/approaches</td><td><strong>Gemini app</strong> (+ Deep Research)</td><td>Already paid in Workspace</td></tr>
+  <tr><td>Docs, specs, emails, meeting notes</td><td><strong>Gemini</strong> (app or Docs/Gmail side panel)</td><td>Already paid in Workspace</td></tr>
+  <tr><td>Project knowledge base / onboarding Q&amp;A</td><td><strong>Gemini Notebook</strong> (NotebookLM)</td><td>Already paid in Workspace</td></tr>
+  <tr><td>Anything with client code on a <strong>personal</strong> AI account</td><td>—</td><td><span class="no">Never</span></td></tr>
+</table>
+</div>
+
+<h2 id="billing"><a class="anchor" href="#billing">1. 💳 How Copilot billing works (since June 2026)</a></h2>
+
+<p>Premium requests are gone. Copilot is billed in <strong>GitHub AI Credits</strong>: 1 credit = $0.01, metered on the <strong>actual tokens</strong> you consume (input + output; cached input at ~10% of the input price), priced per model. (<a href="https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises">Official docs</a>)</p>
+
+<p>What this means for us on Copilot Business:</p>
+
+<ul>
+  <li><strong>1,900 credits ($19) per user per month</strong> — promotional 3,000 until Sept 1, 2026 — <strong>pooled across the whole org</strong>. There is no personal quota: a credit spent by anyone comes out of everyone's pool. No rollover; resets on the 1st of each month (UTC).</li>
+  <li><strong>Free and unlimited:</strong> code completions and next edit suggestions. They never touch the pool.</li>
+  <li><strong>Billed:</strong> every chat prompt (ask / edit / agent / plan modes), proportional to model price and tokens.</li>
+  <li><strong>Our overage policy is "hard block":</strong> when the pool is empty, chat and agent mode stop working <em>for the entire team</em> until the 1st. Completions keep working. There is no fallback to a cheaper model — GitHub removed the "included model" tier entirely.</li>
+</ul>
+
+<p>The key mental shift from the old premium-request world: a prompt no longer has a flat price. <strong>Context is the bill.</strong> A short question to a small model costs a fraction of a credit; a long agent session on a frontier model with half the repo attached costs hundreds.</p>
+
+<p>For scale: the standard allowance works out to roughly <strong>90 credits (~$0.90) per person per working day</strong>. One exchange with ~100k tokens of attached context on a frontier model can eat more than a day's share in a single prompt (see <a href="#prices">§5</a>).</p>
+
+<h2 id="cost"><a class="anchor" href="#cost">2. 💸 Cost discipline</a></h2>
+
+<p>Habits, in order of impact:</p>
+
+<ol>
+  <li><strong>Completions first.</strong> They're free. Lean on them (and next-edit suggestions) for routine code, boilerplate, tests-by-example. Reach for chat only when completions can't get there.</li>
+  <li><strong>Right-size the model.</strong> The price spread between the cheapest and most expensive enabled model is ~40×. Default to the cheap tier for everyday questions and mechanical edits; escalate to a frontier model deliberately, for genuinely hard problems — and note that false economy is real: three failed retries on a cheap model cost more than one clean answer from a mid model. Bring these cases to the Friday review.</li>
+  <li><strong>Context discipline.</strong> Attach the files that matter, not the workspace. Start a <strong>new chat per task</strong> — every turn re-sends the conversation history as input tokens (caching softens this to ~10%, but a bloated thread still leaks credits on every message).</li>
+  <li><strong>One good prompt beats five vague ones.</strong> Retries are re-billed in full. State the goal, the constraints, the relevant files, and what "done" looks like. This is also why repo instruction files exist (<a href="#repos">§8</a>).</li>
+  <li><strong>Agent mode is a power tool, not the default.</strong> It bills every token of its autonomous iterations. Use it for genuinely multi-file work with clear acceptance criteria; watch it; stop a session that's flailing. A one-file change is a chat edit or a completion, not an agent run.</li>
+  <li><strong>Keep the extras off by default.</strong> Higher reasoning settings and the extended (1M-token) context window multiply token burn. Turn them on for a specific reason, then back off.</li>
+  <li><strong>Offload everything that isn't code to Gemini</strong> (<a href="#gemini">§3</a>). Research, comparisons, drafts, brainstorming an approach <em>before</em> implementing it — all zero marginal cost. Think with Gemini, implement with Copilot.</li>
+  <li><strong>Glance at your consumption before Friday.</strong> Come to the review knowing what you spent and on which models.</li>
+</ol>
+
+<h2 id="gemini"><a class="anchor" href="#gemini">3. ✨ Gemini — already paid for, use it more</a></h2>
+
+<p>Our Workspace Business Standard includes, per person: the <strong>Gemini app</strong> (gemini.google.com) with Gems, ~25 Pro-model prompts per 4 hours and 300 Thinking-model prompts/day, <strong>20 Deep Research reports/day</strong>, Gemini in the Gmail/Docs/Sheets/Drive side panels, and <strong>Gemini Notebook</strong> (NotebookLM). (<a href="https://support.google.com/gemini/answer/14620100">Limits</a>)</p>
+
+<p>This is the zero-marginal-cost half of our stack. Default to it for:</p>
+
+<ul>
+  <li>Technology research and library comparisons (Deep Research is genuinely good for "compare X vs Y for our use case" and costs zero Copilot credits).</li>
+  <li>Architecture rubber-ducking before you spend Copilot credits implementing.</li>
+  <li>Drafting docs, specs, client emails, estimates, meeting notes.</li>
+  <li>Gemini Notebook as a per-project knowledge base (specs, call notes, docs — then ask questions against it).</li>
+</ul>
+
+<div class="callout good"><strong>Data protection — the one rule that matters:</strong> Gemini used <strong>while logged into your Lotrek Workspace account</strong> is a core Workspace service under the Cloud Data Processing Addendum: prompts are Customer Data, not human-reviewed, not used to train models. Work content is fine there. (<a href="https://support.google.com/a/answer/15706919">Privacy Hub</a>)</div>
+
+<p>These are <strong>not</strong> the same thing and are <strong>not</strong> covered: personal-account gemini.google.com, Google AI Studio, and the free Gemini API tier — all of those can use your content for training and human review. If you're in the Gemini app, check which account you're logged into.</p>
+
+<p>(There is no Gemini in the IDE: Gemini Code Assist was never part of Workspace, and its free tier was discontinued in June 2026. IDE work is Copilot's job.)</p>
+
+<h2 id="friday"><a class="anchor" href="#friday">4. 📅 The Friday review</a></h2>
+
+<p>Our weekly Copilot usage review is the governance mechanism for everything time-sensitive in this document. It's where we:</p>
+
+<ul>
+  <li><strong>Decide which models are enabled</strong> in the Copilot settings panel. The enabled list is a team decision, made there — this document deliberately doesn't contain one.</li>
+  <li><strong>Check the pool's pace</strong>: consumed credits vs. day of month. If we're on track to hit the hard block, agree on what to throttle.</li>
+  <li><strong>Review per-user and per-model consumption</strong> — not to police, but to find patterns worth copying ("this model did the job at a tenth of the price") or fixing ("this workflow burns credits for nothing").</li>
+  <li><strong>Share model experience</strong>, including false-economy cases where a cheap model wasted more than it saved.</li>
+  <li><strong>Update the snapshot table below</strong> when GitHub changes models or prices.</li>
+</ul>
+
+<h2 id="prices"><a class="anchor" href="#prices">5. 🏷️ Model prices — examples only</a></h2>
+
+<div class="callout warn">⚠️ <strong>Every model named in this document is an example, not a recommendation.</strong> Which models are enabled — and which we prefer for what — is decided week by week in the Friday review; this table only gives a sense of scale. Prices verified 2026-07-20 against <a href="https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing">GitHub's pricing page</a> — <strong>update in the Friday review</strong>. Per 1M tokens, input/output:</div>
+
+<div class="tablewrap">
+<table>
+  <tr><th>Tier</th><th>Model</th><th>Input</th><th>Output</th></tr>
+  <tr><td>Economy</td><td>GPT-5 mini</td><td class="num">$0.25</td><td class="num">$2.00</td></tr>
+  <tr><td>Economy</td><td>Gemini 3 Flash</td><td class="num">$0.50</td><td class="num">$3.00</td></tr>
+  <tr><td>Economy</td><td>Claude Haiku 4.5</td><td class="num">$1.00</td><td class="num">$5.00</td></tr>
+  <tr><td>Mid</td><td>Claude Sonnet 5 <em>(promo to Aug 31, 2026)</em></td><td class="num">$2.00</td><td class="num">$10.00</td></tr>
+  <tr><td>Mid</td><td>Gemini 3.1 Pro</td><td class="num">$2.00</td><td class="num">$12.00</td></tr>
+  <tr><td>Mid</td><td>GPT-5.4</td><td class="num">$2.50</td><td class="num">$15.00</td></tr>
+  <tr><td>Mid</td><td>Claude Sonnet 4.6</td><td class="num">$3.00</td><td class="num">$15.00</td></tr>
+  <tr><td>Frontier</td><td>Claude Opus 4.8</td><td class="num">$5.00</td><td class="num">$25.00</td></tr>
+  <tr><td>Frontier</td><td>GPT-5.5</td><td class="num">$5.00</td><td class="num">$30.00</td></tr>
+  <tr><td>Frontier</td><td>Claude Fable 5</td><td class="num">$10.00</td><td class="num">$50.00</td></tr>
+</table>
+</div>
+
+<p>Concrete anchor (using two of the example models above): a single exchange with 100k input tokens and 5k output costs <strong>~125 credits on Claude Fable 5</strong> vs. <strong>~3.5 credits on GPT-5 mini</strong> — a day-and-a-half of one person's allowance vs. pocket change, for the same prompt.</p>
+
+<h2 id="privacy"><a class="anchor" href="#privacy">6. 🔒 Privacy &amp; client code</a></h2>
+
+<div class="tablewrap">
+<table>
+  <tr><th>Where</th><th>Client code / work content?</th><th>Why</th></tr>
+  <tr><td>Copilot Business (our org seats)</td><td><span class="ok">✅ Yes</span></td><td>Contractually excluded from model training under GitHub's DPA</td></tr>
+  <tr><td>Gemini, logged into Lotrek Workspace</td><td><span class="ok">✅ Yes</span></td><td>Core service under the CDPA — no training, no human review</td></tr>
+  <tr><td>Google AI Studio / free Gemini API / personal Gemini</td><td><span class="no">❌ No</span></td><td>Free tiers train on content and allow human review</td></tr>
+  <tr><td>Personal AI accounts (any provider)</td><td><span class="no">❌ Never</span></td><td>See below</td></tr>
+</table>
+</div>
+
+<p>Rules:</p>
+
+<ul>
+  <li><strong>Secrets never go in a prompt.</strong> No credentials, tokens, client PII — in any tool, including the approved ones. Reference env vars, don't paste values.</li>
+  <li><strong>Personal accounts are for generic learning only.</strong> No client code, no internal data, nothing identifying a client. Know the defaults you're dealing with: ChatGPT and personal Gemini train on conversations by default (opt-out); <strong>Copilot Individual plans also train by default since April 2026</strong> (our Business seats do not — one more reason to work signed into the org account, not a personal one); Claude asks at signup. If you use a personal account at all, disable training in its settings.</li>
+  <li><strong>Client contracts:</strong> none currently restrict AI usage. If you ever spot an AI/ML clause in a client agreement, raise it with the team before using AI on that project.</li>
+</ul>
+
+<h2 id="quality"><a class="anchor" href="#quality">7. ✅ Quality gates</a></h2>
+
+<p>AI-generated code is held to exactly the bar as hand-written code — no higher ceremony, no lower scrutiny.</p>
+
+<ul>
+  <li><strong>You own what you ship.</strong> Never commit a line you can't explain. "Copilot wrote it" is not a review response.</li>
+  <li><strong>Same review bar.</strong> AI code goes through the same PR review as everything else; large generated chunks are worth a note in the PR description so the reviewer knows where to slow down.</li>
+  <li><strong>Non-trivial generated logic gets a test.</strong> Especially the code that looks finished — plausible-but-wrong is the signature AI failure mode.</li>
+  <li><strong>Extra scrutiny on sensitive paths</strong>: auth, permissions, input validation, payments, crypto. Treat AI output there as a draft from an intern who read the docs once.</li>
+  <li><strong>Commit hygiene unchanged</strong>: Conventional Commits, and PR descriptions that describe the actual diff.</li>
+</ul>
+
+<h2 id="repos"><a class="anchor" href="#repos">8. 🗂️ Repo setup standard</a></h2>
+
+<p>Well-configured repos make every AI interaction better <em>and</em> cheaper: GitHub's own guidance confirms good custom instructions raise first-attempt quality — and fewer retries is the biggest credit saver there is.</p>
+
+<p>Every active repo gets:</p>
+
+<ol>
+  <li><strong><code>AGENTS.md</code> at the root — the canonical, tool-agnostic agent guide.</strong> Dev commands, conventions, repository map, gotchas. Use <a href="https://github.com/camomillacms/camomilla-core/blob/master/AGENTS.md">camomilla's AGENTS.md</a> as the reference example. This one file serves Copilot, Claude Code, Cursor, and whatever comes next.</li>
+  <li><strong>VS Code wired to read it:</strong> commit <code>.vscode/settings.json</code> with <code>"chat.useAgentsMdFile": true</code> so Copilot chat and agent mode load it automatically.</li>
+  <li><strong><code>.github/copilot-instructions.md</code> as a thin pointer</strong> (a 3-line summary + "see AGENTS.md"), since it's the most widely supported instruction type across Copilot surfaces. ⚠️ Verified gotcha: Copilot has <strong>no <code>@file</code> import syntax</strong> — that's a Claude Code feature. Don't try to import AGENTS.md from it; the line would be read as plain text. Keep it thin instead of duplicating content.</li>
+  <li><strong>Keep instruction files lean.</strong> They're prepended to <em>every</em> request — under token billing, a bloated instructions file is a tax on every single prompt, org-wide.</li>
+  <li>Where useful: path-scoped rules in <code>.github/instructions/*.instructions.md</code> (<code>applyTo</code> globs, good for monorepos) and reusable prompts as <code>.github/prompts/*.prompt.md</code> slash commands for recurring tasks.</li>
+</ol>
+
+<h2 id="sources"><a class="anchor" href="#sources">📚 Sources</a></h2>
+
+<p>All facts above verified 2026-07-20 against: GitHub docs on <a href="https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises">usage-based billing</a>, <a href="https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing">models &amp; pricing</a>, <a href="https://docs.github.com/en/copilot/reference/custom-instructions-support">custom-instructions support matrix</a>, and <a href="https://docs.github.com/en/copilot/how-tos/manage-your-account/manage-policies">Copilot training-data policy</a>; Google's <a href="https://support.google.com/a/answer/15706919">Workspace generative-AI Privacy Hub</a> and <a href="https://support.google.com/gemini/answer/14620100">Gemini limits per edition</a>; <a href="https://ai.google.dev/gemini-api/terms">Gemini API terms</a>; <a href="https://help.openai.com/en/articles/5722486">OpenAI data-usage FAQ</a>; <a href="https://privacy.claude.com/en/articles/10023580">Anthropic privacy docs</a>; <a href="https://support.google.com/gemini/answer/13594961">Google Gemini Apps privacy</a>.</p>
+
+<footer class="doc">
+  Living document — maintained in the Friday Copilot review. Companion presentation: <code>ai-guidelines-deck/index.html</code>.
+</footer>
+
+</main>
+
+<script>
+  (function () {
+    const btn = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+    const stored = localStorage.getItem('lotrek-ai-guidelines-theme');
+    if (stored === 'light' || stored === 'dark') root.dataset.theme = stored;
+
+    btn.addEventListener('click', () => {
+      const dark = root.dataset.theme
+        ? root.dataset.theme === 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches;
+      const next = dark ? 'light' : 'dark';
+      root.dataset.theme = next;
+      localStorage.setItem('lotrek-ai-guidelines-theme', next);
+    });
+  })();
+</script>
+</body>
+</html>

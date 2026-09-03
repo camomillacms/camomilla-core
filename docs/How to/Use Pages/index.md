@@ -332,3 +332,37 @@ But if you need also some other language you can specify the `included_translati
 `/api/camomilla/pages-router/<page_url>?included_translations=it`
 
 The `included_translations` parameter accepts a comma separated list of languages or the value `all` to include all the translations.
+
+### The changes manifest
+
+Besides the per-page route, the router exposes a manifest of every public page and its content hash:
+
+- `GET /api/camomilla/pages-router/changes`
+
+It is **unauthenticated** and lists **public pages only** — trashed, draft and scheduled pages never appear in it. Static builders use it to work out which pages need re-rendering.
+
+```json
+{
+  "server_time": "2026-03-04T09:12:44.881204Z",
+  "epoch": "2026-03-03T18:02:11.043921Z",
+  "urls": [
+    {
+      "path": "/it/about/",
+      "permalink": "/about",
+      "language_code": "it",
+      "hash": "9f2c1b0e4d7a3c85b1f06e2d4a97c3115be0d8f2"
+    }
+  ],
+  "redirects": [
+    { "from": "/it/chi-siamo/", "to": "/it/about/", "status": 301 }
+  ]
+}
+```
+
+There is one `urls` entry per page **for every language in which it is public** — the public gate is re-evaluated per language, so a page live only in `it` yields a single entry, not one per site language: `path` is the public URL a visitor would type, `permalink` the language-specific permalink, and `hash` a digest of the serialized page payload. The hash — **not a timestamp** — is what tells you a page changed: editing an attached Content block changes the payload and therefore the hash, while no page timestamp moves. `epoch` covers the global render inputs that belong to no single page (menus, page-less Content) and moves whenever one of them changes; it is `null` until the first of those inputs is saved, so a fresh database answers `"epoch": null`. `redirects` mirrors the configured redirects, with `status` `301` for the permanent ones and `302` otherwise.
+
+::: warning `changes` and `publish-due` are reserved
+`GET pages-router/changes` and `POST pages-router/publish-due` are registered **before** the `<path:permalink>` catch-all, so for a page whose permalink is `changes` or `publish-due` only the **slash-less** API URL is shadowed: `pages-router/changes` returns the manifest instead of the page's canonical redirect descriptor, and `pages-router/publish-due` lands on the admin-only publish endpoint, which rejects an anonymous `GET` rather than answering with the page.
+
+Everything else behaves normally. The catch-all captures the trailing slash, so the canonical `pages-router/changes/` serves the page at exactly the URL the **Canonical redirects** tip tells clients to use, and language-prefixed forms (`pages-router/it/changes`) return the usual canonical redirect descriptor. The page also keeps its regular `/changes/` entry in the manifest's own `urls`, so a static build of it is unaffected — rename those permalinks only if some client really does call the slash-less form.
+:::

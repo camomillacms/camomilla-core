@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI at Lotrek — team deck</title>
+<style>
+  :root {
+    --paper: #fafcf8;
+    --ink: #1b2a21;
+    --muted: #56685d;
+    --brand: #379b6e;
+    --brand-deep: #2c7d59;
+    --leaf: #6ab946;
+    --sun: #fcb92c;
+    --sun-ink: #7a5a0e;
+    --danger: #b04437;
+    --soft: rgba(62, 175, 124, 0.09);
+    --sun-soft: rgba(252, 185, 44, 0.16);
+    --danger-soft: rgba(176, 68, 55, 0.08);
+    --line: rgba(43, 90, 66, 0.16);
+    --card: #ffffff;
+    --shadow: 0 1px 2px rgba(27, 42, 33, 0.05), 0 8px 28px rgba(27, 42, 33, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0f1a14;
+      --ink: #e8f1ea;
+      --muted: #93a79a;
+      --brand: #4cbd8c;
+      --brand-deep: #6fd3a7;
+      --leaf: #7cc85a;
+      --sun: #f7be4a;
+      --sun-ink: #f2cd7e;
+      --danger: #e0796b;
+      --soft: rgba(76, 189, 140, 0.12);
+      --sun-soft: rgba(247, 190, 74, 0.13);
+      --danger-soft: rgba(224, 121, 107, 0.12);
+      --line: rgba(140, 200, 168, 0.2);
+      --card: #16241c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0f1a14;
+    --ink: #e8f1ea;
+    --muted: #93a79a;
+    --brand: #4cbd8c;
+    --brand-deep: #6fd3a7;
+    --leaf: #7cc85a;
+    --sun: #f7be4a;
+    --sun-ink: #f2cd7e;
+    --danger: #e0796b;
+    --soft: rgba(76, 189, 140, 0.12);
+    --sun-soft: rgba(247, 190, 74, 0.13);
+    --danger-soft: rgba(224, 121, 107, 0.12);
+    --line: rgba(140, 200, 168, 0.2);
+    --card: #16241c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #fafcf8;
+    --ink: #1b2a21;
+    --muted: #56685d;
+    --brand: #379b6e;
+    --brand-deep: #2c7d59;
+    --leaf: #6ab946;
+    --sun: #fcb92c;
+    --sun-ink: #7a5a0e;
+    --danger: #b04437;
+    --soft: rgba(62, 175, 124, 0.09);
+    --sun-soft: rgba(252, 185, 44, 0.16);
+    --danger-soft: rgba(176, 68, 55, 0.08);
+    --line: rgba(43, 90, 66, 0.16);
+    --card: #ffffff;
+    --shadow: 0 1px 2px rgba(27, 42, 33, 0.05), 0 8px 28px rgba(27, 42, 33, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Avenir Next", "Avenir", "Seravek", -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(15px, 1.55vw, 21px);
+    line-height: 1.45;
+    overflow: hidden;
+  }
+  code, .num {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  code {
+    background: var(--soft);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+    font-size: 0.88em;
+  }
+
+  #deck { position: relative; height: 100dvh; width: 100vw; }
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(0.9rem, 2.2vh, 1.6rem);
+    padding: clamp(1.6rem, 5vw, 5.5rem);
+    padding-bottom: clamp(3.4rem, 8vh, 5rem);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(28px);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0.32s;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.32s ease, transform 0.32s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .slide.active { transition: none; transform: none; }
+  }
+
+  .eyebrow {
+    color: var(--brand);
+    font-size: clamp(0.72rem, 1.1vw, 0.95rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+  }
+  .eyebrow::after { content: ""; height: 1px; width: 3.2em; background: var(--line); }
+  h1, h2 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    line-height: 1.08;
+  }
+  h1 { font-size: clamp(2.1rem, 5.6vw, 4.6rem); }
+  h2 { font-size: clamp(1.7rem, 4.2vw, 3.4rem); }
+  .lede { color: var(--muted); font-size: clamp(1rem, 1.9vw, 1.45rem); max-width: 34em; margin: 0; text-wrap: pretty; }
+  .lede strong, li strong, td strong { color: var(--ink); }
+  .spacer { flex: 0 0 0.2rem; }
+
+  /* ---- components ---- */
+  .tiles { display: flex; flex-wrap: wrap; gap: clamp(0.7rem, 1.6vw, 1.2rem); }
+  .tile {
+    flex: 1 1 12em;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: clamp(0.9rem, 2vw, 1.5rem) clamp(1rem, 2.2vw, 1.7rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .tile .big {
+    font-size: clamp(1.7rem, 3.8vw, 3.1rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .big .unit { font-size: 0.5em; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+  .tile .cap { color: var(--muted); font-size: clamp(0.8rem, 1.3vw, 1rem); }
+  .tile.accent .big { color: var(--brand-deep); }
+
+  .band {
+    border-radius: 12px;
+    padding: clamp(0.8rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.4rem);
+    font-size: clamp(0.95rem, 1.7vw, 1.3rem);
+    text-wrap: pretty;
+  }
+  .band.warn { background: var(--sun-soft); border-left: 4px solid var(--sun); }
+  .band.good { background: var(--soft); border-left: 4px solid var(--brand); }
+  .band.bad { background: var(--danger-soft); border-left: 4px solid var(--danger); }
+
+  ul.points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: clamp(0.55rem, 1.4vh, 1rem); max-width: 42em; }
+  ul.points li { padding-left: 1.5em; position: relative; text-wrap: pretty; font-size: clamp(1rem, 1.85vw, 1.4rem); }
+  ul.points li::before { content: ""; position: absolute; left: 0; top: 0.52em; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--brand); }
+  ul.points li .sub { display: block; color: var(--muted); font-size: 0.82em; margin-top: 0.1em; }
+
+  table { border-collapse: collapse; width: 100%; max-width: 62em; font-size: clamp(0.88rem, 1.6vw, 1.25rem); color: inherit; }
+  th { text-align: left; color: var(--muted); font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; padding: 0.4em 1em 0.4em 0; }
+  td { padding: 0.5em 1em 0.5em 0; border-top: 1px solid var(--line); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  .chip {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 0.12em 0.7em;
+    font-size: 0.82em;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .chip.free { background: var(--soft); color: var(--brand-deep); }
+  .chip.paid { background: var(--sun-soft); color: var(--sun-ink); }
+  .chip.never { background: var(--danger-soft); color: var(--danger); }
+
+  .ok, .no { font-weight: 700; white-space: nowrap; }
+  .ok { color: var(--brand-deep); }
+  .no { color: var(--danger); }
+
+  /* bars (single-hue magnitude, direct-labeled) */
+  .barrow { display: grid; grid-template-columns: minmax(7.5em, 12em) 1fr; align-items: center; gap: 0.4em 1em; max-width: 46em; }
+  .barrow .blabel { font-weight: 600; font-size: clamp(0.95rem, 1.7vw, 1.3rem); }
+  .barrow .btrack { display: flex; align-items: center; gap: 0.7em; min-height: 2.1em; }
+  .bar {
+    height: clamp(1.35rem, 3vh, 1.9rem);
+    border-radius: 0 4px 4px 0;
+    background: var(--brand);
+    min-width: 4px;
+  }
+  .bar.hot { background: var(--brand-deep); }
+  .bval { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bval .unit { color: var(--muted); font-weight: 600; font-size: 0.8em; }
+
+  .minibar { height: 0.6em; border-radius: 0 3px 3px 0; background: var(--brand); min-width: 3px; display: inline-block; vertical-align: baseline; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 3vw, 2.6rem); align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .colhead { font-size: 0.82em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.7em; }
+
+  .takeaway { font-size: clamp(1.5rem, 3.6vw, 2.9rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; }
+  .takeaway .n { color: var(--brand); font-variant-numeric: tabular-nums; margin-right: 0.45em; }
+
+  .foot-note { color: var(--muted); font-size: clamp(0.78rem, 1.25vw, 1rem); }
+
+  /* ---- chrome ---- */
+  #progress { position: fixed; top: 0; left: 0; height: 4px; background: var(--brand); width: 0; transition: width 0.25s ease; z-index: 30; }
+  #hud {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem clamp(1rem, 3vw, 2.4rem);
+    z-index: 20;
+    pointer-events: none;
+    background: linear-gradient(transparent, var(--paper) 65%);
+  }
+  #hud > * { pointer-events: auto; }
+  #hud .brandmark { display: flex; align-items: center; gap: 0.55em; color: var(--muted); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.05em; }
+  #hud nav { display: flex; align-items: center; gap: 0.5rem; }
+  #hud button {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.05rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  #hud button:hover { border-color: var(--brand); color: var(--brand-deep); }
+  #hud button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  #counter { color: var(--muted); font-size: 0.9rem; min-width: 4.5em; text-align: center; font-variant-numeric: tabular-nums; }
+
+  @media print {
+    body { overflow: visible; }
+    #deck { height: auto; }
+    .slide { position: static; opacity: 1; visibility: visible; transform: none; height: 100vh; page-break-after: always; overflow: hidden; }
+    #hud, #progress { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<main id="deck">
+
+  <!-- 1 · title -->
+  <section class="slide" aria-label="Title">
+    <h1>AI at Lotrek</h1>
+    <p class="lede">Copilot, Gemini, and how we spend the shared pool well.</p>
+    <p class="foot-note">Team session · July 2026 · companion to <code>ai-guidelines.md</code> · facts verified against official docs, 2026-07-20</p>
+  </section>
+
+  <!-- 2 · what changed -->
+  <section class="slide" aria-label="What changed">
+    <span class="eyebrow">💳 The new billing model</span>
+    <h2>Premium requests are gone.</h2>
+    <p class="lede">Since June 1, 2026 Copilot bills in <strong>GitHub AI Credits</strong> — metered on the actual tokens each interaction consumes, priced per model.</p>
+    <div class="tiles">
+      <div class="tile accent"><span class="big num">$0.01</span><span class="cap">the value of 1 credit</span></div>
+      <div class="tile"><span class="big">Tokens</span><span class="cap">what you're billed on — input + output, per prompt, per model</span></div>
+      <div class="tile"><span class="big">No free model</span><span class="cap">the 0× "included model" tier and the fallback are gone</span></div>
+    </div>
+    <div class="band good">🆓 <strong>Still free and unlimited:</strong> code completions and next-edit suggestions. They never touch the pool.</div>
+  </section>
+
+  <!-- 3 · the pool -->
+  <section class="slide" aria-label="The shared pool">
+    <span class="eyebrow">🏦 Our budget</span>
+    <h2>One pool for the whole team</h2>
+    <div class="tiles">
+      <div class="tile accent"><span class="big num">1,900<span class="unit"> /person/mo</span></span><span class="cap">credits — promo <strong>3,000</strong> until Sept 1, 2026 · no rollover, resets on the 1st</span></div>
+      <div class="tile"><span class="big">Pooled</span><span class="cap">no personal quota — every credit anyone spends comes out of the same shared pot</span></div>
+      <div class="tile"><span class="big num">≈ 90<span class="unit"> /day</span></span><span class="cap">credits per person per working day — about $0.90</span></div>
+    </div>
+    <div class="band warn">⚠️ <strong>Our overage policy is hard block.</strong> When the pool is empty, chat and agent mode stop <em>for everyone</em> until the 1st. Completions keep working — nothing else does.</div>
+  </section>
+
+  <!-- 4 · context is the bill -->
+  <section class="slide" aria-label="Context is the bill">
+    <span class="eyebrow">🧾 The mental shift</span>
+    <h2>Context is the bill</h2>
+    <p class="lede">A prompt no longer has a flat price. The same exchange — 100k tokens of attached context in, 5k out — on two <strong>example</strong> models (the enabled list changes weekly):</p>
+    <div class="barrow" role="img" aria-label="Bar chart: the same prompt costs about 125 credits on Claude Fable 5 versus about 3.5 credits on GPT-5 mini">
+      <span class="blabel">Claude Fable&nbsp;5</span>
+      <span class="btrack"><span class="bar hot" style="width: min(74%, 34em);"></span><span class="bval num">≈125 <span class="unit">credits</span></span></span>
+      <span class="blabel">GPT-5 mini</span>
+      <span class="btrack"><span class="bar" style="width: max(2%, 10px);"></span><span class="bval num">≈3.5 <span class="unit">credits</span></span></span>
+    </div>
+    <p class="lede">That's <strong>a day and a half of one person's share</strong> vs. pocket change — for the same question. And every chat turn re-sends the whole conversation history as input.</p>
+  </section>
+
+  <!-- 5 · right tool -->
+  <section class="slide" aria-label="Right tool for the job">
+    <span class="eyebrow">🧭 Cheat sheet</span>
+    <h2>Right tool for the job</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <tr><th>Task</th><th>Use</th><th>Cost</th></tr>
+        <tr><td>Routine code while typing</td><td><strong>Completions</strong> / next-edit suggestions</td><td><span class="chip free">Free, unlimited</span></td></tr>
+        <tr><td>Quick question, small edit</td><td><strong>Copilot chat</strong> on a cheap model</td><td><span class="chip paid">Credits · small</span></td></tr>
+        <tr><td>Multi-file implementation</td><td><strong>Agent mode</strong>, tightly scoped</td><td><span class="chip paid">Credits · can be large</span></td></tr>
+        <tr><td>Research, comparisons, drafts, notes</td><td><strong>Gemini</strong> (app, Deep Research, Notebook)</td><td><span class="chip free">Already paid in Workspace</span></td></tr>
+        <tr><td>Client code on a <strong>personal</strong> AI account</td><td>—</td><td><span class="chip never">Never</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6 · prices -->
+  <section class="slide" aria-label="Model prices">
+    <span class="eyebrow">🏷️ Price examples</span>
+    <h2>The spread is ~40×</h2>
+    <p class="lede"><strong>Example models, for scale</strong> — not a recommended or enabled list. That list is decided every Friday.</p>
+    <div style="overflow-x: auto;">
+      <table aria-label="Model price snapshot, per one million tokens, with bars proportional to input price">
+        <tr><th>Tier</th><th>Model</th><th>In / Out per 1M</th><th></th></tr>
+        <tr><td>Economy</td><td>GPT-5 mini</td><td class="num">$0.25 / $2.00</td><td style="width: 34%;"><span class="minibar" style="width: 2.5%;"></span></td></tr>
+        <tr><td>Economy</td><td>Gemini 3 Flash</td><td class="num">$0.50 / $3.00</td><td><span class="minibar" style="width: 5%;"></span></td></tr>
+        <tr><td>Mid</td><td>Claude Sonnet 5 <span class="foot-note">(promo to Aug 31)</span></td><td class="num">$2.00 / $10.00</td><td><span class="minibar" style="width: 20%;"></span></td></tr>
+        <tr><td>Mid</td><td>GPT-5.4</td><td class="num">$2.50 / $15.00</td><td><span class="minibar" style="width: 25%;"></span></td></tr>
+        <tr><td>Frontier</td><td>Claude Opus 4.8</td><td class="num">$5.00 / $25.00</td><td><span class="minibar" style="width: 50%;"></span></td></tr>
+        <tr><td>Frontier</td><td>Claude Fable 5</td><td class="num">$10.00 / $50.00</td><td><span class="minibar" style="width: 100%;"></span></td></tr>
+      </table>
+    </div>
+    <p class="foot-note">Bars ∝ input price. Example prices, snapshot 2026-07-20 — updated in the Friday review, never in this deck.</p>
+  </section>
+
+  <!-- 7 · habits: defaults -->
+  <section class="slide" aria-label="Spend habits: defaults">
+    <span class="eyebrow">💸 Spend habits · 1 of 2</span>
+    <h2>Defaults that save the pool</h2>
+    <ul class="points">
+      <li><strong>Completions first.</strong> They're free — boilerplate, routine code, tests-by-example. Chat is for what completions can't reach.</li>
+      <li><strong>Right-size the model.</strong> Cheap tier for everyday questions and mechanical edits; escalate to frontier deliberately, for genuinely hard problems.</li>
+      <li><strong>Think with Gemini, implement with Copilot.</strong> Research, comparisons, and brainstorming the approach cost zero credits on Gemini.</li>
+    </ul>
+    <div class="band warn">⚠️ <strong>False economy is real:</strong> three failed retries on a cheap model cost more than one clean answer from a mid model. Bring these cases to Friday.</div>
+  </section>
+
+  <!-- 8 · habits: discipline -->
+  <section class="slide" aria-label="Spend habits: discipline">
+    <span class="eyebrow">💸 Spend habits · 2 of 2</span>
+    <h2>Discipline per prompt</h2>
+    <ul class="points">
+      <li><strong>Attach the files that matter, not the workspace.</strong> Attached context is billed input, every turn.</li>
+      <li><strong>New chat per task.</strong> A bloated thread re-sends its history on every message — caching softens it to ~10%, it never makes it free.</li>
+      <li><strong>One good prompt beats five vague ones.</strong> Goal, constraints, relevant files, what "done" looks like. Retries are re-billed in full.</li>
+      <li><strong>Keep the extras off.</strong> Higher reasoning and the 1M-token context window multiply burn — switch them on for a reason, then back off.</li>
+    </ul>
+  </section>
+
+  <!-- 9 · agent mode -->
+  <section class="slide" aria-label="Agent mode">
+    <span class="eyebrow">🤖 The expensive surface</span>
+    <h2>Agent mode is a power tool</h2>
+    <ul class="points">
+      <li><strong>It bills every token of its autonomous iterations</strong> — reading files, retrying, self-correcting. Long sessions cost what they cost.</li>
+      <li><strong>Use it for genuinely multi-file work</strong> with clear acceptance criteria stated up front.</li>
+      <li><strong>Watch it. Stop a session that's flailing</strong> — a run that isn't converging won't get cheaper.</li>
+      <li><strong>A one-file change is a chat edit or a completion,</strong> not an agent run.</li>
+    </ul>
+  </section>
+
+  <!-- 10 · gemini -->
+  <section class="slide" aria-label="Gemini">
+    <span class="eyebrow">✨ The free half of the stack</span>
+    <h2>Gemini is already paid for</h2>
+    <div class="cols">
+      <div>
+        <p class="colhead">What we get (Workspace Business Standard)</p>
+        <ul class="points">
+          <li>Gemini app with Gems · ~25 Pro prompts / 4h · 300 Thinking / day</li>
+          <li><strong>20 Deep Research reports / day</strong> — per person</li>
+          <li>Side panels in Gmail, Docs, Sheets, Drive</li>
+          <li><strong>Gemini Notebook</strong> (NotebookLM)</li>
+        </ul>
+      </div>
+      <div>
+        <p class="colhead">Default to it for</p>
+        <ul class="points">
+          <li>Tech research &amp; library comparisons ("X vs Y for our case")</li>
+          <li>Architecture rubber-ducking <em>before</em> implementing</li>
+          <li>Docs, specs, client emails, estimates, meeting notes</li>
+          <li>Per-project knowledge base you can ask questions against</li>
+        </ul>
+      </div>
+    </div>
+    <div class="band good">💡 <strong>Think with Gemini. Implement with Copilot.</strong> Every one of these costs zero Copilot credits.</div>
+  </section>
+
+  <!-- 11 · privacy -->
+  <section class="slide" aria-label="Privacy and client code">
+    <span class="eyebrow">🔒 Privacy</span>
+    <h2>Where client code can go</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <tr><th>Where</th><th>Client code?</th><th>Why</th></tr>
+        <tr><td>Copilot Business (our org seats)</td><td><span class="ok">✓ Yes</span></td><td>Contractually excluded from training (GitHub DPA)</td></tr>
+        <tr><td>Gemini, logged into <strong>Lotrek Workspace</strong></td><td><span class="ok">✓ Yes</span></td><td>Core service under the CDPA — no training, no human review</td></tr>
+        <tr><td>AI Studio · free Gemini API · personal Gemini</td><td><span class="no">✗ No</span></td><td>Free tiers train on content and allow human review</td></tr>
+        <tr><td>Personal AI accounts (any provider)</td><td><span class="no">✗ Never</span></td><td>See next slide</td></tr>
+      </table>
+    </div>
+    <div class="band bad">🔑 <strong>Secrets never go in a prompt — anywhere.</strong> No credentials, tokens, or client PII, in any tool including the approved ones. Reference env vars; don't paste values.</div>
+  </section>
+
+  <!-- 12 · personal accounts -->
+  <section class="slide" aria-label="Personal accounts">
+    <span class="eyebrow">🕵️ Personal accounts</span>
+    <h2>They train on you by default</h2>
+    <ul class="points">
+      <li><strong>ChatGPT</strong> and <strong>personal Gemini</strong> — train on conversations by default (opt-out buried in settings).</li>
+      <li><strong>Copilot Individual</strong> — trains on your code by default <strong>since April 2026</strong>. Our Business seats don't: one more reason to work signed into the org account.</li>
+      <li><strong>Claude</strong> — asks at signup instead of assuming.</li>
+    </ul>
+    <div class="band warn">🚫 <strong>Personal accounts are for generic learning only.</strong> No client code, no internal data, nothing identifying a client — and if you use one at all, disable training. Spot an AI clause in a client contract? Raise it with the team first.</div>
+  </section>
+
+  <!-- 13 · quality -->
+  <section class="slide" aria-label="Quality gates">
+    <span class="eyebrow">✅ Quality gates</span>
+    <h2>Same bar as hand-written code</h2>
+    <ul class="points">
+      <li><strong>You own what you ship.</strong> Never commit a line you can't explain — "Copilot wrote it" is not a review response.</li>
+      <li><strong>Same PR review as everything else.</strong> Note large generated chunks in the description so the reviewer knows where to slow down.</li>
+      <li><strong>Non-trivial generated logic gets a test.</strong> Plausible-but-wrong is the signature AI failure mode.</li>
+      <li><strong>Extra scrutiny on sensitive paths:</strong> auth, permissions, input validation, payments, crypto.</li>
+      <li><strong>Hygiene unchanged:</strong> Conventional Commits, and PR text that describes the actual diff.</li>
+    </ul>
+  </section>
+
+  <!-- 14 · repo standard -->
+  <section class="slide" aria-label="Repo standard">
+    <span class="eyebrow">🗂️ Repo standard</span>
+    <h2>Every repo gets an <code style="font-size: 0.85em;">AGENTS.md</code></h2>
+    <ul class="points">
+      <li><strong>One canonical, tool-agnostic guide</strong> at the root — dev commands, conventions, repo map, gotchas. Camomilla's is the reference example.</li>
+      <li><strong>Wire VS Code to read it:</strong> commit <code>"chat.useAgentsMdFile": true</code> in <code>.vscode/settings.json</code>.</li>
+      <li><strong><code>.github/copilot-instructions.md</code> stays a thin pointer</strong> — 3 lines + "see AGENTS.md".</li>
+      <li><strong>Keep instruction files lean:</strong> they ride along on <em>every</em> request — a bloated file is a tax on every prompt, org-wide.</li>
+    </ul>
+    <div class="band warn">⚠️ <strong>Gotcha:</strong> Copilot has no <code>@file</code> import — that's Claude Code syntax. An <code>@AGENTS.md</code> line in copilot-instructions.md is read as plain text.</div>
+  </section>
+
+  <!-- 15 · friday review -->
+  <section class="slide" aria-label="The Friday review">
+    <span class="eyebrow">📅 Governance</span>
+    <h2>The Friday review decides</h2>
+    <ul class="points">
+      <li><strong>Which models are enabled</strong> — a team decision made in the settings panel, never hard-coded in a doc.</li>
+      <li><strong>Pool pace</strong> — credits consumed vs. day of month; if we're heading for the hard block, we agree on what to throttle.</li>
+      <li><strong>What worked at what price</strong> — patterns worth copying, workflows that burn credits for nothing, false-economy cases.</li>
+      <li><strong>The price snapshot</strong> — updated whenever GitHub changes models or prices.</li>
+    </ul>
+    <p class="lede"><strong>Come knowing what you spent, and on which models.</strong></p>
+  </section>
+
+  <!-- 16 · closing -->
+  <section class="slide" aria-label="Takeaways">
+    <span class="eyebrow">🌼 If you remember three things</span>
+    <div style="display: flex; flex-direction: column; gap: clamp(1rem, 3vh, 2rem);">
+      <div class="takeaway"><span class="n">1</span>Context is the bill.</div>
+      <div class="takeaway"><span class="n">2</span>Think with Gemini, implement with Copilot.</div>
+      <div class="takeaway"><span class="n">3</span>You own what you ship.</div>
+    </div>
+    <div class="spacer"></div>
+    <p class="lede">Full guidelines, prices, and sources: <code>ai-guidelines.md</code> — living document, maintained in the Friday review.</p>
+  </section>
+
+</main>
+
+<div id="hud">
+  <span class="brandmark">AI at Lotrek</span>
+  <nav aria-label="Slide navigation">
+    <button id="prev" aria-label="Previous slide">←</button>
+    <span id="counter" aria-live="polite">1 / 16</span>
+    <button id="next" aria-label="Next slide">→</button>
+  </nav>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  let i = Math.min(slides.length - 1, Math.max(0, (parseInt(location.hash.slice(2), 10) || 1) - 1));
+
+  function show(n) {
+    i = Math.min(slides.length - 1, Math.max(0, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#/' + (i + 1));
+  }
+
+  document.getElementById('prev').addEventListener('click', () => show(i - 1));
+  document.getElementById('next').addEventListener('click', () => show(i + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); show(0); }
+    else if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+  });
+
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 60) show(i + (dx < 0 ? 1 : -1));
+    touchX = null;
+  }, { passive: true });
+
+  show(i);
+</script>
+</body>
+</html>

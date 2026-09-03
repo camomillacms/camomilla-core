@@ -1,5 +1,4 @@
 from ..mixins import (
-    GetUserLanguageMixin,
     OptimViewMixin,
     PaginateStackMixin,
     OrderingMixin,
@@ -9,18 +8,13 @@ from camomilla.serializers.mixins import TranslationsMixin
 from camomilla.openapi.schema import FormAutoSchema
 from camomilla.settings import API_TRANSLATION_ACCESSOR
 from camomilla.utils.translation import get_lang_info, plain_to_nest
+from ..mixins.language import resolve_request_language
 from rest_framework import viewsets
 from rest_framework.metadata import SimpleMetadata
 from structured.contrib.restframework import StructuredJSONField
 
 
 base_viewset_classes = [
-    # First: it activates the request language in ``initialize_request``, before
-    # any queryset or serializer reads a translated column. Listed here rather
-    # than on each viewset so ``?language=`` is a property of the whole API —
-    # model_api-registered project models included, which previously ignored it
-    # and could only be addressed through Accept-Language.
-    GetUserLanguageMixin,
     CamomillaBasePermissionMixin,
     OptimViewMixin,
     OrderingMixin,
@@ -102,3 +96,16 @@ class BaseViewMetadata(SimpleMetadata):
 
 class BaseModelViewset(*base_viewset_classes):
     metadata_class = BaseViewMetadata
+
+    def initialize_request(self, request, *args, **kwargs):
+        """Activate the request's language before anything reads a column.
+
+        Here rather than on each viewset so ``?language=`` is a property of the
+        whole API — project models registered through ``model_api`` included,
+        which previously ignored it and could only be addressed through
+        ``Accept-Language``. Called as a function, not inherited from
+        ``GetUserLanguageMixin``: viewsets that list that mixin themselves are a
+        documented pattern, and having it on both sides is an inconsistent MRO.
+        """
+        resolve_request_language(self, request)
+        return super().initialize_request(request, *args, **kwargs)

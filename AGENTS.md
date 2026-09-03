@@ -38,9 +38,9 @@ uv run python manage.py runserver
 
 ```
 camomilla/
-├── models/              # AbstractPage/Page, Draft, Media, Article, Menu, Content (+ UrlNode, UrlRedirect)
+├── models/              # AbstractPage/Page, Draft, Media, Article, Menu, Content (+ UrlNode, UrlRedirect, SiteEpoch)
 ├── serializers/         # DRF serializers — base/ (BaseModelSerializer, mixin composition), mixins/, fields/
-├── views/               # DRF viewsets — base/ (BaseModelViewset), mixins/, pages.py (pages_router + pages_router_preview), decorators.py
+├── views/               # DRF viewsets — base/ (BaseModelViewset), mixins/, pages.py (pages_router + pages_router_preview + pages_router_changes + pages_router_publish_due), decorators.py
 ├── managers/            # PageQuerySet, UrlNodeManager (DraftQuerySet lives in models/draft.py)
 ├── templatetags/        # menus (render_menu / node_url), camomilla_filters (localized_url)
 ├── templates_context/   # page context injection (@register)

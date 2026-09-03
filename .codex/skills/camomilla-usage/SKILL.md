@@ -113,8 +113,6 @@ python manage.py migrate
 |---|---|
 | `/api/camomilla/pages/` | Pages CRUD |
 | `/api/camomilla/pages-router/<permalink>` | Page lookup by URL (cached) |
-| `/api/camomilla/pages-router/changes` | Build manifest: every public page URL with a content hash, plus redirects (public, `GET`) |
-| `/api/camomilla/pages-router/publish-due` | Apply any due scheduled drafts, returns `{"published": n}` (`POST`, `IsAdminUser`) |
 | `/api/camomilla/articles/` | Articles CRUD |
 | `/api/camomilla/tags/` | Tags CRUD |
 | `/api/camomilla/contents/` | Content blocks CRUD |
@@ -176,12 +174,6 @@ Output (GET):
 ```
 
 Use `?included_translations=all` or `?included_translations=en,it` to control which translations to include.
-
-### OPTIONS metadata (form discovery)
-
-`OPTIONS` on any `BaseModelViewset` route returns two extra keys alongside DRF's `actions`: `lang_info` (the model's translatable fields, plus `lang_info.accessor` — the key per-language values must be **written** under; it follows `CAMOMILLA["API"]["TRANSLATION_ACCESSOR"]`, so a client that hardcodes `"translations"` can silently drop every translation on save) and `schema`, a flat form-oriented JSON Schema where each field appears exactly once carrying `translatable: true` instead of the nested `translations` envelope. It's the only shape a "create new" form can consult — there's no record to `GET` yet. `/openapi` is unchanged: it still documents the wire contract, envelope included.
-
-> Ships with the `feature/describe-endpoints` branch; not yet merged to `master`.
 
 ### Authentication
 

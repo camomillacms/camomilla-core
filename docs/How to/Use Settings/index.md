@@ -41,7 +41,8 @@ CAMOMILLA = {
         "CACHE_ENABLED": True # if True, the structured field will use a cache system to avoid multiple queries to the database
     }
     "API": {
-        "NESTING_DEPTH": 10 # default nesting depth for serializers
+        "NESTING_DEPTH": 10, # default nesting depth for serializers
+        "TRANSLATION_ACCESSOR": "translations" # key under which per language values are read and written
     },
     "DEBUG": False # enable or disable debug mode
 }
