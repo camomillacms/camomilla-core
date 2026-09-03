@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v6.7.2 (2026-09-03)
+
+### Bug Fixes
+
+- **draft**: Draft workflow on any page model, scoped to the right language
+  ([`9977d7d`](https://github.com/camomillacms/camomilla-core/commit/9977d7d51c43e3e5829a5ef96d35cda73c36e7d9))
+
+- **lang**: Fix language resolution in views
+  ([`9892610`](https://github.com/camomillacms/camomilla-core/commit/98926103ee45c4fe454ccebd93071d4d83b8a4b0))
+
+
 ## v6.7.1 (2026-09-02)
 
 ### Bug Fixes
